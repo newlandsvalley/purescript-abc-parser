@@ -9,7 +9,7 @@ import Data.Either (Either(..))
 import Data.List (List(..), singleton, (:))
 import Data.List (length) as List
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String.Utils (includes, length, filter, startsWith, mapChars)
+import Data.String.Utils (length, filter, startsWith, mapChars, includes)
 import Data.String (toUpper, charAt)
 import Data.Int (fromString, pow)
 import Data.Foldable (foldr)
@@ -21,7 +21,16 @@ import Text.Parsing.StringParser (Parser, ParseError, runParser, fail)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof, whiteSpace)
 import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, optionMaybe, (<?>))
 
+
+import Debug.Trace (trace, traceA)
+
+import ParserExtra (regex)
+
 import Abc.ParseTree
+
+traceParse :: forall a. String -> a -> a
+traceParse s p =
+  trace s (\_ -> p)
 
 abc :: Parser AbcTune
 abc =
@@ -42,6 +51,29 @@ score =
 
 scoreItem :: Parser Music
 scoreItem =
+  choice
+    [
+      spacer
+    , chord
+    , inline
+    , barline
+    , note
+    , brokenRhythmPair
+      -- must place before note because of potential ambiguity of AbcNote
+    , rest
+    , tuplet
+    , slur
+    , graceNote
+      -- we are not enforcing the ordering of grace notes, chords etc pre-note
+    , annotation
+    , chordSymbol
+    , decoration
+    , ignore
+    , continuation
+    ]
+      <?> "score item"
+
+{-
     fix
         \i ->
             -- log "score item" <$>
@@ -66,6 +98,7 @@ scoreItem =
                 ]
             )
                 <?> "score item"
+-}
 
 chord :: Parser Music
 chord =
@@ -89,11 +122,12 @@ inline =
 
 barline :: Parser Music
 barline =
+  traceParse "barline" <$>
     choice
-        [ normalBarline
+        [
+          normalBarline
         , degenerateBarRepeat
         ]
-
 {- a normal bar line (plus optional repeat iteration marker)
    see comments in 4.8 Repeat/bar symbols:
    Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have
@@ -133,12 +167,57 @@ degenerateBarRepeat =
 -}
 repeatSection :: Parser Int
 repeatSection =
+  int
+{- JMW!!! This needs looking at - the whitespace cause terrible parse failures on any barline
     choice
         [ int
         , (whiteSpace *> char '[' *> int)
         ]
+-}
 
 {- written like this instead of a regex because it's all regex control character! -}
+barSeparator :: Parser String
+barSeparator =
+      choice
+          [ string "|"     -- must be last otherwise it hides |:
+          , string "||"
+          , string "||:"   -- must come before || else it hides it
+          , string "::"
+          , string ":|"
+          , string ":||"
+          , string ":|]"   -- must come before :| else it hides it
+          , string ":||:"
+          , string "|:"
+          , string ":[|"
+          , string "]|"
+          , string "]|:"
+          , string "|]"
+          , string "|]:"  -- must come before |] otherwise it hides it
+          , string "[|"
+          ]
+{-
+      choice
+          [ string "[|"
+          , string "|]:"  -- must come before |] otherwise it hides it
+          , string "|]"
+          , string "]|:"
+          , string "]|"
+          , string ":[|"
+          , string "|:"
+          , string ":|:"
+          , string ":||:"
+          , string ":|]"   -- must come before :| else it hides it
+          , string ":||"
+          , string ":|"
+          , string "::"
+          , string "||:"   -- must come before || else it hides it
+          , string "||"
+          , string "|"     -- must be last otherwise it hides |:
+          ]
+  -}
+
+
+{-
 barSeparator :: Parser String
 barSeparator =
     concatenate
@@ -163,6 +242,7 @@ barSeparator =
                     ]
                 )
              )
+-}
 
 
 
@@ -176,20 +256,28 @@ brokenRhythmTie =
 
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
+  traceParse "brokenRhythmPair" <$>
+    (
     BrokenRhythmPair
         <$> abcNote
         <*> brokenRhythmTie
         <*> abcNote
         <?> "broken rhythm pair"
+    )
 
 
 note :: Parser Music
 note =
-    Note <$> abcNote
+  traceParse "note" <$>
+    (
+      Note <$> abcNote
+    )
 
 
 abcNote :: Parser AbcNote
 abcNote =
+  traceParse "abcNote" <$>
+    (
     buildNote
         <$> maybeAccidental
         <*> pitch
@@ -197,6 +285,7 @@ abcNote =
         <*> optionMaybe noteDur
         <*> maybeTie
         <?> "ABC note"
+    )
 
 {- maybe an accidental defining a note's pitch -}
 maybeAccidental :: Parser (Maybe Accidental)
@@ -241,18 +330,25 @@ octaveShift s =
 -}
 noteDur :: Parser Rational
 noteDur =
+
     choice
-        [ rational
-          -- e.g. 3/2
-        , curtailedRightRational
-          -- e.g. 3/
-        , integralAsRational
-          -- e.g. 3
-        , curtailedLeftRational
-          -- e.g. /2
-        , slashesRational
-          -- e.g. / or //
+        [ slashesRational          -- e.g. / or //
+        , curtailedLeftRational    -- e.g. /2
+        , integralAsRational       -- e.g. 3
+        , curtailedRightRational   -- e.g. 3/
+        , rational                 -- e.g. 3/2
         ]
+
+{-
+    choice
+        [ rational                  -- e.g. 3/2
+        , curtailedRightRational    -- e.g. 3/
+        , integralAsRational        -- e.g. 3
+        , curtailedLeftRational     -- e.g. /2
+        , slashesRational           -- e.g. / or //
+        ]
+-}
+
 
 {- normal Rational e.g 3/4 -}
 rational :: Parser Rational
@@ -271,7 +367,10 @@ curtailedRightRational =
 
 integralAsRational :: Parser Rational
 integralAsRational =
+  traceParse "integralAsRational" <$>
+    (
     fromInt <$> int
+    )
 
 {- e.g. / or // or /// (as found in note durations)
    which translates to 1/2, 1/4, 1/8 etc
@@ -280,7 +379,7 @@ slashesRational :: Parser Rational
 slashesRational =
     buildRationalFromExponential <$> List.length <$> many1 (char '/')
 
-{- attaches to leading note and not free-standing -}
+{- attaches to leading barand not free-standing -}
 maybeTie :: Parser (Maybe Char)
 maybeTie =
     (optionMaybe (char '-'))
@@ -288,9 +387,12 @@ maybeTie =
 
 rest :: Parser Music
 rest =
+  traceParse "rest" <$>
+    (
     Rest
         <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
         <?> "rest"
+    )
 
 tuplet :: Parser Music
 tuplet =
@@ -409,10 +511,21 @@ longDecoration =
 
 -- at least one (intended) space somewhere inside the music body
 spacer :: Parser Music
+{-
 spacer =
+  traceParse "spacer" <$>
+    ( Spacer 1 <$ char ' ' )
+    -}
+
+
+spacer =
+  traceParse "spacer" <$>
+    (
     Spacer
         <$> (List.length <$> (many1 scoreSpace))
         <?> "space"
+    )
+
 
 {- space within a line of the tune's score -}
 scoreSpace :: Parser Char
@@ -1048,6 +1161,7 @@ buildNote macc pitchStr octave ml mt =
     in
         { pitchClass : p, accidental : macc, octave : spn, duration : l, tied : tied }
 
+
 buildAccidental :: String -> Accidental
 buildAccidental s =
     case s of
@@ -1097,7 +1211,7 @@ buildChord ns ml =
 -}
 scientificPitchNotation :: String -> Int -> Int
 scientificPitchNotation pc oct =
-    if includes "ABCDEFG" pc then
+    if includes pc "ABCDEFG" then
         -- pitch class inhabits octave of middle C, oct <= 0
         middlecOctave + oct
     else
@@ -1254,9 +1368,10 @@ strToEol =
 
 
 -- PLEASE FIX ME - see https://github.com/purescript-contrib/purescript-string-parsers/issues/25
+{-}
 regex :: String -> Parser String
 regex s = fail "regex not implemented yet in string-parsers"
-
+-}
 
 manyTill1 :: forall a end. Parser a -> Parser end -> Parser (List a)
 manyTill1 = manyTill
@@ -1268,6 +1383,8 @@ int =
   fromMaybe 1 <$>  -- the regex will always provide an integer if it parses
     fromString <$>
     regex "(0|[1-9][0-9]*)"
+    -- regex "(?:0|[1-9][0-9]*)"
+    -- regex "[0-9]"
     <?> "expected a positive integer"
 
 

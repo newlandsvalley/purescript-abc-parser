@@ -58,7 +58,29 @@ main :: forall t1.
           Unit
 main = runTest do
   suite "parser" do
+    {-
     test "headers" do
       assertRoundTrip "T: the title\r\n"
+    test "tinytune" do
+        assertRoundTrip "T: the title\r\n|z AB |\r\n"
     test "key signature" do
       assertKeySigParses "G"
+   test "simple note" do
+      assertRoundTrip "| ABC z def z |\r\n"
+    -}
+
+   test "note len" do
+     assertRoundTrip "| A3 |\r\n"
+     
+  {-
+    test "fractional note len" do
+        assertRoundTrip "| A/2 |\r\n"
+  -}
+
+-- these ABC samples must already be in canonical format for round-tripping to work
+-- because of the exact string matching algorithm
+-- music
+
+
+note =
+    "| ABC z def z |\r\n"

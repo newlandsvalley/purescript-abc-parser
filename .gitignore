@@ -2,5 +2,6 @@
 /node_modules/
 /.pulp-cache/
 /output/
+/deprecated/
 /.psc*
 /.psa*
