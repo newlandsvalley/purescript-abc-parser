@@ -17,9 +17,9 @@ import Data.Functor (map)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
-import Text.Parsing.StringParser (Parser, ParseError, runParser, fail)
+import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof, whiteSpace)
-import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, optionMaybe, (<?>))
+import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, optionMaybe, (<?>))
 
 
 import Debug.Trace (trace, traceA)
@@ -53,23 +53,21 @@ scoreItem :: Parser Music
 scoreItem =
   choice
     [
-      spacer
-    , chord
-    , inline
-    , barline
-    , note
-    , brokenRhythmPair
-      -- must place before note because of potential ambiguity of AbcNote
-    , rest
-    , tuplet
-    , slur
-    , graceNote
-      -- we are not enforcing the ordering of grace notes, chords etc pre-note
-    , annotation
-    , chordSymbol
-    , decoration
+      continuation
     , ignore
-    , continuation
+    , spacer
+    , decoration
+    , chordSymbol
+    , annotation
+    , graceNote
+    , try tuplet
+    , slur
+    , rest
+    , try brokenRhythmPair -- must place 'before' note because of potential ambiguity of AbcNote
+    , note
+    , barline
+    , inline
+    , chord
     ]
       <?> "score item"
 
@@ -125,8 +123,8 @@ barline =
   traceParse "barline" <$>
     choice
         [
-          normalBarline
-        , degenerateBarRepeat
+          degenerateBarRepeat
+        , normalBarline
         ]
 {- a normal bar line (plus optional repeat iteration marker)
    see comments in 4.8 Repeat/bar symbols:
@@ -167,13 +165,16 @@ degenerateBarRepeat =
 -}
 repeatSection :: Parser Int
 repeatSection =
-  int
-{- JMW!!! This needs looking at - the whitespace cause terrible parse failures on any barline
+   int
+
+{- JMW FIX ME
     choice
-        [ int
-        , (whiteSpace *> char '[' *> int)
+        [
+          (whiteSpace *> char '[' *> int)
+        , int
         ]
 -}
+
 
 {- written like this instead of a regex because it's all regex control character! -}
 barSeparator :: Parser String
@@ -296,11 +297,12 @@ accidental :: Parser Accidental
 accidental =
     buildAccidental
         <$> (choice
-                [ string "^^"
-                , string "__"
-                , string "^"
+                [
+                  string "="
                 , string "_"
-                , string "="
+                , string "^"
+                , string "__"
+                , string "^^"
                 ]
             )
 
@@ -330,14 +332,23 @@ octaveShift s =
 -}
 noteDur :: Parser Rational
 noteDur =
-
     choice
+      [
+        try twoSlashes
+      , try anyRat
+      , integralAsRational
+      ]
+
+{-}
         [ slashesRational          -- e.g. / or //
         , curtailedLeftRational    -- e.g. /2
+        , integralAsRational
         , integralAsRational       -- e.g. 3
         , curtailedRightRational   -- e.g. 3/
         , rational                 -- e.g. 3/2
         ]
+        -}
+
 
 {-
     choice
@@ -349,21 +360,40 @@ noteDur =
         ]
 -}
 
+anyRat :: Parser Rational
+anyRat =
+  Rational.rational <$> option 1 int <* char '/' <*> option 2 int
+
+twoSlashes :: Parser Rational
+twoSlashes =
+  traceParse "twoSlashes" <$>
+    (
+    Rational.rational 1 4 <$ char '/' <* char '/'
+    )
 
 {- normal Rational e.g 3/4 -}
 rational :: Parser Rational
 rational =
+  traceParse "rational" <$>
+    (
     Rational.rational <$> int <* char '/' <*> int
+    )
 
 {- e.g. /4 (as found in note durations) -}
 curtailedLeftRational :: Parser Rational
 curtailedLeftRational =
+  traceParse "curtailed left rational" <$>
+    (
     (Rational.rational 1) <$> (char '/' *> int)
+    )
 
 {- e.g. 3/ (as found in note durations) -}
 curtailedRightRational :: Parser Rational
 curtailedRightRational =
+  traceParse "curtailed right rational" <$>
+    (
     invert <$> (Rational.rational 2 <$> (int <* char '/'))
+    )
 
 integralAsRational :: Parser Rational
 integralAsRational =
@@ -377,7 +407,10 @@ integralAsRational =
 -}
 slashesRational :: Parser Rational
 slashesRational =
+  traceParse "slashes rational" <$>
+    (
     buildRationalFromExponential <$> List.length <$> many1 (char '/')
+    )
 
 {- attaches to leading barand not free-standing -}
 maybeTie :: Parser (Maybe Char)
@@ -531,9 +564,10 @@ spacer =
 scoreSpace :: Parser Char
 scoreSpace =
     choice
-        [ space
+        [
+          tab
         , char 'y'
-        , tab
+        , space
         ]
 
 space :: Parser Char
@@ -598,16 +632,18 @@ tuneBodyHeader =
 tuneBodyInfo :: Boolean -> Parser Header
 tuneBodyInfo isInline =
     choice
-        [ tuneBodyOnlyInfo isInline
-        , anywhereInfo isInline
+        [
+          anywhereInfo isInline
+        , tuneBodyOnlyInfo isInline
         ]
         <?> "tune body info"
 
 tuneBodyOnlyInfo :: Boolean -> Parser Header
 tuneBodyOnlyInfo isInline =
     choice
-        [ symbolLine isInline
-        , wordsAligned isInline
+        [
+          wordsAligned isInline
+        , symbolLine isInline
         ]
         <?> "tune body only info"
 
@@ -634,8 +670,9 @@ informationField :: Boolean -> Parser Header
 informationField isInline =
     -- log "header" <$>
     (choice
-        [ anywhereInfo isInline
-        , tuneInfo
+        [
+          tuneInfo
+        , anywhereInfo isInline
         ]
         <?> "header"
     )
@@ -665,7 +702,9 @@ anywhereInfo isInline =
 tuneInfo :: Parser Header
 tuneInfo =
     choice
-        [ area
+        [
+          unsupportedHeader
+        , area
         , book
         , composer
         , discography
@@ -676,7 +715,6 @@ tuneInfo =
         , source
         , referenceNumber
         , transcription
-        , unsupportedHeader
           -- headers that are currently unsupported but must be recognized and ignored
         ]
         <?> "tune info"
@@ -935,10 +973,11 @@ noteDuration =
 meterDefinition :: Parser (Maybe MeterSignature)
 meterDefinition =
     choice
-        [ cutTime
-        , commonTime
+        [
+          nometer
         , meterSignature
-        , nometer
+        , commonTime
+        , cutTime
         ]
 
 
@@ -1010,7 +1049,9 @@ keyAccidental =
 mode :: Parser Mode
 mode =
     choice
-        [ major
+        [
+          minor
+          -- place 'last' because of potential ambiguitymajor
         , ionian
         , dorian
         , phrygian
@@ -1018,8 +1059,6 @@ mode =
         , mixolydian
         , aeolian
         , locrian
-        , minor
-          -- place last because of potential ambiguity
         ]
 
 
@@ -1367,11 +1406,6 @@ strToEol =
     regex "[^\x0D\n]*"
 
 
--- PLEASE FIX ME - see https://github.com/purescript-contrib/purescript-string-parsers/issues/25
-{-}
-regex :: String -> Parser String
-regex s = fail "regex not implemented yet in string-parsers"
--}
 
 manyTill1 :: forall a end. Parser a -> Parser end -> Parser (List a)
 manyTill1 = manyTill
@@ -1383,8 +1417,6 @@ int =
   fromMaybe 1 <$>  -- the regex will always provide an integer if it parses
     fromString <$>
     regex "(0|[1-9][0-9]*)"
-    -- regex "(?:0|[1-9][0-9]*)"
-    -- regex "[0-9]"
     <?> "expected a positive integer"
 
 

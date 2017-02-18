@@ -218,7 +218,7 @@ meter ms =
 
 duration :: NoteDuration -> String
 duration (Rational (Ratio 1 1 ))  = ""
-duration (Rational (Ratio 2 1 ))  = "/"
+duration (Rational (Ratio 1 2 ))  = "/"
 duration (Rational (Ratio n 1 ))  = show n
 duration r = rational r
 

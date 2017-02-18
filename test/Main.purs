@@ -4,6 +4,7 @@ import Prelude
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE)
 import Control.Monad.Aff.AVar (AVAR)
+import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
 -- import Data.Maybe (Maybe(..))
@@ -12,7 +13,7 @@ import Data.Either (Either(..))
 import Abc (parse, parseKeySignature)
 import Abc.Canonical (fromTune)
 
-import Test.Unit (Test, suite, test, success, failure)
+import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Main (runTest)
 import Test.Unit.Assert as Assert
 import Test.Unit.Console (TESTOUTPUT)
@@ -48,39 +49,62 @@ assertKeySigParses s =
                 failure ("parse failed: " <> (show err))
 
 
-main :: forall t1.
+main :: forall t.
         Eff
           ( console :: CONSOLE
           , testOutput :: TESTOUTPUT
           , avar :: AVAR
-          | t1
+          | t
           )
           Unit
 main = runTest do
   suite "parser" do
-    {-
-    test "headers" do
-      assertRoundTrip "T: the title\r\n"
-    test "tinytune" do
-        assertRoundTrip "T: the title\r\n|z AB |\r\n"
+     -- headerSuite
+     noteSuite
+
+
+noteSuite :: forall t. Free (TestF t) Unit
+noteSuite =
+  suite "note" do
+    test "single duration" do
+       assertRoundTrip "| A |\r\n"
+    test "doubly implied half duration" do
+       assertRoundTrip "| B/ |\r\n"
+    test "implied half duration" do
+       assertCanonical "| B/2 |\r\n" halfNoteCanonical
+    test "explicit half duration" do
+       assertCanonical "| B1/2 |\r\n" halfNoteCanonical
+    test "quarter duration" do
+       assertCanonical "| D// |\r\n" quarterNoteCanonical
+    test "double duration" do
+       assertRoundTrip "| a2 |\r\n"
+    test "broken rhythm >" do
+       assertRoundTrip "| a>b |\r\n"
+    test "broken rhythm <" do
+       assertRoundTrip "| c<d |\r\n"
+    test "triplet" do
+       assertRoundTrip "| (3efg) |\r\n"
+
+
+
+keySigSuite :: forall t. Free (TestF t) Unit
+keySigSuite =
+  suite "key signature parser" do
     test "key signature" do
       assertKeySigParses "G"
-   test "simple note" do
-      assertRoundTrip "| ABC z def z |\r\n"
-    -}
 
-   test "note len" do
-     assertRoundTrip "| A3 |\r\n"
-     
-  {-
-    test "fractional note len" do
-        assertRoundTrip "| A/2 |\r\n"
-  -}
+-- this fails at the moment
+headerSuite :: forall t. Free (TestF t) Unit
+headerSuite =
+  suite "headers" do
+    test "title" do
+      assertRoundTrip "T: the title\r\n"
 
--- these ABC samples must already be in canonical format for round-tripping to work
+-- these ABC samples are already in canonical format which should allow round-tripping to work
 -- because of the exact string matching algorithm
--- music
 
+halfNoteCanonical =
+    "| B/ |\r\n"
 
-note =
-    "| ABC z def z |\r\n"
+quarterNoteCanonical =
+    "| D1/4 |\r\n"
