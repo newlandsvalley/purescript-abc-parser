@@ -6,23 +6,23 @@ module Abc
 import Prelude (($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join)
 import Control.Alt ((<|>))
 import Data.Either (Either(..))
-import Data.List (List(..), singleton, (:))
-import Data.List (length) as List
+import Data.List (List(..), (:))
+import Data.List (length, singleton) as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.Utils (length, filter, startsWith, mapChars, includes)
-import Data.String (toUpper, charAt)
+import Data.String (toUpper, charAt, singleton)
 import Data.Int (fromString, pow)
-import Data.Foldable (foldr)
+import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
 import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
-import Text.Parsing.StringParser.String (satisfy, string, char, eof, whiteSpace)
+import Text.Parsing.StringParser.String (satisfy, string, char, eof)
 import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, optionMaybe, (<?>))
 
 
-import Debug.Trace (trace, traceA)
+import Debug.Trace (trace)
 
 import ParserExtra (regex)
 
@@ -123,8 +123,8 @@ barline =
   traceParse "barline" <$>
     choice
         [
-          degenerateBarRepeat
-        , normalBarline
+          normalBarline
+        , degenerateBarRepeat
         ]
 {- a normal bar line (plus optional repeat iteration marker)
    see comments in 4.8 Repeat/bar symbols:
@@ -180,24 +180,6 @@ repeatSection =
 barSeparator :: Parser String
 barSeparator =
       choice
-          [ string "|"     -- must be last otherwise it hides |:
-          , string "||"
-          , string "||:"   -- must come before || else it hides it
-          , string "::"
-          , string ":|"
-          , string ":||"
-          , string ":|]"   -- must come before :| else it hides it
-          , string ":||:"
-          , string "|:"
-          , string ":[|"
-          , string "]|"
-          , string "]|:"
-          , string "|]"
-          , string "|]:"  -- must come before |] otherwise it hides it
-          , string "[|"
-          ]
-{-
-      choice
           [ string "[|"
           , string "|]:"  -- must come before |] otherwise it hides it
           , string "|]"
@@ -215,35 +197,26 @@ barSeparator =
           , string "||"
           , string "|"     -- must be last otherwise it hides |:
           ]
-  -}
-
 
 {-
-barSeparator :: Parser String
-barSeparator =
-    concatenate
-        <$> (many1
-                ( choice
-                    [ string "[|"
-                    , string "|]:"  -- must come before |] otherwise it hides it
-                    , string "|]"
-                    , string "]|:"
-                    , string "]|"
-                    , string ":[|"
-                    , string "|:"
-                    , string ":|:"
-                    , string ":||:"
-                    , string ":|]"   -- must come before :| else it hides it
-                    , string ":||"
-                    , string ":|"
-                    , string "::"
-                    , string "||:"   -- must come before || else it hides it
-                    , string "||"
-                    , string "|"     -- must be last otherwise it hides |:
-                    ]
-                )
-             )
--}
+      choice
+          [ string "|"     -- must be last otherwise it hides |:
+          , string "||"
+          , string "||:"   -- must come before || else it hides it
+          , string "::"
+          , string ":|"
+          , string ":||"
+          , string ":|]"   -- must come before :| else it hides it
+          , string ":||:"
+          , string "|:"
+          , string ":[|"
+          , string "]|"
+          , string "]|:"
+          , string "|]"
+          , string "|]:"  -- must come before |] otherwise it hides it
+          , string "[|"
+          ]
+  -}
 
 
 
@@ -298,11 +271,11 @@ accidental =
     buildAccidental
         <$> (choice
                 [
-                  string "="
-                , string "_"
-                , string "^"
+                  string "^^"
                 , string "__"
-                , string "^^"
+                , string "^"
+                , string "_"
+                , string "="
                 ]
             )
 
@@ -542,15 +515,22 @@ longDecoration =
     between (char '!') (char '!') (regex "[^\x0D\n!]*")
         <?> "long decoration"
 
+{-| our whiteSpace differs from that of the string parser we do NOT want to
+  consume carriage returns or newlines
+-}
+
+whiteSpace :: Parser String
+whiteSpace =
+  foldMap singleton <$>
+     many
+       (choice
+         [ space
+         , tab
+         ]
+        )
+
 -- at least one (intended) space somewhere inside the music body
 spacer :: Parser Music
-{-
-spacer =
-  traceParse "spacer" <$>
-    ( Spacer 1 <$ char ' ' )
-    -}
-
-
 spacer =
   traceParse "spacer" <$>
     (
@@ -619,7 +599,10 @@ headers =
 
 header :: Parser Header
 header =
+  traceParse "header" <$>
+    (
     informationField false <* eol
+    )
 
 {- headers that may appear in the tune body -}
 tuneBodyHeader :: Parser BodyPart
@@ -633,8 +616,8 @@ tuneBodyInfo :: Boolean -> Parser Header
 tuneBodyInfo isInline =
     choice
         [
-          anywhereInfo isInline
-        , tuneBodyOnlyInfo isInline
+          tuneBodyOnlyInfo isInline
+        , anywhereInfo isInline
         ]
         <?> "tune body info"
 
@@ -642,8 +625,8 @@ tuneBodyOnlyInfo :: Boolean -> Parser Header
 tuneBodyOnlyInfo isInline =
     choice
         [
-          wordsAligned isInline
-        , symbolLine isInline
+          symbolLine isInline
+        , wordsAligned isInline
         ]
         <?> "tune body only info"
 
@@ -668,17 +651,19 @@ tuneBodyOnlyInfo isInline =
 -}
 informationField :: Boolean -> Parser Header
 informationField isInline =
-    -- log "header" <$>
+  traceParse "informationField" <$>
     (choice
         [
-          tuneInfo
-        , anywhereInfo isInline
+          anywhereInfo isInline
+        , tuneInfo
         ]
         <?> "header"
     )
 
 anywhereInfo :: Boolean -> Parser Header
 anywhereInfo isInline =
+  traceParse "anywhereInfo" <$>
+    (
     choice
         [ instruction isInline
         , key
@@ -698,13 +683,13 @@ anywhereInfo isInline =
         , comment
         ]
         <?> "anywhere info"
+    )
 
 tuneInfo :: Parser Header
 tuneInfo =
     choice
         [
-          unsupportedHeader
-        , area
+          area
         , book
         , composer
         , discography
@@ -715,7 +700,7 @@ tuneInfo =
         , source
         , referenceNumber
         , transcription
-          -- headers that are currently unsupported but must be recognized and ignored
+        , unsupportedHeader  -- headers that are currently unsupported but must be recognized and ignored
         ]
         <?> "tune info"
 
@@ -901,9 +886,12 @@ symbolLine isInline =
 
 title :: Boolean -> Parser Header
 title isInline =
+  traceParse "title" <$>
+    (
     Title
         <$> ((headerCode 'T') *> (inlineInfo isInline))
         <?> "T header"
+    )
 
 
 userDefined :: Boolean -> Parser Header
@@ -974,10 +962,10 @@ meterDefinition :: Parser (Maybe MeterSignature)
 meterDefinition =
     choice
         [
-          nometer
-        , meterSignature
+          cutTime
         , commonTime
-        , cutTime
+        , meterSignature
+        , nometer
         ]
 
 
@@ -1050,8 +1038,7 @@ mode :: Parser Mode
 mode =
     choice
         [
-          minor
-          -- place 'last' because of potential ambiguitymajor
+          try major
         , ionian
         , dorian
         , phrygian
@@ -1059,52 +1046,54 @@ mode =
         , mixolydian
         , aeolian
         , locrian
+        , minor -- place 'last' because of potential ambiguitymajor
         ]
 
 
 minor :: Parser Mode
 minor =
-    Minor <$ whiteSpace <* regex "(M|m)([A-Za-z])*"
+    Minor <$ whiteSpace <* regex "[M|m][A-Za-z]*"
 
 
 major :: Parser Mode
 major =
-    Major <$ whiteSpace <* regex "(M|m)(A|a)(J|j)([A-Za-z])*"
+    Major <$ whiteSpace <* regex "[M|m][A|a][J|j][A-Za-z]*"
 
 
 ionian :: Parser Mode
 ionian =
-    Ionian <$ whiteSpace <* regex "(I|i)(O|o)(N|n)([A-Za-z])*"
+    -- Ionian <$ whiteSpace <* regex "(I|i)(O|o)(N|n)([A-Za-z])*"
+    Ionian <$ whiteSpace <* regex "[I|i][O|o][N|n][A-Za-z]*"
 
 
 dorian :: Parser Mode
 dorian =
-    Dorian <$ whiteSpace <* regex "(D|d)(O|o)(R|r)([A-Za-z])*"
+    Dorian <$ whiteSpace <* regex "[D|d][O|o][R|r][A-Za-z]*"
 
 
 phrygian :: Parser Mode
 phrygian =
-    Phrygian <$ whiteSpace <* regex "(P|p)(H|h)(R|r)([A-Za-z])*"
+    Phrygian <$ whiteSpace <* regex "[P|p][H|h][R|r][A-Za-z]*"
 
 
 lydian :: Parser Mode
 lydian =
-    Lydian <$ whiteSpace <* regex "(L|l)(Y|y)(D|d)([A-Za-z])*"
+    Lydian <$ whiteSpace <* regex "[L|l][Y|y][D|d][A-Za-z]*"
 
 
 mixolydian :: Parser Mode
 mixolydian =
-    Mixolydian <$ whiteSpace <* regex "(M|m)(I|i)(X|x)([A-Za-z])*"
+    Mixolydian <$ whiteSpace <* regex "[M|m][I|i][X|x][A-Za-z]*"
 
 
 aeolian :: Parser Mode
 aeolian =
-    Aeolian <$ whiteSpace <* regex "(A|a)(E|e)(O|o)([A-Za-z])*"
+    Aeolian <$ whiteSpace <* regex "[A|a][E|e][O|o][A-Za-z]*"
 
 
 locrian :: Parser Mode
 locrian =
-    Locrian <$ whiteSpace <* regex "(L|l)(O|o)(C|c)([A-Za-z])*"
+    Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
 
 
 
@@ -1347,7 +1336,7 @@ buildTempoSignature ms1 fs c i ms2 =
         noteLengths =
           case fs of
             Nil ->
-                singleton (1 % 4)
+                List.singleton (1 % 4)
             _ ->
                 fs
     in
@@ -1419,17 +1408,17 @@ int =
     regex "(0|[1-9][0-9]*)"
     <?> "expected a positive integer"
 
-
 quotedString :: Parser String
 quotedString =
     string "\""
-        *> regex "(\\\\\"|[^\"\n])*"
-        <* string "\""
-        <?> "quoted string"
+       *> regex "(\\\\\"|[^\"\n])*"
+       <* string "\""
+       <?> "quoted string"
 
 spacedQuotedString :: Parser String
 spacedQuotedString =
-    whiteSpace *> quotedString <* whiteSpace
+    try -- whitespace can crop up anywhere
+      (whiteSpace *> quotedString <* whiteSpace)
 
 
 -- utility Functions
