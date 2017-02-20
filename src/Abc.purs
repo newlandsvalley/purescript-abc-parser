@@ -3,7 +3,7 @@ module Abc
         , parseKeySignature
         ) where
 
-import Prelude (($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join)
+import Prelude (($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip)
 import Control.Alt ((<|>))
 import Data.Either (Either(..))
 import Data.List (List(..), (:))
@@ -19,7 +19,7 @@ import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
 import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof)
-import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, optionMaybe, (<?>))
+import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
 
 
 import Debug.Trace (trace)
@@ -27,6 +27,11 @@ import Debug.Trace (trace)
 import ParserExtra (regex)
 
 import Abc.ParseTree
+
+{- transient data type just used for parsing the awkward Tempo syntax
+  a list of time signatures expressed as raetionals and a bpm expressed as an Int
+-}
+data TempoDesignation = TempoDesignation (List Rational) Int
 
 traceParse :: forall a. String -> a -> a
 traceParse s p =
@@ -803,7 +808,6 @@ key =
         <$> (headerCode 'K')
         <*> keySignature
         <*> keyAccidentals
-        <* whiteSpace
         <?> "K header"
 
 
@@ -992,8 +996,43 @@ nometer =
 
 tempoSignature :: Parser TempoSignature
 tempoSignature =
-    buildTempoSignature <$> optionMaybe spacedQuotedString <*> many headerRational <*> optionMaybe (char '=') <*> int <*> optionMaybe spacedQuotedString <* whiteSpace
+  (choice
+    [
+      try suffixedTempoDesignation    -- tempo suffixed with a label
+    , try unlabelledTempoDesignation  -- unlabelled tempo
+    , degenerateTempo                 -- only bpm (deprecated but still prominent)
+    , prefixedTempoDesignation        -- tempo prefixed with a label
+    ]
+  ) <* whiteSpace
 
+{- we have for example 1/4=120 -}
+unlabelledTempoDesignation :: Parser TempoSignature
+unlabelledTempoDesignation =
+  buildTempoSignature Nothing <$>
+    tempoDesignation
+
+{- we have for example "lento" 1/4=120 -}
+prefixedTempoDesignation :: Parser TempoSignature
+prefixedTempoDesignation =
+  buildTempoSignature2 <$>
+    spacedQuotedString <*> tempoDesignation
+
+{- we have for example 1/4=120 "lento" -}
+suffixedTempoDesignation :: Parser TempoSignature
+suffixedTempoDesignation =
+  flip buildTempoSignature2 <$>
+    tempoDesignation <*> spacedQuotedString
+
+{-\ we have for example 120 -}
+degenerateTempo :: Parser TempoSignature
+degenerateTempo =
+  buildTempoSignature3 <$>
+    int
+
+tempoDesignation :: Parser TempoDesignation
+tempoDesignation =
+  TempoDesignation <$>
+      many1 headerRational <* (char '=') <*> int
 
 sharpOrFlat :: Parser Accidental
 sharpOrFlat =
@@ -1014,25 +1053,17 @@ keySignature :: Parser KeySignature
 keySignature =
     buildKeySignature <$> keyName <*> optionMaybe sharpOrFlat <*> optionMaybe mode
 
-{- a complete list of key accidentals which may be empty -}
-keyAccidentals :: Parser KeySet
-keyAccidentals =
-    buildKeyAccidentals <$> spacelessAccidental <*> keyAccidentalsList
-
-{- I think the first in the list is optionally introduced without a space  (judging by what's in the wild) -}
-spacelessAccidental :: Parser (Maybe KeyAccidental)
-spacelessAccidental =
-    optionMaybe keyAccidental
-
-{- there may be zero or more key accidentals, separated by spaces (KeySet is a List of Key Accidentals) -}
-keyAccidentalsList :: Parser KeySet
-keyAccidentalsList =
-    many (space *> keyAccidental)
-
 {- a key accidental as an amendment to a key signature - as in e.g. K:D Phr ^f -}
 keyAccidental :: Parser KeyAccidental
 keyAccidental =
     buildKeyAccidental <$> accidental <*> pitch
+
+{- a complete list of key accidentals which may be empty
+   each is separated by a single space
+-}
+keyAccidentals :: Parser KeySet
+keyAccidentals =
+    whiteSpace *> sepBy keyAccidental space
 
 mode :: Parser Mode
 mode =
@@ -1216,15 +1247,6 @@ buildKeyAccidental a pitchStr =
     in
         Tuple pc a
 
-
-buildKeyAccidentals :: Maybe KeyAccidental -> List KeyAccidental -> List KeyAccidental
-buildKeyAccidentals mac acs =
-    case mac of
-        Just ac ->
-            ac : acs
-        _ ->
-            acs
-
 buildChord :: List AbcNote -> Maybe Rational -> AbcChord
 buildChord ns ml =
     let
@@ -1323,27 +1345,35 @@ buildAnnotation s =
     in
         Annotation placement s
 
-buildTempoSignature :: Maybe String -> List Rational -> Maybe Char -> Int -> Maybe String -> TempoSignature
-buildTempoSignature ms1 fs c i ms2 =
-    let
-        ms =
-            case ms1 of
-                Nothing ->
-                    ms2
+{- default tempo signature builder which builds from
+     an optional label
+     a tempo designation such as (1/4=120) or (1/3 1/6=120)
+-}
+buildTempoSignature :: Maybe String -> TempoDesignation ->  TempoSignature
+buildTempoSignature marking td  =
+ case td of
+   TempoDesignation noteLengths bpm ->
+    { noteLengths : noteLengths
+    , bpm : bpm
+    , marking : marking
+    }
 
-                _ ->
-                    ms1
-        noteLengths =
-          case fs of
-            Nil ->
-                List.singleton (1 % 4)
-            _ ->
-                fs
-    in
-        { noteLengths : noteLengths
-        , bpm : i
-        , marking : ms
-        }
+{-| equivalent builder where we have a defined label -}
+buildTempoSignature2 :: String -> TempoDesignation ->  TempoSignature
+buildTempoSignature2 marking td  =
+  buildTempoSignature (Just marking) td
+
+{- builder for a degenerate tempo signature where we only have bpm -}
+buildTempoSignature3 :: Int ->  TempoSignature
+buildTempoSignature3 bpm  =
+  let
+    noteLengths =
+      List.singleton (1 % 4)
+  in
+   { noteLengths : noteLengths
+   , bpm : bpm
+   , marking : Nothing
+   }
 
 
 {- build a key signature -}

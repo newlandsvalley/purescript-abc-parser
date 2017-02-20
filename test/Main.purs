@@ -35,6 +35,19 @@ assertCanonical s canonical =
             Left err ->
                 failure ("parse failed: " <> (show err))
 
+assertParses :: forall e. String -> Test e
+assertParses s =
+    let
+        parseResult =
+            parse s
+    in
+        case parseResult of
+            Right res ->
+                success
+
+            Left err ->
+                failure ("parse key signature failed: " <> (show err))
+
 assertKeySigParses :: forall e. String -> Test e
 assertKeySigParses s =
     let
@@ -142,6 +155,10 @@ headerSuite =
       assertRoundTrip "K: Aminor ^f\x0D\n| ABC |\x0D\n"
     test "key with unspaced accidental" do
       assertCanonical "K: Eminor^c\x0D\n| ABC |\x0D\n" keyWithAccidental
+    test "simple key" do
+      assertCanonical "K: C\x0D\n| ABC |\x0D\n" keyCMajor
+    test "key trailing space" do
+      assertCanonical "K: Cmajor \x0D\n| ABC |\x0D\n" keyCMajor
     test "note length" do
         assertRoundTrip "L: 1/8\x0D\n| ABC |\x0D\n"
     test "meter" do
@@ -157,102 +174,47 @@ headerSuite =
     test "parts" do
       assertRoundTrip "P: ((AB)3.(CD)3)2\x0D\n| ABC |\x0D\n"
     test "tempo" do
-      assertRoundTrip "Q: 1/4=120\x0D\n| ABC |\x0D\n"
-
+      assertRoundTrip standardTempo
+    test "suffixed tempo" do
+      assertRoundTrip suffixedTempo
+    test "prefixed tempo" do
+      assertCanonical "Q: \"lento\" 1/4=70\x0D\n| ABC |\x0D\n" suffixedTempo
+    test "degenerate tempo" do
+      assertCanonical "Q: 120\x0D\n| ABC |\x0D\n" standardTempo
+    test "tempo trailing space" do
+      assertCanonical "Q: 1/4=120  \x0D\n| ABC |\x0D\n" standardTempo
+    test "multi-beat tempo" do
+      assertRoundTrip "Q: 1/4 3/8 1/4 3/8=40\x0D\n| ABC |\x0D\n"
+    test "remark" do
+      assertRoundTrip "r: this is a remark\x0D\n| ABC |\x0D\n"
+    test "rhythm" do
+      assertRoundTrip "R: Polska\x0D\n| ABC |\x0D\n"
+    test "source" do
+      assertRoundTrip "S: Christine Dyer\x0D\n| ABC |\x0D\n"
     test "title" do
-      assertRoundTrip "T: the title\r\n| A |\r\n"
+      assertRoundTrip "T: Engelska efter Albert Augustsson\x0D\n| ABC |\x0D\n"
+    test "user-defined" do
+      assertRoundTrip "U: some comment\x0D\n| ABC |\x0D\n"
+    test "voice" do
+      assertRoundTrip "V: T1           clef=treble-8  name=\"Tenore I\"   snm=\"T.I\"\x0D\n| ABC |\x0D\n"
+    test "words after" do
+      assertRoundTrip "W: doh re mi fa \x0D\n| ABC |\x0D\n"
+    -- the words aligned header only appears inline
+    test "words aligned" do
+      assertRoundTrip "| ABC |\x0D\nw: doh re mi fa \x0D\n| ABC |\x0D\n"
+    test "reference" do
+      assertRoundTrip "X: 125\x0D\n| ABC |\x0D\n"
+    test "transcriber" do
+      assertRoundTrip "Z: John Watson\x0D\n| ABC |\x0D\n"
+    test "field continuation" do
+      assertRoundTrip "R: Polska\x0D\n+: in triplet time\x0D\n| ABC |\x0D\n"
+    test "comment" do
+      assertRoundTrip "%%TBL:{\"version\":\"beta\",\"type\":\"tune\",\"id\":\"10294\"}\x0D\n| ABC |\x0D\n"
+    test "unsupported header" do
+      assertParses "j: custom header\x0D\n| ABC |\x0D\n"
+    test "bracket in header" do
+      assertRoundTrip "r: this is a remark [part 1]\x0D\n| ABC |\x0D\n"
 
-
--- headers
-
-{- this fails
-    test "tempo no note length" do
-      assertRoundTrip "Q: 70\x0D\n| ABC |\x0D\n"
--}
-
-
-
-tempoNoNoteLength =
-    "Q: 70\x0D\n| ABC |\x0D\n"
-
-
-
--- this degenerate form...
-
-
-tempoNoNoteLengthCanonical =
-    "Q: 1/4=70\x0D\n| ABC |\x0D\n"
-
-
-
--- should expand to this in canonical
-
-
-tempoSpace =
-    "Q: 1/8=80 \x0D\n| ABC |\x0D\n"
-
-
-tempoComplex =
-    "Q: 1/4 3/8 1/4 3/8=40 \"allegro\"\x0D\n| ABC |\x0D\n"
-
-
-remark =
-    "r: this is a remark\x0D\n| ABC |\x0D\n"
-
-
-rhythm =
-    "R: Polska\x0D\n| ABC |\x0D\n"
-
-
-source =
-    "S: Christine Dyer\x0D\n| ABC |\x0D\n"
-
-
-title =
-    "T: Engelska efter Albert Augustsson\x0D\n| ABC |\x0D\n"
-
-
-userDefined =
-    "U: some comment\x0D\n| ABC |\x0D\n"
-
-
-voice =
-    "V: T1           clef=treble-8  name=\"Tenore I\"   snm=\"T.I\"\x0D\n| ABC |\x0D\n"
-
-
-wordsAfter =
-    "W: doh re mi fa \x0D\n| ABC |\x0D\n"
-
-
-wordsAligned =
-    "| ABC |\x0D\nw: doh re mi fa \x0D\n| ABC |\x0D\n"
-
-
-
--- only appears inline
-
-
-reference =
-    "X: 125\x0D\n| ABC |\x0D\n"
-
-
-transcriber =
-    "Z: John Watson\x0D\n| ABC |\x0D\n"
-
-fieldContinuation =
-    "R: Polska\x0D\n+: in triplet time\x0D\n| ABC |\x0D\n"
-
-
-comment =
-    "%%TBL:{\"version\":\"beta\",\"type\":\"tune\",\"id\":\"10294\"}\x0D\n| ABC |\x0D\n"
-
-
-unsupportedHeader =
-    "j: custom header\x0D\n| ABC |\x0D\n"
-
-
-bracketInHeader =
-    "r: this is a remark [part 1]\x0D\n| ABC |\x0D\n"
 
 -- these ABC samples are already in canonical format which should allow round-tripping to work
 -- because of the exact string matching algorithm
@@ -260,8 +222,17 @@ bracketInHeader =
 keyWithAccidental =
     "K: Eminor ^c\x0D\n| ABC |\x0D\n"
 
+keyCMajor =
+    "K: Cmajor\x0D\n| ABC |\x0D\n"
+
 halfNoteCanonical =
     "| B/ |\r\n"
 
 quarterNoteCanonical =
     "| D1/4 |\r\n"
+
+standardTempo =
+    "Q: 1/4=120\x0D\n| ABC |\x0D\n"
+
+suffixedTempo =
+    "Q: 1/4=70 \"lento\"\x0D\n| ABC |\x0D\n"
