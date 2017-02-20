@@ -4,11 +4,11 @@ import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String (drop, length)
 import Data.String.Regex as Regex
-import Data.String.Regex.Flags (noFlags, multiline)
+import Data.String.Regex.Flags (noFlags)
 import Data.String.Utils (startsWith)
 import Prelude ((<>), (+), ($), show)
 import Text.Parsing.StringParser (Parser(..), ParseError(..), fail)
-import Data.Array (take)
+import Data.Array (uncons)
 
 regex :: String -> Parser String
 regex pat =
@@ -29,11 +29,8 @@ regex pat =
             remainder = drop pos str
           in
             -- reduce the possible array of matches to 0 or 1 elements to aid Array pattern matching
-            case take 1 $ fromMaybe [] $ Regex.match r remainder of
-              [ Just matched ] ->
+            case uncons $ fromMaybe [] $ Regex.match r remainder of
+              Just { head: Just matched, tail: _ }  ->
                   Right { result: matched, suffix: { str, pos: pos + length matched } }
               _ ->
-                let
-                  msg = "Regex pattern " <> show pat <> " did not match"
-                in
-                   Left { pos, error: ParseError msg }
+                  Left { pos, error: ParseError $ "Regex pattern " <> show pat <> " did not match" }
