@@ -46,7 +46,20 @@ assertParses s =
                 success
 
             Left err ->
-                failure ("parse key signature failed: " <> (show err))
+                failure ("parse failed: " <> (show err))
+
+assertParseError :: forall e. String -> Test e
+assertParseError s =
+    let
+        parseResult =
+            parse s
+    in
+        case parseResult of
+           Right res ->
+                failure "parses when it shouldn't"
+
+           Left err ->
+                success
 
 assertKeySigParses :: forall e. String -> Test e
 assertKeySigParses s =
@@ -75,61 +88,11 @@ main = runTest do
      headerSuite
      noteSuite
      barSuite
+     phrasingSuite
+     structureSuite
+     badInputSuite
+     keySigSuite
 
-
-noteSuite :: forall t. Free (TestF t) Unit
-noteSuite =
-  suite "note" do
-    test "single duration" do
-       assertRoundTrip "| A |\r\n"
-    test "doubly implied half duration" do
-       assertRoundTrip "| B/ |\r\n"
-    test "implied half duration" do
-       assertCanonical "| B/2 |\r\n" halfNoteCanonical
-    test "explicit half duration" do
-       assertCanonical "| B1/2 |\r\n" halfNoteCanonical
-    test "quarter duration" do
-       assertCanonical "| D// |\r\n" quarterNoteCanonical
-    test "double duration" do
-       assertRoundTrip "| a2 |\r\n"
-    test "broken rhythm >" do
-       assertRoundTrip "| a>b |\r\n"
-    test "broken rhythm <" do
-       assertRoundTrip "| c<d |\r\n"
-    test "triplet" do
-       assertRoundTrip "| (3efg) |\r\n"
-    test "double sharp" do
-       assertRoundTrip "| ^^C2 |\r\n"
-    test "sharp" do
-       assertRoundTrip "| ^C/ |\r\n"
-    test "double flat" do
-       assertRoundTrip "| __C |\r\n"
-    test "flat" do
-       assertRoundTrip "| _C3/2 |\r\n"
-    test "natural" do
-       assertRoundTrip "| =C3/2 |\r\n"
-
-barSuite :: forall t. Free (TestF t) Unit
-barSuite =
-  suite "bar lines" do
-    test "repeat" do
-      assertRoundTrip "|: A :|\r\n"
-    test "bracket line" do
-      assertRoundTrip "[| A |]\r\n"
-    test "alternate endings" do
-      assertRoundTrip "| A |1 B :|2 c||\r\n"
-    test "double colon" do
-      assertCanonical "||: A :: c :||\r\n" "||: A :|: c :||\r\n"
-
-
-keySigSuite :: forall t. Free (TestF t) Unit
-keySigSuite =
-  suite "key signature parser" do
-    test "key signature" do
-      assertKeySigParses "G"
-
-
--- this fails at the moment
 headerSuite :: forall t. Free (TestF t) Unit
 headerSuite =
   suite "headers" do
@@ -150,7 +113,9 @@ headerSuite =
     test "instruction" do
       assertRoundTrip "I: abc-charset UTF-8\x0D\n| ABC |\x0D\n"
     test "key" do
-      assertRoundTrip "K: Adorian\x0D\n| ABC |\x0D\n"
+      assertRoundTrip keyADorian
+    test "key spaced" do
+      assertCanonical "K: A dorian\x0D\n| ABC |\x0D\n" keyADorian
     test "key with accidental" do
       assertRoundTrip "K: Aminor ^f\x0D\n| ABC |\x0D\n"
     test "key with unspaced accidental" do
@@ -215,6 +180,161 @@ headerSuite =
     test "bracket in header" do
       assertRoundTrip "r: this is a remark [part 1]\x0D\n| ABC |\x0D\n"
 
+noteSuite :: forall t. Free (TestF t) Unit
+noteSuite =
+  suite "note" do
+    test "single duration" do
+       assertRoundTrip "| A |\r\n"
+    test "doubly implied half duration" do
+       assertRoundTrip "| B/ |\r\n"
+    test "implied half duration" do
+       assertCanonical "| B/2 |\r\n" halfNoteCanonical
+    test "explicit half duration" do
+       assertCanonical "| B1/2 |\r\n" halfNoteCanonical
+    test "quarter duration" do
+       assertCanonical "| D// |\r\n" quarterNoteCanonical
+    test "eighth duration" do
+       assertCanonical "| D/// |\r\n" eighthNoteCanonical
+    test "double duration" do
+       assertRoundTrip "| a2 |\r\n"
+    test "broken rhythm" do
+       assertRoundTrip "| A>B C>>D a<b c<<d |\x0D\n"
+    test "broken rhythm spaced" do
+       assertCanonical "| A> B |\x0D\n" "| A>B |\x0D\n"
+    test "octave" do
+       assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
+    test "tie" do
+       assertRoundTrip "| A4~ A2 |\x0D\n"
+    test "complex tie" do
+       assertRoundTrip "| fg-ga ab-bc|\x0D\n"
+    test "triplet" do
+       assertRoundTrip "| (3efg) |\r\n"
+    test "spaced triplet" do
+       assertCanonical "| (3 abc def |\x0D\n" "| (3abc def |\x0D\n"
+    test "grace note" do
+       assertRoundTrip "| {d^f}GA |\x0D\n"
+    test "double sharp" do
+       assertRoundTrip "| ^^C2 |\r\n"
+    test "sharp" do
+       assertRoundTrip "| ^C/ |\r\n"
+    test "double flat" do
+       assertRoundTrip "| __C |\r\n"
+    test "flat" do
+       assertRoundTrip "| _C3/2 |\r\n"
+    test "natural" do
+       assertRoundTrip "| =C3/2 |\r\n"
+    test "chord symbol" do
+       assertRoundTrip "| \"Em\" EG \"Am\" AC |\x0D\n"
+    test "chords" do
+       assertRoundTrip "| [de^f]g [cda]b |\x0D\n"
+    test "chord duration" do
+       assertRoundTrip "| [cda]4 |\x0D\n"
+
+
+barSuite :: forall t. Free (TestF t) Unit
+barSuite =
+  suite "bar lines" do
+    test "repeat" do
+      assertRoundTrip "|: A :|\r\n"
+    test "bracket line" do
+      assertRoundTrip "[| A |]\r\n"
+    test "double colon" do
+      assertCanonical "||: A :: c :||\r\n" "||: A :|: c :||\r\n"
+    test "alternate endings" do
+      assertRoundTrip "| A |1 B :|2 c||\r\n"
+    test "repeat 0" do
+      assertRoundTrip  "|: ABCD EFGa |1 D4 C4 :|2 c8 |\x0D\n"
+    test "repeat 1" do
+      assertCanonical  "|: ABCD EFGa |[1 D4 C4 :|[2 c8 |\x0D\n" repeat
+    test "repeat 1a" do
+      assertRoundTrip  "|: ABCD EFGa [|1 D4 C4 :[|2 c8 |]\x0D\n"
+    test "repeat 2" do
+      assertRoundTrip  "|: ABCD EFGa [|1 D4 C4 :[|2 c8 |]\x0D\n"
+    test "repeat 3" do
+      assertRoundTrip repeat3
+    test "repeat 3a" do
+      assertCanonical  "|: ABCD EFGa :|: c8 |\x0D\n" repeat3
+    test "repeat 3b" do
+      assertRoundTrip  "|: ABCD EFGa :||: c8 |\x0D\n"
+    test "repeat 4" do
+      assertRoundTrip  "[|2 ABCD EFGa |]: c8 |\x0D\n"
+    test "repeat 5" do
+      assertRoundTrip  "|: ABCD EFGa :|] c8 |\x0D\n"
+    test "repeat 6" do
+      assertRoundTrip  "[|2 ABCD EFGa ||: c8 |\x0D\n"
+    test "repeat 7" do
+      assertRoundTrip  "| ABCD EFGa :|| c8 |\x0D\n"
+    test "degenerate repeat 1" do
+      assertCanonical  "[1 ABCD |\x0D\n" "|1 ABCD |\x0D\n"
+    test "degenerate repeat 2" do
+      assertCanonical  "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
+
+phrasingSuite :: forall t. Free (TestF t) Unit
+phrasingSuite  =
+  suite "phrasing" do
+    test "slur" do
+      assertRoundTrip  "| (de^f) (cda) |\x0D\n"
+    test "articulation" do
+      assertRoundTrip  "(vA2 | !fz!Ld2).d.f .e.d.c.B A2(A2 | d2).d.f .e.d.c.B A2A2 |\x0D\n"
+    test "annotation" do
+      assertRoundTrip  "| \"<(\" \">)\" EG |\x0D\n"
+
+structureSuite :: forall t. Free (TestF t) Unit
+structureSuite  =
+  suite "structure" do
+    test "ignore" do
+      assertParses  "| ABC# z2 @def z/ |\x0D\n"
+    test "typeset space" do
+      assertParses  "| ABC yz2 defyz/ |\x0D\n"
+    test "backtick" do
+      assertParses "| A``B``C |\x0D\n"
+    test "inline" do
+      assertRoundTrip "| ABC z2 def z/ \x0D\nQ: 1/4=120\x0D\n| ABC z2 def z/ |\x0D\n"
+    test "inline bracket" do
+      assertRoundTrip "| ABC def g3 | [L: 1/8] A3 A3 |\x0D\n"
+    test "inline bracket 1" do
+      assertRoundTrip "| ABC def g3 |[L: 1/8] A3 A3 |\x0D\n"
+    test "new key" do
+      assertRoundTrip "| ABc |\x0D\nK: F#major\x0D\n| def |\x0D\n"
+    test "new tempo" do
+      assertRoundTrip "| ABc |\x0D\nM: 3/4\x0D\n| def |\x0D\n"
+    test "new unit length" do
+      assertRoundTrip "| ABc |\x0D\nL: 1/16\x0D\n| def |\x0D\n"
+    test "new part" do
+      assertRoundTrip "| ABc |\x0D\nP: B\x0D\n| def |\x0D\n"
+    test "continuation" do
+      assertRoundTrip "| ABc |\\\x0D\n| def |\x0D\n"
+    test "continuation with comment" do
+      assertParses "| ABc |\\ ignored comment\x0D\n| def |\x0D\n"
+    test "inline key" do
+      assertRoundTrip "| ABC def g3 | [K: Amajor] g3 a3 |\x0D\n"
+    test "inline comment" do
+      assertRoundTrip "| ABC z2 def z/ \x0D\n%% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
+
+badInputSuite :: forall t. Free (TestF t) Unit
+badInputSuite =
+  suite "bad input" do
+    test "bad chars 1" do
+      assertParseError "| ABC z2 def z/ |\x0D\n| foo bar |\x0D\n"
+    test "bad chars 2" do
+      assertParseError "| foo bar |\x0D\n| ABC z2 def z/ |\x0D\n"
+    test "bracket in inline header" do
+      assertParseError "| ABC |\x0D\nr: this is a remark [part 1]\x0D\n"
+
+keySigSuite :: forall t. Free (TestF t) Unit
+keySigSuite =
+  suite "key signature parser" do
+    test "G" do
+      assertKeySigParses "G"
+    test "C# Major" do
+      assertKeySigParses "C# Major"
+    test "G Mixolydian" do
+      assertKeySigParses "G Mixolydian"
+    test "A Locrian" do
+      assertKeySigParses "A Locrian"
+    test "Bb Minor" do
+      assertKeySigParses "Bb Minor"
+
 
 -- these ABC samples are already in canonical format which should allow round-tripping to work
 -- because of the exact string matching algorithm
@@ -225,11 +345,24 @@ keyWithAccidental =
 keyCMajor =
     "K: Cmajor\x0D\n| ABC |\x0D\n"
 
+keyADorian =
+    "K: Adorian\x0D\n| ABC |\x0D\n"
+
 halfNoteCanonical =
     "| B/ |\r\n"
 
 quarterNoteCanonical =
     "| D1/4 |\r\n"
+
+eighthNoteCanonical =
+    "| D1/8 |\r\n"
+
+repeat =
+    "|: ABCD EFGa ||1 D4 C4 :||2 c8 |\r\n"
+
+repeat3 =
+    "|: ABCD EFGa :|: c8 |\x0D\n"
+
 
 standardTempo =
     "Q: 1/4=120\x0D\n| ABC |\x0D\n"

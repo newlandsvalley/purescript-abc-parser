@@ -19,23 +19,31 @@ import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
 import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof)
-import Text.Parsing.StringParser.Combinators (between, choice, fix, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
+import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
 
 
-import Debug.Trace (trace)
+-- import Debug.Trace (trace)
 
 import ParserExtra (regex)
-
 import Abc.ParseTree
 
 {- transient data type just used for parsing the awkward Tempo syntax
-  a list of time signatures expressed as raetionals and a bpm expressed as an Int
+  a list of time signatures expressed as rationals and a bpm expressed as an Int
 -}
 data TempoDesignation = TempoDesignation (List Rational) Int
 
+{- use for debug like this:
+
+   traceParse "manySlashes" <$>
+    (
+      parseRule
+    )
+-}
+{-
 traceParse :: forall a. String -> a -> a
 traceParse s p =
   trace s (\_ -> p)
+-}
 
 abc :: Parser AbcTune
 abc =
@@ -45,9 +53,13 @@ body :: Parser (List BodyPart)
 body =
     (:)
         <$> score
-        <*> manyTill1
-                -- (leftBiasedOr score tuneBodyHeader)
-                (score <|> tuneBodyHeader)
+        <*> manyTill
+                {- there is unfortunately ambiguity between a score item and
+                   an in-score header.  For example 'M' may introduce both a
+                   decoration or a meter.  We probably don't pay too much for
+                   trying the header because they are only short sequences
+                -}
+                (try tuneBodyHeader <|> score)
                 eof
 
 score :: Parser BodyPart
@@ -58,50 +70,23 @@ scoreItem :: Parser Music
 scoreItem =
   choice
     [
-      continuation
+      try chord -- potential ambiguity with (inline) in-score headers
+    , try inline
+    , continuation
     , ignore
     , spacer
     , decoration
     , chordSymbol
     , annotation
     , graceNote
-    , try tuplet
+    , try tuplet  -- potential ambiguity with slurs
     , slur
     , rest
-    , try brokenRhythmPair -- must place 'before' note because of potential ambiguity of AbcNote
+    , try brokenRhythmPair -- potential ambiguity with note
     , note
     , barline
-    , inline
-    , chord
     ]
       <?> "score item"
-
-{-
-    fix
-        \i ->
-            -- log "score item" <$>
-            (choice
-                [ chord
-                , inline
-                , barline
-                , brokenRhythmPair
-                  -- must place before note because of potential ambiguity of AbcNote
-                , note
-                , rest
-                , tuplet
-                , slur
-                , graceNote
-                  -- we are not enforcing the ordering of grace notes, chords etc pre-note
-                , annotation
-                , chordSymbol
-                , decoration
-                , spacer
-                , ignore
-                , continuation
-                ]
-            )
-                <?> "score item"
--}
 
 chord :: Parser Music
 chord =
@@ -125,12 +110,12 @@ inline =
 
 barline :: Parser Music
 barline =
-  traceParse "barline" <$>
     choice
         [
           normalBarline
         , degenerateBarRepeat
         ]
+
 {- a normal bar line (plus optional repeat iteration marker)
    see comments in 4.8 Repeat/bar symbols:
    Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have
@@ -172,14 +157,6 @@ repeatSection :: Parser Int
 repeatSection =
    int
 
-{- JMW FIX ME
-    choice
-        [
-          (whiteSpace *> char '[' *> int)
-        , int
-        ]
--}
-
 
 {- written like this instead of a regex because it's all regex control character! -}
 barSeparator :: Parser String
@@ -203,60 +180,25 @@ barSeparator =
           , string "|"     -- must be last otherwise it hides |:
           ]
 
-{-
-      choice
-          [ string "|"     -- must be last otherwise it hides |:
-          , string "||"
-          , string "||:"   -- must come before || else it hides it
-          , string "::"
-          , string ":|"
-          , string ":||"
-          , string ":|]"   -- must come before :| else it hides it
-          , string ":||:"
-          , string "|:"
-          , string ":[|"
-          , string "]|"
-          , string "]|:"
-          , string "|]"
-          , string "|]:"  -- must come before |] otherwise it hides it
-          , string "[|"
-          ]
-  -}
-
-
-
 -- spec is unclear if spaces are allowed after a broken rhythm operator but it's easy to support, is more permissive and doesn't break anything
-
-
 brokenRhythmTie :: Parser Broken
 brokenRhythmTie =
     buildBrokenOperator <$> regex "(<+|>+)" <* whiteSpace
 
-
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
-  traceParse "brokenRhythmPair" <$>
-    (
     BrokenRhythmPair
         <$> abcNote
         <*> brokenRhythmTie
         <*> abcNote
         <?> "broken rhythm pair"
-    )
-
 
 note :: Parser Music
 note =
-  traceParse "note" <$>
-    (
-      Note <$> abcNote
-    )
-
+  Note <$> abcNote
 
 abcNote :: Parser AbcNote
 abcNote =
-  traceParse "abcNote" <$>
-    (
     buildNote
         <$> maybeAccidental
         <*> pitch
@@ -264,7 +206,6 @@ abcNote =
         <*> optionMaybe noteDur
         <*> maybeTie
         <?> "ABC note"
-    )
 
 {- maybe an accidental defining a note's pitch -}
 maybeAccidental :: Parser (Maybe Accidental)
@@ -312,83 +253,32 @@ noteDur :: Parser Rational
 noteDur =
     choice
       [
-        try twoSlashes
+        try manySlashes
       , try anyRat
       , integralAsRational
       ]
 
-{-}
-        [ slashesRational          -- e.g. / or //
-        , curtailedLeftRational    -- e.g. /2
-        , integralAsRational
-        , integralAsRational       -- e.g. 3
-        , curtailedRightRational   -- e.g. 3/
-        , rational                 -- e.g. 3/2
-        ]
-        -}
-
-
-{-
-    choice
-        [ rational                  -- e.g. 3/2
-        , curtailedRightRational    -- e.g. 3/
-        , integralAsRational        -- e.g. 3
-        , curtailedLeftRational     -- e.g. /2
-        , slashesRational           -- e.g. / or //
-        ]
+{-| this matches:
+       1/2
+       /2
+       1
+       /
+   i.e. there has to be at least a single slash
 -}
-
 anyRat :: Parser Rational
 anyRat =
   Rational.rational <$> option 1 int <* char '/' <*> option 2 int
 
-twoSlashes :: Parser Rational
-twoSlashes =
-  traceParse "twoSlashes" <$>
-    (
-    Rational.rational 1 4 <$ char '/' <* char '/'
-    )
+{-| this matches //  or /// etc. -}
+manySlashes :: Parser Rational
+manySlashes =
+    buildRationalFromSlashList
+      <$> ((:) <$> char '/' <*> many1 (char '/'))
 
-{- normal Rational e.g 3/4 -}
-rational :: Parser Rational
-rational =
-  traceParse "rational" <$>
-    (
-    Rational.rational <$> int <* char '/' <*> int
-    )
-
-{- e.g. /4 (as found in note durations) -}
-curtailedLeftRational :: Parser Rational
-curtailedLeftRational =
-  traceParse "curtailed left rational" <$>
-    (
-    (Rational.rational 1) <$> (char '/' *> int)
-    )
-
-{- e.g. 3/ (as found in note durations) -}
-curtailedRightRational :: Parser Rational
-curtailedRightRational =
-  traceParse "curtailed right rational" <$>
-    (
-    invert <$> (Rational.rational 2 <$> (int <* char '/'))
-    )
 
 integralAsRational :: Parser Rational
 integralAsRational =
-  traceParse "integralAsRational" <$>
-    (
     fromInt <$> int
-    )
-
-{- e.g. / or // or /// (as found in note durations)
-   which translates to 1/2, 1/4, 1/8 etc
--}
-slashesRational :: Parser Rational
-slashesRational =
-  traceParse "slashes rational" <$>
-    (
-    buildRationalFromExponential <$> List.length <$> many1 (char '/')
-    )
 
 {- attaches to leading barand not free-standing -}
 maybeTie :: Parser (Maybe Char)
@@ -398,12 +288,9 @@ maybeTie =
 
 rest :: Parser Music
 rest =
-  traceParse "rest" <$>
-    (
     Rest
         <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
         <?> "rest"
-    )
 
 tuplet :: Parser Music
 tuplet =
@@ -537,12 +424,9 @@ whiteSpace =
 -- at least one (intended) space somewhere inside the music body
 spacer :: Parser Music
 spacer =
-  traceParse "spacer" <$>
-    (
     Spacer
         <$> (List.length <$> (many1 scoreSpace))
         <?> "space"
-    )
 
 
 {- space within a line of the tune's score -}
@@ -604,10 +488,7 @@ headers =
 
 header :: Parser Header
 header =
-  traceParse "header" <$>
-    (
     informationField false <* eol
-    )
 
 {- headers that may appear in the tune body -}
 tuneBodyHeader :: Parser BodyPart
@@ -636,7 +517,6 @@ tuneBodyOnlyInfo isInline =
         <?> "tune body only info"
 
 
-
 {- Headers/Information fields.  These can be used in three different ways:
      1) As a normal tune header
      2) As an 'inline' header inside the tune body on a separate line
@@ -656,19 +536,16 @@ tuneBodyOnlyInfo isInline =
 -}
 informationField :: Boolean -> Parser Header
 informationField isInline =
-  traceParse "informationField" <$>
-    (choice
+    choice
         [
           anywhereInfo isInline
         , tuneInfo
         ]
         <?> "header"
-    )
+
 
 anywhereInfo :: Boolean -> Parser Header
 anywhereInfo isInline =
-  traceParse "anywhereInfo" <$>
-    (
     choice
         [ instruction isInline
         , key
@@ -688,7 +565,6 @@ anywhereInfo isInline =
         , comment
         ]
         <?> "anywhere info"
-    )
 
 tuneInfo :: Parser Header
 tuneInfo =
@@ -890,12 +766,9 @@ symbolLine isInline =
 
 title :: Boolean -> Parser Header
 title isInline =
-  traceParse "title" <$>
-    (
     Title
         <$> ((headerCode 'T') *> (inlineInfo isInline))
         <?> "T header"
-    )
 
 
 userDefined :: Boolean -> Parser Header
@@ -952,6 +825,13 @@ unsupportedHeader =
 
 
 -- HEADER ATTRIBUTES
+
+{- normal Rational e.g 3/4 -}
+rational :: Parser Rational
+rational =
+    Rational.rational <$> int <* char '/' <*> int
+
+
 -- rational with trailing optional spaces
 headerRational :: Parser Rational
 headerRational =
@@ -1051,7 +931,7 @@ keyName =
 
 keySignature :: Parser KeySignature
 keySignature =
-    buildKeySignature <$> keyName <*> optionMaybe sharpOrFlat <*> optionMaybe mode
+    buildKeySignature <$> keyName <*> optionMaybe sharpOrFlat <* whiteSpace <*> optionMaybe mode
 
 {- a key accidental as an amendment to a key signature - as in e.g. K:D Phr ^f -}
 keyAccidental :: Parser KeyAccidental
@@ -1085,11 +965,9 @@ minor :: Parser Mode
 minor =
     Minor <$ whiteSpace <* regex "[M|m][A-Za-z]*"
 
-
 major :: Parser Mode
 major =
     Major <$ whiteSpace <* regex "[M|m][A|a][J|j][A-Za-z]*"
-
 
 ionian :: Parser Mode
 ionian =
@@ -1125,8 +1003,6 @@ aeolian =
 locrian :: Parser Mode
 locrian =
     Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
-
-
 
 -- builders
 buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
@@ -1269,11 +1145,12 @@ scientificPitchNotation pc oct =
         middlecOctave + 1 + oct
 
 {- used in counting slashes exponentially -}
-
-
-buildRationalFromExponential :: Int -> Rational
-buildRationalFromExponential i =
-    (1 % (pow 2 i))
+buildRationalFromSlashList :: forall a. List a -> Rational
+buildRationalFromSlashList xs =
+  let
+    f i = (1 % (pow 2 i))
+  in
+    f $ List.length xs
 
 {- build a tuplet signature {p,q,r) - p notes in the time taken for q
    in operation over the next r notes
@@ -1459,8 +1336,6 @@ invert :: Rational -> Rational
 invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
-
-
 
 {-| Entry point - Parse an ABC tune image.
 -}
