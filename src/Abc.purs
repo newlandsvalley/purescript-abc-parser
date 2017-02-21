@@ -17,14 +17,16 @@ import Data.Functor (map)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
-import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
+import Text.Parsing.StringParser (Parser, ParseError, runParser, try, fail)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
+import Data.String.Regex as Regex
+import Data.String.Regex.Flags (noFlags)
 
 
 -- import Debug.Trace (trace)
 
-import ParserExtra (regex)
+import ParserExtra as ParserExtra
 import Abc.ParseTree
 
 {- transient data type just used for parsing the awkward Tempo syntax
@@ -1117,11 +1119,7 @@ buildAccidental s =
 
 buildKeyAccidental :: Accidental -> String -> KeyAccidental
 buildKeyAccidental a pitchStr =
-    let
-        pc =
-            lookupPitch pitchStr
-    in
-        Tuple pc a
+    { pitchClass : lookupPitch pitchStr, accidental : a }
 
 buildChord :: List AbcNote -> Maybe Rational -> AbcChord
 buildChord ns ml =
@@ -1336,6 +1334,25 @@ invert :: Rational -> Rational
 invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
+
+regex :: String -> Parser String
+regex =
+  ParserExtra.regex'
+{-
+regex pat =
+    case er of
+      Left _ ->
+        fail $ "Illegal regex " <> pat
+      Right r ->
+        ParserExtra.regex r
+    where
+      pattern =
+        if startsWith "^" pat then
+          pat
+        else
+          "^" <> pat
+      er = Regex.regex pattern noFlags
+-}
 
 {-| Entry point - Parse an ABC tune image.
 -}

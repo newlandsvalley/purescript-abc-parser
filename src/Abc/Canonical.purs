@@ -232,8 +232,8 @@ key k =
 
 
 keyAccidental :: KeyAccidental -> String
-keyAccidental (Tuple pc acc) =
-        show acc <> Str.toLower (show pc)
+keyAccidental ka =
+  show ka.accidental <> Str.toLower (show ka.pitchClass)
 
 
 keyAccidentals :: List KeyAccidental -> String
