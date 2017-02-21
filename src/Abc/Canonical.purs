@@ -414,13 +414,8 @@ header h =
         Instruction s ->
             "I: " <> s
 
-        Key (Tuple k kacc) ->
-            "K: " <> (key k) <> (keyAccidentals kacc)
-
-{-
-        Key ( k, kacc ) ->
-            "K: " ++ (key k) ++ (keyAccidentals kacc)
--}
+        Key mks ->
+            "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
 
         UnitNoteLength d ->
             "L: " <> (duration d)

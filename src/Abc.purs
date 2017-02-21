@@ -1258,8 +1258,8 @@ buildKeySignature pStr ma mm =
 
 {- build a complete key designation (key signature plus modifying accidentals) -}
 buildKey :: Char -> KeySignature -> List KeyAccidental -> Header
-buildKey c ks ka =
-    Key ( Tuple ks ka )
+buildKey c ks kas =
+    Key { keySignature: ks, modifications: kas }
 
 -- lookups
 
@@ -1369,11 +1369,11 @@ parse s =
 parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
     case runParser keySignature s of
-        Right n ->
+        Right ks ->
           let
              emptyList = Nil :: List KeyAccidental
           in
-             Right (Tuple n emptyList)
+             Right { keySignature: ks, modifications: emptyList }
 
         Left e ->
             Left e

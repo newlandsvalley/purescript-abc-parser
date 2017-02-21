@@ -225,7 +225,10 @@ type KeySignature =
     This is used for non-diatonic modes where intervals may be greater than two semitones
     (for example as found in Klezmer).
 -}
-type ModifiedKeySignature = Tuple KeySignature ( List KeyAccidental )
+type ModifiedKeySignature =
+  { keySignature :: KeySignature
+  , modifications ::  List KeyAccidental
+  }
 
 
 {-| A Key Accidental (A modification to a standard key for one pitch in the scale).
