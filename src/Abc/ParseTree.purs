@@ -166,15 +166,15 @@ data Mode
     | Locrian
 
 instance showMode :: Show Mode where
-    show Major = "major"
-    show Minor = "minor"
-    show Ionian = "ionian"
-    show Dorian = "dorian"
-    show Phrygian = "phrygian"
-    show Lydian = "lydian"
-    show Mixolydian = "mixolydian"
-    show Aeolian = "aeolian"
-    show Locrian = "locrian"
+    show Major = "Major"
+    show Minor = "Minor"
+    show Ionian = "Ionian"
+    show Dorian = "Dorian"
+    show Phrygian = "Phrygian"
+    show Lydian = "Lydian"
+    show Mixolydian = "Mixolydian"
+    show Aeolian = "Aeolian"
+    show Locrian = "Locrian"
 
 {-| An Accidental.-}
 data Accidental

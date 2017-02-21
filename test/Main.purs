@@ -115,15 +115,15 @@ headerSuite =
     test "key" do
       assertRoundTrip keyADorian
     test "key spaced" do
-      assertCanonical "K: A dorian\x0D\n| ABC |\x0D\n" keyADorian
+      assertCanonical "K: A Dorian\x0D\n| ABC |\x0D\n" keyADorian
     test "key with accidental" do
-      assertRoundTrip "K: Aminor ^f\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "K: AMinor ^f\x0D\n| ABC |\x0D\n"
     test "key with unspaced accidental" do
-      assertCanonical "K: Eminor^c\x0D\n| ABC |\x0D\n" keyWithAccidental
+      assertCanonical "K: EMinor^c\x0D\n| ABC |\x0D\n" keyWithAccidental
     test "simple key" do
       assertCanonical "K: C\x0D\n| ABC |\x0D\n" keyCMajor
     test "key trailing space" do
-      assertCanonical "K: Cmajor \x0D\n| ABC |\x0D\n" keyCMajor
+      assertCanonical "K: CMajor \x0D\n| ABC |\x0D\n" keyCMajor
     test "note length" do
         assertRoundTrip "L: 1/8\x0D\n| ABC |\x0D\n"
     test "meter" do
@@ -295,7 +295,7 @@ structureSuite  =
     test "inline bracket 1" do
       assertRoundTrip "| ABC def g3 |[L: 1/8] A3 A3 |\x0D\n"
     test "new key" do
-      assertRoundTrip "| ABc |\x0D\nK: F#major\x0D\n| def |\x0D\n"
+      assertRoundTrip "| ABc |\x0D\nK: F#Major\x0D\n| def |\x0D\n"
     test "new tempo" do
       assertRoundTrip "| ABc |\x0D\nM: 3/4\x0D\n| def |\x0D\n"
     test "new unit length" do
@@ -307,7 +307,7 @@ structureSuite  =
     test "continuation with comment" do
       assertParses "| ABc |\\ ignored comment\x0D\n| def |\x0D\n"
     test "inline key" do
-      assertRoundTrip "| ABC def g3 | [K: Amajor] g3 a3 |\x0D\n"
+      assertRoundTrip "| ABC def g3 | [K: AMajor] g3 a3 |\x0D\n"
     test "inline comment" do
       assertRoundTrip "| ABC z2 def z/ \x0D\n%% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
 
@@ -340,13 +340,13 @@ keySigSuite =
 -- because of the exact string matching algorithm
 
 keyWithAccidental =
-    "K: Eminor ^c\x0D\n| ABC |\x0D\n"
+    "K: EMinor ^c\x0D\n| ABC |\x0D\n"
 
 keyCMajor =
-    "K: Cmajor\x0D\n| ABC |\x0D\n"
+    "K: CMajor\x0D\n| ABC |\x0D\n"
 
 keyADorian =
-    "K: Adorian\x0D\n| ABC |\x0D\n"
+    "K: ADorian\x0D\n| ABC |\x0D\n"
 
 halfNoteCanonical =
     "| B/ |\r\n"
