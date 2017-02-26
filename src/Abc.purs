@@ -20,9 +20,6 @@ import Data.Tuple (Tuple(..))
 import Text.Parsing.StringParser (Parser, ParseError, runParser, try, fail)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
-import Data.String.Regex as Regex
-import Data.String.Regex.Flags (noFlags)
-
 
 -- import Debug.Trace (trace)
 
@@ -293,6 +290,7 @@ rest =
     Rest
         <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
         <?> "rest"
+
 
 tuplet :: Parser Music
 tuplet =
@@ -1119,7 +1117,7 @@ buildAccidental s =
 
 buildKeyAccidental :: Accidental -> String -> KeyAccidental
 buildKeyAccidental a pitchStr =
-    { pitchClass : lookupPitch pitchStr, accidental : a }
+    KeyAccidental { pitchClass : lookupPitch pitchStr, accidental : a }
 
 buildChord :: List AbcNote -> Maybe Rational -> AbcChord
 buildChord ns ml =

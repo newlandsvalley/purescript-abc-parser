@@ -13,7 +13,7 @@ module Abc.ParseTree ( AbcTune
 , NoteDuration
 , KeySignature
 , ModifiedKeySignature
-, KeyAccidental
+, KeyAccidental(..)
 , KeySet
 , MeterSignature(..)
 , TempoSignature
@@ -27,11 +27,14 @@ module Abc.ParseTree ( AbcTune
 ) where
 
 
-import Prelude (class Show)
+-- import Data.BooleanAlgebra (class BooleanAlgebra)
 import Data.List (List)
 import Data.Maybe (Maybe)
 import Data.Rational (Rational)
 import Data.Tuple (Tuple)
+import Data.Newtype (class Newtype)
+import Prelude (class Show, class Eq, class Ord)
+import Data.Generic (gEq, gShow, class Generic)
 
 {-| A Tune.-}
 type AbcTune =
@@ -184,6 +187,8 @@ data Accidental
     | DoubleFlat
     | Natural
 
+
+-- import Debug exposing (..)
 {- as shown in the body of the tune but not in headers -}
 instance showAccidental :: Show Accidental where
     show Sharp = "^"
@@ -191,6 +196,10 @@ instance showAccidental :: Show Accidental where
     show DoubleSharp = "^^"
     show DoubleFlat = "__"
     show Natural = "="
+
+
+derive instance eqAccidental :: Eq Accidental
+derive instance ordAccidental :: Ord Accidental
 
 
 {-| A white note on the piano.-}
@@ -212,7 +221,8 @@ instance showPitchClass :: Show PitchClass where
   show F = "F"
   show G = "G"
 
-
+derive instance eqPitchCLass :: Eq PitchClass
+derive instance ordPitchCLass :: Ord PitchClass
 
 {-| A Key Signature.-}
 type KeySignature =
@@ -232,11 +242,20 @@ type ModifiedKeySignature =
 
 
 {-| A Key Accidental (A modification to a standard key for one pitch in the scale).
+    (we're not allowed to derive instances on record types unless we use newtype)
 -}
-type KeyAccidental =
+newtype KeyAccidental = KeyAccidental
     { pitchClass :: PitchClass
     , accidental :: Accidental
     }
+
+derive instance genericPitchClass  :: Generic PitchClass
+derive instance genericAccidental  :: Generic Accidental
+
+-- derive instance genericKeyAccidental  :: Generic KeyAccidental
+derive instance newtypeKeyAccidental :: Newtype KeyAccidental _
+derive instance eqKeyAccidental :: Eq KeyAccidental
+derive instance ordKeyAccidental :: Ord KeyAccidental
 
 
 {-| A set of accidentals within a key signature.
