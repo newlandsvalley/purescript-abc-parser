@@ -518,11 +518,11 @@ modifyKeySet newKeyA ks =
     KeyAccidental { pitchClass: _, accidental: Natural}  ->
       ks
     KeyAccidental { pitchClass: pitchClass, accidental: _ }  ->
-        newKeyA : (filter (matchPC pitchClass) ks)
+        newKeyA : (filter (noMatchPC pitchClass) ks)
   where
-    matchPC :: PitchClass -> KeyAccidental -> Boolean
-    matchPC pc nka =
-       pc == (unwrap nka).pitchClass
+    noMatchPC :: PitchClass -> KeyAccidental -> Boolean
+    noMatchPC pc nka =
+       pc /= (unwrap nka).pitchClass
 
 
 {-

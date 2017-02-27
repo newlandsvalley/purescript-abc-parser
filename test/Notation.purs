@@ -4,7 +4,7 @@ import Prelude
 import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..), intersect, length, null, (:))
 import Data.Rational (fromInt)
 import Data.Map (keys)
@@ -98,15 +98,26 @@ assertEquivalentKeys actual expected =
       failure $ "non-equivalent keys: "
          <> (show actual) <> " not equal to: " <> (show expected)
 
+{- It's such a pain to provide Eq, Show on what you'd like to be a somple record
+   so for testing purposes just collapse tp a string
+
+   Type class instances for type synonyms are disallowed
+-}
+showKeySig :: KeySignature -> String
+showKeySig ks =
+  show ks.pitchClass <> show ks.accidental <> show ks.mode
+
 notationSuite :: forall t. Free (TestF t) Unit
 notationSuite = do
+  lookupSuite
+   {-
    headerSuite
    majorModeSuite
    minorModeSuite
-   otherModeSuite
-   keySuite
-   {-
    klezmerModeSuite
+   otherModeSuite
+   modalKeySigNormalisationSuite
+   keySuite
    -}
 
 headerSuite :: forall t. Free (TestF t) Unit
@@ -321,15 +332,56 @@ otherModeSuite =
         (keySet { pitchClass: C, accidental: Nothing, mode: Ionian })
         (Nil)
 
+modalKeySigNormalisationSuite :: forall t. Free (TestF t) Unit
+modalKeySigNormalisationSuite =
+  suite "modal key sgnature normalisation" do
+    test "D Mix" do
+      Assert.equal
+        ( showKeySig { pitchClass: G, accidental: Nothing, mode: Major })
+        ( showKeySig $ normaliseModalKey { pitchClass: D, accidental: Nothing, mode: Mixolydian })
+    test "Bb Dor" do
+      Assert.equal
+        ( showKeySig { pitchClass: A, accidental: Just Flat, mode: Major })
+        ( showKeySig $ normaliseModalKey { pitchClass: B, accidental: Just Flat, mode: Dorian })
+    test "A Phr" do
+      Assert.equal
+        ( showKeySig { pitchClass: F, accidental: Nothing, mode: Major })
+        ( showKeySig $ normaliseModalKey { pitchClass: A, accidental: Nothing, mode: Phrygian })
+    test "Ab Lyd" do
+      Assert.equal
+        ( showKeySig { pitchClass: E, accidental: Just Flat, mode: Major })
+        ( showKeySig $ normaliseModalKey { pitchClass: A, accidental: Just Flat, mode: Lydian })
+    test "G# Loc" do
+      Assert.equal
+        ( showKeySig { pitchClass: A, accidental: Nothing, mode: Major })
+        ( showKeySig $ normaliseModalKey { pitchClass: G, accidental: Just Sharp, mode: Locrian })
+
+
 keySuite :: forall t. Free (TestF t) Unit
 keySuite =
   suite "keys" do
     test "D is a sharp key" do
       Assert.assert "not a sharp key" (isCOrSharpKey dMajor)
-    test "C is an (honourary) key" do
+    test "C is an (honourary) sharp key" do
       Assert.assert "not a sharp key" (isCOrSharpKey cMajor)
     test "F is not a sharp key" do
       Assert.assertFalse "is a sharp key" (isCOrSharpKey fMajor)
+    test "Gm is not a sharp key" do
+      Assert.assertFalse "is a sharp key" (isCOrSharpKey gMinor)
+
+
+lookupSuite :: forall t. Free (TestF t) Unit
+lookupSuite =
+  suite "lookups" do
+    test "f in G Major" do
+      Assert.equal
+          (Just Sharp)
+          (accidentalImplicitInKey F { keySignature: gMajor, modifications: Nil })
+
+    test "f in G Major" do
+      Assert.equal
+        (Nothing)
+        (accidentalImplicitInKey F { keySignature: cMajor, modifications: Nil })
 
 
 -- headers in sample ABC tunes
