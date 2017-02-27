@@ -11,6 +11,7 @@ import Test.Unit.Console (TESTOUTPUT)
 import Test.Abc (abcSuite)
 import Test.Notation (notationSuite)
 import Test.Octave (octaveSuite)
+import Test.Tempo (tempoSuite)
 
 
 main :: forall t.
@@ -26,3 +27,4 @@ main = runTest do
     abcSuite
     notationSuite
     octaveSuite
+    tempoSuite
