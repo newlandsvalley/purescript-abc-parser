@@ -10,6 +10,7 @@ import Test.Unit.Main (runTest)
 import Test.Unit.Console (TESTOUTPUT)
 import Test.Abc (abcSuite)
 import Test.Notation (notationSuite)
+import Test.Octave (octaveSuite)
 
 
 main :: forall t.
@@ -24,3 +25,4 @@ main = runTest do
   suite "parser" do
     abcSuite
     notationSuite
+    octaveSuite
