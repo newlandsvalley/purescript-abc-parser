@@ -45,49 +45,27 @@ import Data.Newtype (unwrap, wrap)
 import Abc.ParseTree
 import Music.Accidentals as Accidentals
 
---import Music.Accidentals exposing (..)
---import Debug exposing (..)
-
-{-}
-import List.Extra exposing (getAt, splitAt, elemIndex, tails)
-import List exposing (member, isEmpty)
-import Maybe exposing (withDefault)
-import Maybe.Extra exposing (join, isJust, or)
-import String exposing (contains, endsWith, fromChar)
-import Dict exposing (Dict, fromList, get)
-import Tuple exposing (first, second)
--}
-
-
 {-| A diatonic scale presented as a list of notes in the scale.
 -}
 type DiatonicScale =
     List KeyAccidental
 
-
-
 {- A chromatic (12-note) scale -}
-
-
 type ChromaticScale =
     List KeyAccidental
 
-
 type Intervals =
     List Int
-
 
 {-| The pitch of a note expressed as a MIDI interval.
 -}
 type MidiPitch =
     Int
 
-
 {-| A MIDI tick - used to give a note duration.
 -}
 type MidiTick =
     Int
-
 
 {-| The time taken when a note is played before the next note.
 -}
@@ -110,7 +88,7 @@ type AbcTempo =
     }
 
 
-{-| A representation of the ABC headers as a Dictionary, taking the first definition
+{-| A representation of the ABC headers as a Map, taking the first definition
 of any header if multiple definitions are present in the ABC
 -}
 type HeaderMap =
@@ -498,7 +476,6 @@ inScale :: KeyAccidental -> DiatonicScale -> Boolean
 inScale ka s =
     elem ka s
 
-
 {-| Is the key signature a sharp key or else a simple C Major key?
 -}
 isCOrSharpKey :: KeySignature -> Boolean
@@ -512,7 +489,6 @@ isCOrSharpKey ksig =
     in
       -- the list is empty anyway or contains only flat keys
       null $ filter isFlat kset
-
 
 {-| Return an accidental if it is implicitly there in the (modified) key signature
     attached to the pitch class of the note. In ABC, notes generally inherit
@@ -687,7 +663,7 @@ transposeKeySignatureBy i mks =
             (show mks.keySignature.pitchClass) <> (accidentalPattern mks.keySignature.accidental)
 
         idx =
-            fromMaybe 0 $ lookup pattern chromaticScaleDict
+            fromMaybe 0 $ lookup pattern chromaticScaleMap
 
         newIndex =
             (notesInChromaticScale + idx + i) `mod` notesInChromaticScale
@@ -883,22 +859,18 @@ equivalentEnharmonicKeySig pc a m =
           { pitchClass: pc, accidental: Just a, mode: m }
 
 
-majorIntervals :: Intervals
-majorIntervals =
-     (2: 2: 1: 2: 2: 2: 1: Nil)
-
-
+{- The major scale intervals are 2,2,1,2,2,2,1
+   This reperesents the accumulated intervals starting from 0
+   which are used as offsets into a representation of a major scale
+-}
+majorIntervalOffsets :: Intervals
+majorIntervalOffsets =
+  (0: 2: 4: 5: 7: 9: 11: Nil)
 
 {- lookup for providing offsets from C in a chromatic scale
-   we have to translate a KeyAccidental to a string because otherwise
-   it can't be used as a Dict key.  This is a problem in Elm -
-   user-defined types should be attributable to a 'pseudo'
-   type class of comparable
 -}
-
-
-chromaticScaleDict :: Map String Int
-chromaticScaleDict =
+chromaticScaleMap :: Map String Int
+chromaticScaleMap =
     fromFoldable
         [ Tuple "C" 0
         , Tuple  "C#" 1
@@ -951,31 +923,6 @@ rotateLeftBy idx ls =
 
 
 
-{- convert e.g. [2,2,1,2,2,2,1] into [0,2,4,5,7,9,11]
-   so instead of tone/semitone intervals we have offsets into a chromatic scale
--}
-partialSum :: List Int -> List Int
-partialSum l =
-  let
-    summer intervals =
-      case intervals of
-        nil -> singleton 0
-        (x : xs) -> (sum intervals) : summer xs
-    firstInterval = fromMaybe 0 (head l)
-  in
-    reverse $ map (\i -> i - firstInterval) $ summer l
-
-{-
-partialSum l =
-  take (length l) $ reverse $ map (+) (tails (reverse l))
-  where
-    tails :: List Int -> List (List Int)
-    tails nil = singleton nil
-    tails (x:xs) = xs: (tails xs)
-        -}
-
-
-
 {- find the pitch class at a given position in the scale
    modulate the index to be in the range 0 <= index < notesInChromaticScale
    where a negative value rotates left from the maximum value in the scale
@@ -997,8 +944,6 @@ lookUpScale s i =
 
 
 -- provide the Major scale for the pitch class
-
-
 majorScale :: KeyAccidental -> DiatonicScale
 majorScale target =
     let
@@ -1016,7 +961,8 @@ majorScale target =
         f =
             lookUpScale (rotateFrom target chromaticScale)
     in
-        map f (partialSum majorIntervals)
+        -- map f (partialSum majorIntervals)
+      map f majorIntervalOffsets
 
 
 
@@ -1222,7 +1168,7 @@ midiPitchOffset n mks barAccidentals =
         pattern =
             (show n.pitchClass) <> accidental
     in
-        fromMaybe 0 (lookup pattern chromaticScaleDict)
+        fromMaybe 0 (lookup pattern chromaticScaleMap)
 
 
 
@@ -1259,7 +1205,7 @@ transposeKeyAccidentalBy i ka =
             show (unwrap ka).pitchClass
 
         idx =
-            fromMaybe 0 $ lookup pattern chromaticScaleDict
+            fromMaybe 0 $ lookup pattern chromaticScaleMap
 
         scaleModifier :: { modifier :: Int, scale :: ChromaticScale }
         scaleModifier =

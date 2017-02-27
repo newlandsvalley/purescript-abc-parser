@@ -9,6 +9,8 @@ import Test.Unit (suite)
 import Test.Unit.Main (runTest)
 import Test.Unit.Console (TESTOUTPUT)
 import Test.Abc (abcSuite)
+import Test.Notation (notationSuite)
+
 
 main :: forall t.
         Eff
@@ -21,3 +23,4 @@ main :: forall t.
 main = runTest do
   suite "parser" do
     abcSuite
+    notationSuite

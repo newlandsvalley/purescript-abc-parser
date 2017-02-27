@@ -33,7 +33,7 @@ import Data.Maybe (Maybe)
 import Data.Rational (Rational)
 import Data.Tuple (Tuple)
 import Data.Newtype (class Newtype)
-import Prelude (class Show, class Eq, class Ord)
+import Prelude (class Show, class Eq, class Ord, (<>), show)
 import Data.Generic (gEq, gShow, class Generic)
 
 {-| A Tune.-}
@@ -257,6 +257,8 @@ derive instance newtypeKeyAccidental :: Newtype KeyAccidental _
 derive instance eqKeyAccidental :: Eq KeyAccidental
 derive instance ordKeyAccidental :: Ord KeyAccidental
 
+instance showKeyAccidental :: Show KeyAccidental where
+  show (KeyAccidental ka) = show ka.pitchClass <> show ka.accidental
 
 {-| A set of accidentals within a key signature.
 -}
