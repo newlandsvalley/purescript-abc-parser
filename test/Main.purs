@@ -12,6 +12,7 @@ import Test.Abc (abcSuite)
 import Test.Notation (notationSuite)
 import Test.Octave (octaveSuite)
 import Test.Tempo (tempoSuite)
+import Test.Transposition (transpositionSuite)
 
 
 main :: forall t.
@@ -24,7 +25,10 @@ main :: forall t.
           Unit
 main = runTest do
   suite "parser" do
+    transpositionSuite
+    {-
     abcSuite
     notationSuite
     octaveSuite
     tempoSuite
+    -}

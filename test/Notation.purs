@@ -109,8 +109,7 @@ showKeySig ks =
 
 notationSuite :: forall t. Free (TestF t) Unit
 notationSuite = do
-  lookupSuite
-   {-
+   lookupSuite
    headerSuite
    majorModeSuite
    minorModeSuite
@@ -118,7 +117,6 @@ notationSuite = do
    otherModeSuite
    modalKeySigNormalisationSuite
    keySuite
-   -}
 
 headerSuite :: forall t. Free (TestF t) Unit
 headerSuite =

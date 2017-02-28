@@ -179,6 +179,9 @@ instance showMode :: Show Mode where
     show Aeolian = "Aeolian"
     show Locrian = "Locrian"
 
+
+derive instance eqMode :: Eq Mode 
+
 {-| An Accidental.-}
 data Accidental
     = Sharp
