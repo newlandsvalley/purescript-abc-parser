@@ -2,28 +2,197 @@ module Test.Transposition (transpositionSuite) where
 
 import Music.Transposition
 import Test.Utils
-import Abc.ParseTree (AbcNote, Accidental(..), PitchClass(..), Mode(..), ModifiedKeySignature)
+import Test.Unit.Assert as Assert
+import Abc (parse)
+import Abc.Canonical (abcNote, fromTune)
+import Abc.ParseTree (AbcTune, AbcNote, Accidental(..), KeyAccidental(..), PitchClass(..), Mode(..), ModifiedKeySignature)
+import Control.Comonad.Store (store)
 import Control.Monad.Free (Free)
+import Data.Either (Either(..))
 import Data.List (List(..))
 import Data.Maybe (Maybe(..))
-import Data.Either (Either(..))
+import Data.Bifunctor (lmap)
 import Data.Rational (fromInt)
-import Prelude (Unit, bind)
-import Test.Unit (TestF, suite, test)
-import Test.Unit.Assert as Assert
+import Prelude (Unit, (>>=), bind, map, negate, pure, show)
+import Test.Unit (Test, TestF, failure, suite, test)
+
+
+
+assertTranspositionMatches :: forall e. String -> ModifiedKeySignature -> String -> Test e
+assertTranspositionMatches s targetks target =
+    let
+        transposedResult :: Either String AbcTune
+        transposedResult =
+          -- convert the ParseError to a String
+          lmap show (parse s)
+             >>= (transposeTo targetks)
+    in
+        case transposedResult of
+            Right res ->
+                Assert.equal target (fromTune res)
+
+            Left errs ->
+              failure "unexpected transposition error"
+
 
 transpositionSuite :: forall t. Free (TestF t) Unit
 transpositionSuite = do
   suite "transposition" do
     keySuite
+    noteSuite
+    phraseSuite
+    keyChangeSuite
 
 keySuite :: forall t. Free (TestF t) Unit
 keySuite = do
   suite "keys" do
-  test "C to G#" do
+    test "C to G#" do
       Assert.equal
         (Right 8)
         (keyDistance gSharpMajor cMajor)
+    test "G# to Bb" do
+      Assert.equal
+        (Right 2)
+        (keyDistance bFlat gSharpMajor)
+    test "Bb to G#" do
+      Assert.equal
+        (Right (-2))
+        (keyDistance gSharpMajor bFlat )
+    test "Bm to Am" do
+      Assert.equal
+        (Left "incompatible modes")
+        (keyDistance bFlatDorian cMajor)
+
+-- | Transposition within the contexts of given keys
+-- | This is another example of where I find PureScript awkward
+-- | no derived instances are available for AbcNote because it's defined
+-- | as simply as possible as a record.  However we can 'show' an AbcNote
+-- | because it's there in Xanonical.  So we compare the stringified versions.
+noteSuite :: forall t. Free (TestF t) Unit
+noteSuite = do
+  suite "notes" do
+    test "F in FMaj to GMaj" do
+      Assert.equal
+        (map abcNote (Right g))
+        (map abcNote (transposeNote gMajor fMajor f))
+    test "FNat in GMaj to FMaj" do
+      Assert.equal
+        (map abcNote (Right eb))
+        (map abcNote (transposeNote fMajor gMajor fnat))
+    test "C# in AMaj to GMaj" do
+      Assert.equal
+        (map abcNote (Right b))
+        (map abcNote (transposeNote gMajor aMajor cs))
+    test "C# in GMaj to AMaj" do
+      Assert.equal
+        (map abcNote (Right ds))
+        (map abcNote (transposeNote aMajor gMajor cs))
+    test "G# in Amin to FMin" do
+      Assert.equal
+        (map abcNote (Right enat))
+        (map abcNote (transposeNote fMinor aMinor gs))
+    test "B in DMaj to CMaj" do
+      Assert.equal
+        (map abcNote (Right a))
+        (map abcNote (transposeNote cMajor dMajor b))
+
+phraseSuite :: forall t. Free (TestF t) Unit
+phraseSuite = do
+  suite "phrases" do
+    test "C phrase to D phrase" do
+      assertTranspositionMatches
+        cPhrase
+        dMajor
+        dPhrase
+    test "D phrase to C phrase" do
+      assertTranspositionMatches
+        dPhrase
+        cMajor
+        cPhrase
+    test "C phrase to F phrase" do
+      assertTranspositionMatches
+        cPhrase
+        fMajor
+        fPhrase
+    test "Gm phrase to Dm phrase" do
+      assertTranspositionMatches
+        gmPhrase
+        dMinor
+        dmPhrase
+    test "Gm phrase with in-bar accidental" do
+      assertTranspositionMatches
+        gmPhraseLocal
+        dMinor
+        dmPhrase
+    test "Dm phrase to Gm phrase" do
+      assertTranspositionMatches
+        dmPhrase
+        gMinor
+        gmPhraseLocal
+    test "Bm phrase to Em phrase" do
+      assertTranspositionMatches
+        bmPhrase
+        eMinor
+        emPhrase
+    test "Am phrase to Fm phrase" do
+      assertTranspositionMatches
+        amPhrase
+        fMinor
+        fmPhrase
+    test "Am phrase to F#m phrase" do
+      assertTranspositionMatches
+        amPhrase0
+        fSharpMinor
+        fsharpmPhrase0
+    test "identity transposition" do
+      assertTranspositionMatches
+        dmPhrase
+        dMinor
+        dmPhrase
+    test "Cm phrase to Am phrase" do
+      assertTranspositionMatches
+        cmPhrase1
+        aMinor
+        amPhrase1High
+
+keyChangeSuite :: forall t. Free (TestF t) Unit
+keyChangeSuite = do
+  suite "key changes" do
+    test "key change Bm to Am" do
+      assertTranspositionMatches
+        keyChangeBm
+        aMinor
+        keyChangeAm
+    test "key change Am to Bm" do
+      assertTranspositionMatches
+        keyChangeAm
+        bMinor
+        keyChangeBm
+    test "key change Bm to Em" do
+      assertTranspositionMatches
+        keyChangeBm
+        eMinor
+        keyChangeEmHigh
+    test "key change Em to Bm" do
+      assertTranspositionMatches
+        keyChangeEm
+        bMinor
+        keyChangeBm
+    test "key change Bm to C#m" do
+      assertTranspositionMatches
+        keyChangeBm
+        cSharpMinor
+        keyChangeCSharpmHigh
+    test "key change C#m to Bm" do
+      assertTranspositionMatches
+        keyChangeCSharpm
+        bMinor
+        keyChangeBm
+    test "key change Bm to Am inline" do
+      assertTranspositionMatches
+        keyChangeBmInline
+        aMinor
+        keyChangeAmInline
 
 -- note C Sharp and D Sharp are in octave 5 all the other notes are in octave 4
 
@@ -163,7 +332,7 @@ bFlatDorian =
 
 bFlat :: ModifiedKeySignature
 bFlat =
-  buildKeySig C (Just Flat) Major
+  buildKeySig B (Just Flat) Major
 
 
 cPhrase =

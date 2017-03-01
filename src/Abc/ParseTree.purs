@@ -180,7 +180,7 @@ instance showMode :: Show Mode where
     show Locrian = "Locrian"
 
 
-derive instance eqMode :: Eq Mode 
+derive instance eqMode :: Eq Mode
 
 {-| An Accidental.-}
 data Accidental

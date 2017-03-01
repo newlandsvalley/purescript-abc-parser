@@ -25,10 +25,8 @@ main :: forall t.
           Unit
 main = runTest do
   suite "parser" do
-    transpositionSuite
-    {-
     abcSuite
     notationSuite
     octaveSuite
     tempoSuite
-    -}
+    transpositionSuite

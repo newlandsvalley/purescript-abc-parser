@@ -4,5 +4,6 @@
 /output/
 /deprecated/
 /src/ParserExtra1.purs
+/src/ParserExtra2.purs
 /.psc*
 /.psa*

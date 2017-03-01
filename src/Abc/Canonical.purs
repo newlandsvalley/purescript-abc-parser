@@ -1,6 +1,6 @@
 module Abc.Canonical
         ( fromTune
-        , fromResult
+        , fromEither
         , abcNote
         , abcChord
         , tuplet
@@ -529,6 +529,6 @@ fromTune abcTune =
 
 {-| Translate a parse Result containing an ABC Tune parse tree to a Result containing a canonical ABC String.
 -}
-fromResult :: Either String AbcTune -> Either String String
-fromResult r =
+fromEither :: Either String AbcTune -> Either String String
+fromEither r =
     map fromTune r
