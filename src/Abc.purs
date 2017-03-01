@@ -17,15 +17,11 @@ import Data.Functor (map)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
-import Text.Parsing.StringParser (Parser, ParseError, runParser, try, fail)
-import Text.Parsing.StringParser.String (satisfy, string, char, eof)
+import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
+import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
-
--- import Debug.Trace (trace)
-
-import ParserExtra as ParserExtra
 import Abc.ParseTree
-
+-- import Debug.Trace (trace)
 
 
 {- transient data type just used for parsing the awkward Tempo syntax
@@ -1335,10 +1331,11 @@ invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
 
+{-}
 regex :: String -> Parser String
 regex =
   ParserExtra.regex'
-{-
+
 regex pat =
     case er of
       Left _ ->

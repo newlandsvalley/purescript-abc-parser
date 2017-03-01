@@ -290,7 +290,7 @@ transposeMusic state m =
 transposeList :: forall m. TranspositionState -> (TranspositionState -> m -> m) -> List m -> Tuple (List m) TranspositionState
 transposeList state transposef ns =
     let
-        f :: forall m.Tuple (List m) TranspositionState -> m -> Tuple (List m) TranspositionState
+        f :: forall m. Tuple (List m) TranspositionState -> m -> Tuple (List m) TranspositionState
         f acc n =
             let
                 -- ( ns, s0 ) = acc
@@ -298,6 +298,7 @@ transposeList state transposef ns =
                 s0 = snd acc
 
                 -- ( n1, s1 ) = transposeNoteBy s0 n
+                result :: Tuple m TranspositionState
                 result = transposef s0 n
                 n1 = fst result
                 s1 = snd result
