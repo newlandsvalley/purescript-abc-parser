@@ -42,6 +42,8 @@ traceParse s p =
   trace s (\_ -> p)
 -}
 
+
+
 abc :: Parser AbcTune
 abc =
     buildAbcTune <$> headers <*> body
@@ -180,7 +182,7 @@ barSeparator =
 -- spec is unclear if spaces are allowed after a broken rhythm operator but it's easy to support, is more permissive and doesn't break anything
 brokenRhythmTie :: Parser Broken
 brokenRhythmTie =
-    buildBrokenOperator <$> regex "(<+|>+)" <* whiteSpace
+    buildBrokenOperator <$> brokenRhythmOperator <* whiteSpace
 
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
@@ -309,7 +311,7 @@ tuplet =
 tupletSignature :: Parser TupletSignature
 tupletSignature =
     buildTupletSignature
-        <$> regex "[2-9]"
+        <$> tupletLength
         <*> tup
         <*> tup
         <* whiteSpace
@@ -318,7 +320,7 @@ tup :: Parser (Maybe String)
 tup =
     join
         <$> optionMaybe
-                (char ':' *> optionMaybe (regex "[2-9]"))
+                (char ':' *> optionMaybe tupletLength)
 
 {- Note, Slur should really be defined as Slur (List Music) and then parsed as shown below.  This would allow slurs to be
       nested and the parser to test that the brackets are balanced.  However, unfortunately, in the wild there are examples
@@ -1002,6 +1004,8 @@ locrian :: Parser Mode
 locrian =
     Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
 
+
+
 -- builders
 buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
@@ -1271,6 +1275,23 @@ lookupPitch p =
      "G" -> G
      _ -> C
 
+-- regex parsers.  Place some at the top level so that we can precompile the regex
+brokenRhythmOperator :: Parser String
+brokenRhythmOperator =
+  regex "(<+|>+)"
+
+tupletLength :: Parser String
+tupletLength =
+  regex "[2-9]"
+
+endOfLine :: Parser String
+endOfLine =
+  regex "\r\n"
+
+anyInt :: Parser String
+anyInt =
+  regex "(0|[1-9][0-9]*)"     
+
 -- low level
 
 {-| Parse a `\n` character. -}
@@ -1280,7 +1301,7 @@ newline = satisfy ((==) '\n') <?> "expected newline"
 
 {-| Parse a `\r\n` sequence, returning a `\n` character. -}
 crlf :: Parser Char
-crlf = '\n' <$ regex "\r\n" <?> "expected crlf"
+crlf = '\n' <$ endOfLine <?> "expected crlf"
 
 
 {-| Parse an end of line character or sequence, returning a `\n` character. -}
@@ -1304,9 +1325,9 @@ manyTill1 = manyTill
 -}
 int :: Parser Int
 int =
-  fromMaybe 1 <$>  -- the regex will always provide an integer if it parses
+  fromMaybe 1 <$>  -- the anyInt regex will always provide an integer if it parses
     fromString <$>
-    regex "(0|[1-9][0-9]*)"
+    anyInt
     <?> "expected a positive integer"
 
 quotedString :: Parser String
@@ -1330,26 +1351,6 @@ invert :: Rational -> Rational
 invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
-
-{-}
-regex :: String -> Parser String
-regex =
-  ParserExtra.regex'
-
-regex pat =
-    case er of
-      Left _ ->
-        fail $ "Illegal regex " <> pat
-      Right r ->
-        ParserExtra.regex r
-    where
-      pattern =
-        if startsWith "^" pat then
-          pat
-        else
-          "^" <> pat
-      er = Regex.regex pattern noFlags
--}
 
 {-| Entry point - Parse an ABC tune image.
 -}
