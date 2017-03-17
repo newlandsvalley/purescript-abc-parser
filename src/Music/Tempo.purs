@@ -33,7 +33,6 @@ getBpm tune =
     _ ->
       defaultTempo.bpm
 
-
 -- | Change the tempo of the tune by altering the beats per minute (bpm)
 -- | in the tune's tempo header (if it exists) or by altering a newly incorporated
 -- | default tempo if not.

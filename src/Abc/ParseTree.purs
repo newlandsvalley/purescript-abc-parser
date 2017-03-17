@@ -26,7 +26,6 @@ module Abc.ParseTree ( AbcTune
 , middlecOctave
 ) where
 
-
 -- import Data.BooleanAlgebra (class BooleanAlgebra)
 import Data.List (List)
 import Data.Maybe (Maybe)
@@ -34,37 +33,32 @@ import Data.Rational (Rational)
 import Data.Tuple (Tuple)
 import Data.Newtype (class Newtype)
 import Prelude (class Show, class Eq, class Ord, (<>), show)
-import Data.Generic (gEq, gShow, class Generic)
+import Data.Generic (class Generic)
 
-{-| A Tune.-}
+-- | A Tune.
 type AbcTune =
   { headers :: TuneHeaders
   , body :: TuneBody
   }
 
-
-{-| A List of Tune Headers.-}
+-- | A List of Tune Headers.
 type TuneHeaders =
     List Header
 
-
-{-| A Tune Body.-}
+-- | A Tune Body.
 type TuneBody =
     List BodyPart
 
-
-{-| A Tune Body part-}
+-- | A Tune Body part
 data BodyPart
     = Score MusicLine
     | BodyInfo Header
 
-
-{-| A line of musical score up to eol.-}
+-- | A line of musical score up to eol.
 type MusicLine =
     List Music
 
-
-{-| A Note.-}
+-- | A Note.
 type AbcNote =
     { pitchClass :: PitchClass
     , accidental :: Maybe Accidental
@@ -73,15 +67,13 @@ type AbcNote =
     , tied ::  Boolean  -- to the next note
     }
 
-
-{-| A Chord.-}
+-- | A Chord.
 type AbcChord =
     { notes :: List AbcNote
     , duration :: NoteDuration
     }
 
-
-{-| An Annotation placement.-}
+-- | An Annotation placement.
 data AnnotationPlacement
     = AboveNextSymbol
     | BelowNextSymbol
@@ -96,8 +88,7 @@ instance showAnnotationPlacement :: Show AnnotationPlacement where
    show RightOfNextSymbol = ">"
    show Discretional = "@"
 
-
-{-| The 'score' part of Music.-}
+-- | The 'score' part of Music.
 data Music
     = Barline Bar
     | Note AbcNote
@@ -116,8 +107,7 @@ data Music
     | Ignore
     | Continuation
 
-
-{-| A bar line Thickness.-}
+-- | A bar line Thickness.
 data Thickness
     = Thin
     | ThinThin
@@ -130,7 +120,7 @@ instance showThickness :: Show Thickness where
   show ThinThick = "|]"
   show ThickThin = "[|"
 
-{-| A Repeat in a Bar line.-}
+-- | A Repeat in a Bar line.
 data Repeat
     = Begin
     | End
@@ -155,8 +145,7 @@ type Bar =
     , iteration :: Maybe Int
     }
 
-
-{-| A Mode.-}
+-- | A Mode.
 data Mode
     = Major
     | Minor
@@ -179,17 +168,15 @@ instance showMode :: Show Mode where
     show Aeolian = "Aeolian"
     show Locrian = "Locrian"
 
-
 derive instance eqMode :: Eq Mode
 
-{-| An Accidental.-}
+-- | An Accidental.
 data Accidental
     = Sharp
     | Flat
     | DoubleSharp
     | DoubleFlat
     | Natural
-
 
 -- import Debug exposing (..)
 {- as shown in the body of the tune but not in headers -}
@@ -204,8 +191,7 @@ instance showAccidental :: Show Accidental where
 derive instance eqAccidental :: Eq Accidental
 derive instance ordAccidental :: Ord Accidental
 
-
-{-| A white note on the piano.-}
+-- | A white note on the piano.
 data PitchClass
     = A
     | B
@@ -227,26 +213,23 @@ instance showPitchClass :: Show PitchClass where
 derive instance eqPitchCLass :: Eq PitchClass
 derive instance ordPitchCLass :: Ord PitchClass
 
-{-| A Key Signature.-}
+-- | A Key Signature.
 type KeySignature =
     { pitchClass :: PitchClass
     , accidental :: Maybe Accidental
     , mode :: Mode
     }
 
-{-| A Key Signature with modifications (possibly empty)
-    This is used for non-diatonic modes where intervals may be greater than two semitones
-    (for example as found in Klezmer).
--}
+-- | A Key Signature with modifications (possibly empty)
+-- |    This is used for non-diatonic modes where intervals may be greater than two semitones
+-- |    (for example as found in Klezmer).
 type ModifiedKeySignature =
   { keySignature :: KeySignature
   , modifications ::  List KeyAccidental
   }
 
-
-{-| A Key Accidental (A modification to a standard key for one pitch in the scale).
-    (we're not allowed to derive instances on record types unless we use newtype)
--}
+-- | A Key Accidental (A modification to a standard key for one pitch in the scale).
+-- |  (we're not allowed to derive instances on record types unless we use newtype)
 newtype KeyAccidental = KeyAccidental
     { pitchClass :: PitchClass
     , accidental :: Accidental
@@ -263,14 +246,11 @@ derive instance ordKeyAccidental :: Ord KeyAccidental
 instance showKeyAccidental :: Show KeyAccidental where
   show (KeyAccidental ka) = show ka.pitchClass <> show ka.accidental
 
-{-| A set of accidentals within a key signature.
--}
+-- | A set of accidentals within a key signature.
 type KeySet =
     List KeyAccidental
 
-
-{-| A Meter Signature - e.g. 3/4.
--}
+-- | A Meter Signature - e.g. 3/4.
 type MeterSignature = Tuple Int Int
 
 
@@ -288,29 +268,25 @@ type TempoSignature =
     }
 
 
-{-| A Note Duration - e.g. 1/4.
--}
+-- | A Note Duration - e.g. 1/4.
 -- newtype NoteDuration = NoteDuration Rational
 type NoteDuration = Rational
 
 
-{-| A tuplet signature:
-    put p notes into the time of q the next r notes.
--}
+-- | A tuplet signature:
+-- |    put p notes into the time of q the next r notes.
 type TupletSignature =
     { p :: Int
     , q :: Int
     , r :: Int
     }
 
-
-{-| A broken rhythm operator - one or more < or >.-}
+-- | A broken rhythm operator - one or more < or >.-}
 data Broken
     = LeftArrow Int
     | RightArrow Int
 
-
-{-| An ABC Tune Header.-}
+-- | An ABC Tune Header.
 data Header
     = Area String
     | Book String
@@ -349,8 +325,7 @@ data Header
     | UnsupportedHeader
 
 
-{-| The octave number of middle C in MIDI parlance.
--}
+-- | The octave number of middle C in MIDI parlance.
 middlecOctave :: Int
 middlecOctave =
     5

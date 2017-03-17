@@ -6,13 +6,11 @@ module Abc.Canonical
         , tuplet
         ) where
 
-
-
-import Prelude
+import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Abc.ParseTree
 import Data.List (List, length)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Rational (Rational(..), (%))
+import Data.Rational (Rational(..))
 import Data.Ratio (Ratio(..))
 import Data.Tuple (Tuple(..))
 import Data.String (trim, toLower, singleton, length, take) as Str
@@ -20,46 +18,12 @@ import Data.Foldable (foldr)
 import Data.Either (Either)
 import Data.Newtype (unwrap)
 
-{-| Module for converting an ABC Tune parse tree to a canonical ABC string,
-
--}
+-- | Module for converting an ABC Tune parse tree to a canonical ABC string
 
 
 enquote :: String -> String
 enquote s =
     "\"" <> s <> "\""
-
-{-
-mode :: Mode -> String
-mode m =
-    case m of
-        Major ->
-            "major"
-
-        Minor ->
-            "minor"
-
-        Ionian ->
-            "ionian"
-
-        Dorian ->
-            "dorian"
-
-        Phrygian ->
-            "phrygian"
-
-        Lydian ->
-            "lydian"
-
-        Mixolydian ->
-            "mixolydian"
-
-        Aeolian ->
-            "aeolian"
-
-        Locrian ->
-            "locrian"
--}
 
 bar :: Bar -> String
 bar b =
@@ -131,8 +95,7 @@ headerAccidental a =
             ""
 
 
-{-| Pretty-print a tuplet.-}
-
+-- | Pretty-print a tuplet.
 tuplet :: TupletSignature -> String
 tuplet { p: 2, q: 3, r: 2 } = "(2"
 tuplet { p: 3, q: 2, r: 3 } = "(3"
@@ -144,32 +107,6 @@ tuplet { p: p, q: q, r: r } =
         <> (show q)
         <> ":"
         <> (show r)
-
-{-}
-tuplet t =
-    let
-        TupletSignature { p: p, q: q, r: r } =
-            t
-    in
-        case t of
-            ( 2, 3, 2 ) ->
-                "(2"
-
-            ( 3, 2, 3 ) ->
-                "(3"
-
-            ( 4, 3, 4 ) ->
-                "(4"
-
-            _ ->
-                "("
-                    ++ (toString p)
-                    ++ ":"
-                    ++ (toString q)
-                    ++ ":"
-                    ++ (toString r)
--}
-
 
 tempo :: TempoSignature -> String
 tempo t =
@@ -188,11 +125,9 @@ tempo t =
             <> show t.bpm
             <> text
 
-
 rational :: Rational -> String
 rational (Rational (Ratio n d)) =
     show n <> "/" <> show d
-
 
 ratlist :: List Rational -> String
 ratlist rs =
@@ -205,7 +140,6 @@ ratlist rs =
         List.foldr f "" rs
             |> trimRight
     -}
-
 
 meter :: Maybe MeterSignature -> String
 meter ms =
@@ -241,7 +175,6 @@ keyAccidentals :: List KeyAccidental -> String
 keyAccidentals =
     concatenate <<< map (\a -> " " <> keyAccidental a)
 
-
 octave :: Int -> String
 octave i =
     let
@@ -256,7 +189,6 @@ octave i =
         else
             Str.take (middlecOctave - i) ",,,,,,,,,,"
 
-
 pitch :: Int -> PitchClass -> String
 pitch octaveNumber p =
     if (octaveNumber <= middlecOctave) then
@@ -265,8 +197,7 @@ pitch octaveNumber p =
         Str.toLower (show p)
 
 
-{-| Pretty-print a note.
--}
+-- | Pretty-print a note.
 abcNote :: AbcNote -> String
 abcNote a =
     let
@@ -287,16 +218,13 @@ abcNote a =
             <> duration a.duration
             <> tie
 
-
-{-| Pretty-print a chord.
--}
+-- | Pretty-print a chord.
 abcChord :: AbcChord -> String
 abcChord a =
     "["
         <> (notes a.notes)
         <> "]"
         <> duration a.duration
-
 
 notes :: List AbcNote -> String
 notes ns =
@@ -306,11 +234,9 @@ notes ns =
     in
         foldr f "" ns
 
-
 rest :: NoteDuration -> String
 rest n =
     "z" <> (duration n)
-
 
 decorate :: String -> String
 decorate s =
@@ -318,7 +244,6 @@ decorate s =
         s
     else
         "!" <> s <> "!"
-
 
 musics :: List Music -> String
 musics ms =
@@ -328,7 +253,6 @@ musics ms =
     in
         foldr f "" ms
 
-
 broken :: Broken -> String
 broken b =
     case b of
@@ -337,7 +261,6 @@ broken b =
 
         RightArrow i ->
             Str.take i ">>>>>>>>>>"
-
 
 music :: Music -> String
 music m =
@@ -386,7 +309,6 @@ music m =
 
         Continuation ->
             "\\"
-
 
 header :: Header -> String
 header h =
@@ -487,7 +409,6 @@ tuneHeaders hs =
     in
         foldr f "" hs
 
-
 bodyPart :: BodyPart -> String
 bodyPart bp =
     case bp of
@@ -497,14 +418,12 @@ bodyPart bp =
         BodyInfo h ->
             header h
 
-
 continuation :: Boolean -> String
 continuation c =
     if c then
         "\\"
     else
         ""
-
 
 tuneBody :: TuneBody -> String
 tuneBody b =
@@ -519,16 +438,12 @@ concatenate = foldr (<>) ""
 
 -- Main Exported Functions
 
-
-{-| Translate an ABC Tune parse tree to a canonical ABC String.
--}
+-- | Translate an ABC Tune parse tree to a canonical ABC String.
 fromTune :: AbcTune -> String
 fromTune abcTune =
     tuneHeaders abcTune.headers <> tuneBody abcTune.body
 
-
-{-| Translate a parse Result containing an ABC Tune parse tree to a Result containing a canonical ABC String.
--}
+-- | Translate a parse Result containing an ABC Tune parse tree to a Result containing a canonical ABC String.
 fromEither :: Either String AbcTune -> Either String String
 fromEither r =
     map fromTune r

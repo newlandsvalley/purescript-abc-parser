@@ -14,7 +14,6 @@ import Data.Map as Map
 import Data.Tuple (Tuple(..))
 import Data.Newtype (unwrap)
 
-
 {-| A set of accidentals,  String is a proxy for PitchClass
 -}
 type Accidentals =

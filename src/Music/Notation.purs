@@ -31,49 +31,40 @@ module Music.Notation
         ) where
 
 
-import Data.Rational
 import Abc.ParseTree
-import Debug.Trace
 import Music.Accidentals as Accidentals
-import Control.Comonad.Store (pos)
-import Data.Foldable (sum, oneOf)
+import Data.Foldable (oneOf)
 import Data.Int (round)
-import Data.List (List(..), (:), elem, elemIndex, foldr, filter, head, index, length, null, reverse, singleton, slice, take)
-import Data.Map (Map(..), fromFoldable, lookup)
+import Data.List (List(..), (:), elem, elemIndex, foldr, filter, index, length, null, reverse, slice)
+import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Newtype (unwrap, wrap)
-import Data.Rational (rational, fromInt, toNumber, (%))
-import Data.Tuple (Tuple(..), fst, snd)
+import Data.Newtype (unwrap)
+import Data.Rational (Rational, fromInt, toNumber, (%))
+import Data.Tuple (Tuple(..))
 import Prelude (($), (<>), (+), (-), (*), (/), (<), (==), (/=), (||), show, negate, map, mod)
 
-{-| A diatonic scale presented as a list of notes in the scale.
--}
+-- | A diatonic scale presented as a list of notes in the scale.
 type DiatonicScale =
     List KeyAccidental
 
-{- A chromatic (12-note) scale -}
+-- | A chromatic (12-note) scale -}
 type ChromaticScale =
     List KeyAccidental
 
 type Intervals =
     List Int
 
-{-| The pitch of a note expressed as a MIDI interval.
--}
+-- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
     Int
 
-{-| A MIDI tick - used to give a note duration.
--}
+-- | A MIDI tick - used to give a note duration.
 type MidiTick =
     Int
 
-{-| The time taken when a note is played before the next note.
--}
+-- | The time taken when a note is played before the next note.
 type NoteTime =
     Number
-
-
 
 {-| The tempo when the tune is being played. This is usually represented
 as (for example) 1/4 = 120 - i.e. 120 querter notes per minute.
@@ -89,9 +80,8 @@ type AbcTempo =
     }
 
 
-{-| A representation of the ABC headers as a Map, taking the first definition
-of any header if multiple definitions are present in the ABC
--}
+-- | A representation of the ABC headers as a Map, taking the first definition
+-- | of any header if multiple definitions are present in the ABC.
 type HeaderMap =
     Map Char Header
 
@@ -116,7 +106,7 @@ keySet ks =
  filter accidentalKey $ diatonicScale ks
 
 
---| The set of keys (pitch classes with accidental) that comprise a modified key signature
+-- | The set of keys (pitch classes with accidental) that comprise a modified key signature
 modifiedKeySet :: ModifiedKeySignature -> KeySet
 modifiedKeySet ksm =
   let
@@ -491,6 +481,9 @@ midiTempo t =
 -- temporary
 lookupScale :: ChromaticScale -> Int -> Maybe KeyAccidental
 lookupScale scale idx =
+  index scale idx
+
+{-
   let
     result = index scale idx
   in
@@ -498,6 +491,7 @@ lookupScale scale idx =
     traceShow idx \_ ->
     traceShow result \_ ->
     result
+-}
 
 -- | Transpose a key signature by a given distance.
 transposeKeySignatureBy :: Int -> ModifiedKeySignature -> ModifiedKeySignature
