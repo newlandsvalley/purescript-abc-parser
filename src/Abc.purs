@@ -1,5 +1,5 @@
 module Abc
-        ( PositionedParseError
+        ( PositionedParseError(..)
         , parse
         , parseKeySignature
         ) where
