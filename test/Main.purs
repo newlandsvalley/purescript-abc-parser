@@ -14,7 +14,6 @@ import Test.Octave (octaveSuite)
 import Test.Tempo (tempoSuite)
 import Test.Transposition (transpositionSuite)
 
-
 main :: forall t.
         Eff
           ( console :: CONSOLE

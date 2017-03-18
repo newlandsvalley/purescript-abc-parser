@@ -1,9 +1,10 @@
 module Abc
-        ( parse
+        ( PositionedParseError
+        , parse
         , parseKeySignature
         ) where
 
-import Prelude (($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip)
+import Prelude (class Show, ($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip, show)
 import Control.Alt ((<|>))
 import Data.Either (Either(..))
 import Data.List (List(..), (:))
@@ -14,10 +15,11 @@ import Data.String (toUpper, charAt, singleton)
 import Data.Int (fromString, pow)
 import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
+import Data.Bifunctor (bimap)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
-import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
+import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
 import Abc.ParseTree
@@ -42,7 +44,14 @@ traceParse s p =
   trace s (\_ -> p)
 -}
 
+-- | a parse error and its accompanying position in the text
+newtype PositionedParseError = PositionedParseError
+  { pos :: Int
+  , error :: String
+  }
 
+instance showKeyPositionedParseError :: Show PositionedParseError where
+  show (PositionedParseError e) = e.error <> " at position " <> show e.pos
 
 abc :: Parser AbcTune
 abc =
@@ -1290,7 +1299,7 @@ endOfLine =
 
 anyInt :: Parser String
 anyInt =
-  regex "(0|[1-9][0-9]*)"     
+  regex "(0|[1-9][0-9]*)"
 
 -- low level
 
@@ -1352,21 +1361,30 @@ invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
 
-{-| Entry point - Parse an ABC tune image.
--}
-parse :: String -> Either ParseError AbcTune
+
+-- | Run a parser for an input string, returning either a positioned error or a result.
+runParser1 :: forall a. Parser a -> String -> Either PositionedParseError a
+runParser1 (Parser p) s =
+  let
+    formatErr :: { pos :: Pos, error :: ParseError } -> PositionedParseError
+    formatErr { pos : pos, error : ParseError e } =
+      PositionedParseError { pos : pos, error : e}
+  in
+    bimap formatErr _.result (p { str: s, pos: 0 })
+
+-- | Entry point - Parse an ABC tune image.
+parse :: String -> Either PositionedParseError AbcTune
 parse s =
-    case runParser abc s of
+    case runParser1 abc s of
         Right n ->
             Right n
 
         Left e ->
             Left e
 
-
-parseKeySignature :: String -> Either ParseError ModifiedKeySignature
+parseKeySignature :: String -> Either PositionedParseError ModifiedKeySignature
 parseKeySignature s =
-    case runParser keySignature s of
+    case runParser1 keySignature s of
         Right ks ->
           let
              emptyList = Nil :: List KeyAccidental

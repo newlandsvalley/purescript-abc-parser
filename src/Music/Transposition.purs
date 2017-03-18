@@ -5,8 +5,6 @@ module Music.Transposition
         , transposeTo
         ) where
 
-
-
 {- A parse tree score contains implicit accidentals.  Very often, the source text will not mark them but assume that they
    are implicit in the key signature.  They also may appear 'locally' - i.e. earlier in the bar and thus inherited.
    In order for the transposition process to work, all accidentals must be made explicit during transposition and then
