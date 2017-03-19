@@ -11,7 +11,7 @@ import Data.List (List(..), (:))
 import Data.List (length, singleton) as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.Utils (length, filter, startsWith, mapChars, includes)
-import Data.String (toUpper, charAt, singleton)
+import Data.String (toUpper, charAt, singleton, fromCharArray)
 import Data.Int (fromString, pow)
 import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
@@ -594,15 +594,17 @@ tuneInfo =
         ]
         <?> "tune info"
 
-
-headerCode :: Char -> Parser Char
+headerCode :: Char -> Parser String
 headerCode c =
-    char c <* char ':' <* whiteSpace
-
+  let
+    pattern =
+       fromCharArray [ c, ':' ]
+  in
+    string pattern <* whiteSpace
 
 unsupportedHeaderCode :: Parser String
 unsupportedHeaderCode =
-    regex "[a-qt-vx-zEJ]" <* char ':' <* whiteSpace
+    regex "[a-qt-vx-zEJ]:" <* whiteSpace
 
 {- comments.  These are introduced with '%' and can occur anywhere.
    The stylesheet directive '%%' is not recognized here and will
@@ -1266,8 +1268,8 @@ buildKeySignature pStr ma mm =
     { pitchClass : lookupPitch pStr, accidental : ma, mode : fromMaybe Major mm }
 
 {- build a complete key designation (key signature plus modifying accidentals) -}
-buildKey :: Char -> KeySignature -> List KeyAccidental -> Header
-buildKey c ks kas =
+buildKey :: String -> KeySignature -> List KeyAccidental -> Header
+buildKey code ks kas =
     Key { keySignature: ks, modifications: kas }
 
 -- lookups

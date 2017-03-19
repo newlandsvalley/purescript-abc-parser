@@ -73,6 +73,7 @@ abcSuite = do
    barSuite
    phrasingSuite
    structureSuite
+   ambiguitySuite
    badInputSuite
    keySigSuite
 
@@ -294,6 +295,18 @@ structureSuite  =
     test "inline comment" do
       assertRoundTrip "| ABC z2 def z/ \x0D\n%% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
 
+-- | the purescript version handles parsing differently from the elm version
+-- | when two different productions have the same initial lexeme.
+-- | The purescript parser requires you to use 'try' to resolve the parse
+ambiguitySuite :: forall t. Free (TestF t) Unit
+ambiguitySuite =
+  suite "ambiguity" do
+    test "ambiguous A" do
+      assertRoundTrip "K: GMajor\r\nA\r\n"
+    test "ambiguous a" do
+      assertRoundTrip "K: GMajor\r\na\r\n"
+
+
 badInputSuite :: forall t. Free (TestF t) Unit
 badInputSuite =
   suite "bad input" do
@@ -317,6 +330,7 @@ keySigSuite =
       assertKeySigParses "A Locrian"
     test "Bb Minor" do
       assertKeySigParses "Bb Minor"
+
 
 
 -- these ABC samples are already in canonical format which should allow round-tripping to work
