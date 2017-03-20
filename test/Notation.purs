@@ -6,7 +6,8 @@ import Control.Monad.Free (Free)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..), intersect, length, null, (:))
-import Data.Rational (fromInt)
+import Data.Rational (Rational, fromInt, rational)
+import Data.Tuple (Tuple(..))
 import Data.Map (keys)
 import Abc (parse)
 import Abc.ParseTree (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), KeyAccidental(..), KeySet, Mode(..), AbcNote, AbcTune)
@@ -50,6 +51,40 @@ assertOkKeySig source target =
     _ ->
       failure "parse error"
 
+assertOkMeter :: forall e. String -> (Tuple Int Int) -> Test e
+assertOkMeter source target =
+  case parse source of
+    Right tune ->
+      let
+        meter =
+          getMeter tune
+      in
+        case meter of
+          Just m  ->
+            Assert.equal target m
+
+          _ ->
+            failure "no meter"
+    _ ->
+      failure "parse error"
+
+assertOkNoteLen :: forall e. String -> Rational -> Test e
+assertOkNoteLen source target =
+  case parse source of
+    Right tune ->
+      let
+        len =
+          getUnitNoteLength tune
+      in
+        case len of
+          Just rat  ->
+            Assert.equal target rat
+
+          _ ->
+            failure "no unit note length"
+    _ ->
+      failure "parse error"
+
 assertNoHeader :: forall e h. String -> (AbcTune -> Maybe h) -> Test e
 assertNoHeader source getf =
   case parse source of
@@ -71,17 +106,10 @@ assertHeaderCount :: forall e. Int -> String ->  Test e
 assertHeaderCount expectedCount source =
   case parse source of
     Right tune ->
-      let
-        headerMap =
-          getHeaderMap tune
-
-        count =
-          length $ keys $ headerMap
-      in
-        Assert.equal expectedCount count
+      Assert.equal expectedCount (length tune.headers)
 
     _ ->
-        failure "parse error"
+      failure "parse error"
 
 assertEquivalentKeys :: forall e. KeySet -> KeySet -> Test e
 assertEquivalentKeys actual expected =
@@ -132,7 +160,11 @@ headerSuite =
    test "no key header" do
      assertNoHeader titledTune getKeySig
    test "multiple headers" do
-     assertHeaderCount 7 manyHeaders
+     assertHeaderCount 8 manyHeaders
+   test "getMeter" do
+    assertOkMeter manyHeaders (Tuple 4 4)
+   test "getUnitNoteLen" do
+     assertOkNoteLen manyHeaders (rational 1 16)
 
 
 scaleSuite :: forall t. Free (TestF t) Unit
@@ -393,7 +425,7 @@ doublyTitledTune =
     "T: Nancy Dawson\x0D\nT: Piss Upon the Grass\x0D\n| ABC |\x0D\n"
 
 manyHeaders =
-    "X: 1\x0D\nT: Skänklåt efter Brittas Hans\x0D\nR: Skänklåt\x0D\nZ: Brian O'Connor, 11/7/2016\x0D\nO: Bjorsa\x0D\nM: 4/4\x0D\nK:Gmaj\x0D\n| ABC |\x0D\n"
+    "X: 1\r\nT: Skänklåt efter Brittas Hans\r\nR: Skänklåt\r\nZ: Brian O'Connor, 11/7/2016\r\nL: 1/16\r\nO: Bjorsa\r\nM: 4/4\r\nK:Gmaj\r\n| ABC |\r\n"
 
 -- notes
 fNatural :: AbcNote

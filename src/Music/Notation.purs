@@ -11,10 +11,12 @@ module Music.Notation
         , modifiedKeySet
         , getKeySet
         , inKeySet
-        , getHeaderMap
+        , getHeader
         , getKeySig
+        , getMeter
         , getTempoSig
         , getTitle
+        , getUnitNoteLength
         , diatonicScale
         , inScale
         , isCOrSharpKey
@@ -242,64 +244,52 @@ getHeaderMap t =
 
 -- | Get the key signature (if any) from the tune.
 getKeySig :: AbcTune -> Maybe ModifiedKeySignature
-getKeySig t =
-  let
-    headerMap =
-      getHeaderMap t
-  in
-    case lookup 'K' headerMap of
-      Just kh ->
-        case kh of
-          Key mks ->
-            Just mks
+getKeySig tune =
+  case (getHeader 'K' tune) of
+    Just (Key key) ->
+      Just key
+    _ ->
+      Nothing
 
-          _ ->
-            Nothing
+-- | Get the meter
+getMeter :: AbcTune -> Maybe MeterSignature
+getMeter tune =
+  case (getHeader 'M' tune) of
+    Just (Meter maybeMeter) ->
+      Just (fromMaybe (Tuple 4 4) $ maybeMeter)
+    _ ->
+      Nothing
 
-      _ ->
-        Nothing
-
-
--- | Get the tempo signature (if any) from the tune.
 getTempoSig :: AbcTune -> Maybe TempoSignature
-getTempoSig t =
-  let
-    headerMap =
-      getHeaderMap t
-  in
-    case lookup 'Q' headerMap of
-      Just qh ->
-        case qh of
-          Tempo ts ->
-            Just ts
-
-          _ ->
-            Nothing
-
-      _ ->
-        Nothing
-
-
+getTempoSig tune =
+  case (getHeader 'Q' tune) of
+    Just (Tempo tempo) ->
+      Just tempo
+    _ ->
+      Nothing
 
 -- | Get the first Title (if any) from the tune.
 getTitle :: AbcTune -> Maybe String
-getTitle t =
-  let
-    headerMap =
-      getHeaderMap t
-  in
-    case lookup 'T' headerMap of
-      Just th ->
-        case th of
-          Title title ->
-            Just title
+getTitle tune =
+  case (getHeader 'T' tune) of
+    Just (Title title) ->
+      Just title
+    _ ->
+      Nothing
 
-          _ ->
-            Nothing
+-- | Get the unit note length
+getUnitNoteLength :: AbcTune -> Maybe NoteDuration
+getUnitNoteLength tune =
+  case (getHeader 'L' tune) of
+    Just (UnitNoteLength duration) ->
+      Just duration
+    _ ->
+      Nothing
 
-      _ ->
-        Nothing
-
+-- | Get the header from the header code
+getHeader :: Char -> AbcTune -> Maybe Header
+getHeader code t =
+  lookup code (getHeaderMap t)
 
 
 -- | The set of keys (pitch classes and accidental) that comprise a diatonic scale

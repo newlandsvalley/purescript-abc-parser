@@ -6,11 +6,10 @@ module Music.Tempo
 
 import Prelude (($))
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Map (lookup)
 import Data.List (List(..), (:), filter, reverse)
 import Data.Rational (rational)
 import Abc.ParseTree
-import Music.Notation (getHeaderMap)
+import Music.Notation (getHeader)
 
 -- Exposed API
 
@@ -59,11 +58,15 @@ setBpm bpm tune =
 -- | get the tempo header
 tempoHeader :: AbcTune -> Header
 tempoHeader tune =
+  fromMaybe (Tempo defaultTempo) $  getHeader 'Q' tune
+
+{-}
   let
     headerMap =
       getHeaderMap tune
   in
     fromMaybe (Tempo defaultTempo) $ lookup 'Q' headerMap
+-}
 
 -- | replace a tempo header (if it exists)
 replaceTempoHeader :: Header -> TuneHeaders -> TuneHeaders
