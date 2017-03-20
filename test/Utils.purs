@@ -2,9 +2,9 @@ module Test.Utils where
 
 import Prelude (($), map)
 import Data.Either (Either(..))
-import Abc (parse)
-import Abc.ParseTree (AbcTune)
-import Abc.Canonical (fromTune)
+import Data.Abc.Parser (parse)
+import Abc (AbcTune)
+import Data.Abc.Canonical (fromTune)
 
 import Test.Unit (Test, failure)
 import Test.Unit.Assert as Assert

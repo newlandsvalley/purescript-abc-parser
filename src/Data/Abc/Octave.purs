@@ -1,11 +1,11 @@
-module Music.Octave
+module Data.Abc.Octave
         ( up
         , down
         ) where
 
 import Prelude ((+), map, negate)
 import Data.List (List)
-import Abc.ParseTree
+import Abc
 
 -- import Test.Unit.Assert as Assert
 -- Exposed API

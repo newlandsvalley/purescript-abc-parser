@@ -3,7 +3,7 @@ module Test.Octave (octaveSuite) where
 import Prelude (Unit, bind)
 import Control.Monad.Free (Free)
 
-import Music.Octave (down, up)
+import Data.Abc.Octave (down, up)
 import Test.Utils
 
 import Test.Unit (TestF, suite, test)

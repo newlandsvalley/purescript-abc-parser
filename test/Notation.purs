@@ -9,9 +9,9 @@ import Data.List (List(..), intersect, length, null, (:))
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..))
 import Data.Map (keys)
-import Abc (parse)
-import Abc.ParseTree (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), KeyAccidental(..), KeySet, Mode(..), AbcNote, AbcTune)
-import Music.Notation
+import Data.Abc.Parser (parse)
+import Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), KeyAccidental(..), KeySet, Mode(..), AbcNote, AbcTune)
+import Data.Abc.Notation
 
 import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Assert as Assert

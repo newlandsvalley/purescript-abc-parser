@@ -4,8 +4,8 @@ import Prelude
 import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
-import Abc (parse, parseKeySignature)
-import Abc.Canonical (fromTune)
+import Data.Abc.Parser (parse, parseKeySignature)
+import Data.Abc.Canonical (fromTune)
 
 import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Assert as Assert

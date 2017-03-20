@@ -1,4 +1,4 @@
-module Abc.Canonical
+module Data.Abc.Canonical
         ( fromTune
         , fromEither
         , abcNote
@@ -7,7 +7,7 @@ module Abc.Canonical
         ) where
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
-import Abc.ParseTree
+import Abc
 import Data.List (List, length)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational(..))

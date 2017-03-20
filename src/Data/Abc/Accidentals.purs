@@ -1,4 +1,4 @@
-module Music.Accidentals
+module Data.Abc.Accidentals
         ( Accidentals
         , empty
         , add
@@ -8,7 +8,7 @@ module Music.Accidentals
         ) where
 
 import Prelude ((==), (<<<), map)
-import Abc.ParseTree (PitchClass, Accidental, KeyAccidental, KeySet)
+import Abc (PitchClass, Accidental, KeyAccidental, KeySet)
 import Data.Maybe (Maybe(..))
 import Data.Map as Map
 import Data.Tuple (Tuple(..))

@@ -1,4 +1,4 @@
-module Music.Tempo
+module Data.Abc.Tempo
         ( defaultTempo
         , getBpm
         , setBpm
@@ -8,8 +8,8 @@ import Prelude (($))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..), (:), filter, reverse)
 import Data.Rational (rational)
-import Abc.ParseTree
-import Music.Notation (getHeader)
+import Abc
+import Data.Abc.Notation (getHeader)
 
 -- Exposed API
 

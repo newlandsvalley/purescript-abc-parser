@@ -1,4 +1,4 @@
-module Abc.ParseTree ( AbcTune
+module Abc ( AbcTune
 , TuneHeaders
 , TuneBody
 , BodyPart(..)

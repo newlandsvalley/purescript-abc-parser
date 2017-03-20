@@ -1,4 +1,4 @@
-module Music.Notation
+module Data.Abc.Notation
         ( MidiPitch
         , MidiTick
         , AbcTempo
@@ -33,8 +33,8 @@ module Music.Notation
         ) where
 
 
-import Abc.ParseTree
-import Music.Accidentals as Accidentals
+import Abc
+import Data.Abc.Accidentals as Accidentals
 import Data.Foldable (oneOf)
 import Data.Int (round)
 import Data.List (List(..), (:), elem, elemIndex, foldr, filter, index, length, null, reverse, slice)

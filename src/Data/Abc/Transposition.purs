@@ -1,4 +1,4 @@
-module Music.Transposition
+module Data.Abc.Transposition
         ( defaultKey
         , keyDistance
         , transposeNote
@@ -21,9 +21,9 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Newtype (unwrap)
 import Data.Foldable (oneOf)
-import Abc.ParseTree
-import Music.Accidentals as Accidentals
-import Music.Notation (DiatonicScale, accidentalImplicitInKey, diatonicScale
+import Abc
+import Data.Abc.Accidentals as Accidentals
+import Data.Abc.Notation (DiatonicScale, accidentalImplicitInKey, diatonicScale
                        , getKeySig, inScale
                        , isCOrSharpKey, modifiedKeySet, notesInChromaticScale
                        , transposeKeySignatureBy)
