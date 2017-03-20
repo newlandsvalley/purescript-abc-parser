@@ -3,7 +3,7 @@ module Test.Utils where
 import Prelude (($), map)
 import Data.Either (Either(..))
 import Data.Abc.Parser (parse)
-import Abc (AbcTune)
+import Data.Abc (AbcTune)
 import Data.Abc.Canonical (fromTune)
 
 import Test.Unit (Test, failure)

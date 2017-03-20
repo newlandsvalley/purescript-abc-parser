@@ -21,7 +21,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Newtype (unwrap)
 import Data.Foldable (oneOf)
-import Abc
+import Data.Abc
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Notation (DiatonicScale, accidentalImplicitInKey, diatonicScale
                        , getKeySig, inScale

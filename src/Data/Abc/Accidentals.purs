@@ -8,7 +8,7 @@ module Data.Abc.Accidentals
         ) where
 
 import Prelude ((==), (<<<), map)
-import Abc (PitchClass, Accidental, KeyAccidental, KeySet)
+import Data.Abc (PitchClass, Accidental, KeyAccidental, KeySet)
 import Data.Maybe (Maybe(..))
 import Data.Map as Map
 import Data.Tuple (Tuple(..))

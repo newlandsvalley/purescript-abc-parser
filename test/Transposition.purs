@@ -5,15 +5,14 @@ import Test.Unit.Assert as Assert
 import Data.Abc.Parser (parse)
 import Data.Abc.Canonical (abcNote, fromTune)
 import Data.Abc.Transposition
-import Abc (AbcTune, AbcNote, Accidental(..), KeyAccidental(..), PitchClass(..), Mode(..), ModifiedKeySignature)
-import Control.Comonad.Store (store)
+import Data.Abc (AbcTune, AbcNote, Accidental(..), KeyAccidental(..), PitchClass(..), Mode(..), ModifiedKeySignature)
 import Control.Monad.Free (Free)
 import Data.Either (Either(..))
 import Data.List (List(..))
 import Data.Maybe (Maybe(..))
 import Data.Bifunctor (lmap)
 import Data.Rational (fromInt)
-import Prelude (Unit, (>>=), bind, map, negate, pure, show)
+import Prelude (Unit, (>>=), bind, map, negate, show)
 import Test.Unit (Test, TestF, failure, suite, test)
 
 assertTranspositionMatches :: forall e. String -> ModifiedKeySignature -> String -> Test e

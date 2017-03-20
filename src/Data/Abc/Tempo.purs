@@ -8,7 +8,7 @@ import Prelude (($))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..), (:), filter, reverse)
 import Data.Rational (rational)
-import Abc
+import Data.Abc
 import Data.Abc.Notation (getHeader)
 
 -- Exposed API

@@ -33,7 +33,7 @@ module Data.Abc.Notation
         ) where
 
 
-import Abc
+import Data.Abc
 import Data.Abc.Accidentals as Accidentals
 import Data.Foldable (oneOf)
 import Data.Int (round)

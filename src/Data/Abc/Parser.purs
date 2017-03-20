@@ -22,7 +22,7 @@ import Data.Tuple (Tuple(..))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
-import Abc
+import Data.Abc
 -- import Debug.Trace (trace)
 
 

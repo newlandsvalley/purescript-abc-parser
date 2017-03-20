@@ -8,9 +8,8 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..), intersect, length, null, (:))
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..))
-import Data.Map (keys)
 import Data.Abc.Parser (parse)
-import Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), KeyAccidental(..), KeySet, Mode(..), AbcNote, AbcTune)
+import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), KeyAccidental(..), KeySet, Mode(..), AbcNote, AbcTune)
 import Data.Abc.Notation
 
 import Test.Unit (Test, TestF, suite, test, success, failure)

@@ -5,7 +5,7 @@ module Data.Abc.Octave
 
 import Prelude ((+), map, negate)
 import Data.List (List)
-import Abc
+import Data.Abc
 
 -- import Test.Unit.Assert as Assert
 -- Exposed API

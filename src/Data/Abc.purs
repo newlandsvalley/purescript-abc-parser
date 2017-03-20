@@ -1,4 +1,4 @@
-module Abc ( AbcTune
+module Data.Abc ( AbcTune
 , TuneHeaders
 , TuneBody
 , BodyPart(..)
