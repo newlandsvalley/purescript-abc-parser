@@ -68,19 +68,20 @@ type MidiTick =
 type NoteTime =
     Number
 
-{-| The tempo when the tune is being played. This is usually represented
-as (for example) 1/4 = 120 - i.e. 120 querter notes per minute.
-
-* tempoNoteLength - the note length of a tempo definition
-* bpm - the beats per minute of a tempo Definition
-* unitNoteLength - the length of a 'unit note' in the ABC definition
--}
+-- | The tempo when the tune is being played. This is usually represented
+-- | as (for example) 1/4 = 120 - i.e. 120 querter notes per minute.
+-- | this is a consolidation of both the Tempo and the Unit Note length
+-- | which thus encapsulates everything you need to calculate the overall
+-- | tempo of the tune
+-- |
+-- | tempoNoteLength - the note length of a tempo definition
+-- | bpm - the beats per minute of a tempo Definition
+-- | unitNoteLength - the length of a 'unit note' in the ABC definition
 type AbcTempo =
     { tempoNoteLength :: Rational
     , bpm :: Int
     , unitNoteLength :: Rational
     }
-
 
 -- | A representation of the ABC headers as a Map, taking the first definition
 -- | of any header if multiple definitions are present in the ABC.

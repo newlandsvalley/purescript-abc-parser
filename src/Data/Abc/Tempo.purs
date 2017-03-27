@@ -1,15 +1,18 @@
 module Data.Abc.Tempo
         ( defaultTempo
+        , defaultAbcTempo
+        , getAbcTempo
         , getBpm
         , setBpm
         ) where
 
-import Prelude (($))
+import Prelude (($), (+))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..), (:), filter, reverse)
-import Data.Rational (rational)
+import Data.Foldable (foldl)
+import Data.Rational (rational, fromInt)
 import Data.Abc
-import Data.Abc.Notation (getHeader)
+import Data.Abc.Notation (AbcTempo, getUnitNoteLength, getTempoSig, getHeader)
 
 -- Exposed API
 
@@ -19,6 +22,26 @@ defaultTempo =
     { noteLengths: ( rational 1 4 : Nil)
     , bpm: 120
     , marking: Nothing
+    }
+
+-- | default to 1/4=120
+defaultAbcTempo :: AbcTempo
+defaultAbcTempo =
+    { tempoNoteLength : rational 1 4
+    , bpm : 120
+    , unitNoteLength : rational 1 8
+    }
+
+-- | Get the ABC tempo from the tune
+getAbcTempo :: AbcTune -> AbcTempo
+getAbcTempo tune =
+  let
+    tempoSig = fromMaybe defaultTempo $ getTempoSig tune
+    unitNoteLength = fromMaybe (rational 1 8) $ getUnitNoteLength tune
+  in
+    { tempoNoteLength : foldl (+) (fromInt 0) tempoSig.noteLengths
+    , bpm : tempoSig.bpm
+    , unitNoteLength : unitNoteLength
     }
 
 -- | Get the tempo of the tune in beats per minute from the tunes header
@@ -53,20 +76,11 @@ setBpm bpm tune =
     { headers: newHeaders, body: tune.body }
 
 
-
 -- implementation
 -- | get the tempo header
 tempoHeader :: AbcTune -> Header
 tempoHeader tune =
   fromMaybe (Tempo defaultTempo) $  getHeader 'Q' tune
-
-{-}
-  let
-    headerMap =
-      getHeaderMap tune
-  in
-    fromMaybe (Tempo defaultTempo) $ lookup 'Q' headerMap
--}
 
 -- | replace a tempo header (if it exists)
 replaceTempoHeader :: Header -> TuneHeaders -> TuneHeaders
