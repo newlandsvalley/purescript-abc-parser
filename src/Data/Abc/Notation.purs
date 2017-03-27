@@ -1,12 +1,9 @@
 module Data.Abc.Notation
         ( MidiPitch
-        , MidiTick
-        , AbcTempo
         , NoteTime
         , DiatonicScale
         , HeaderMap
         , notesInChromaticScale
-        , standardMidiTick
         , keySet
         , modifiedKeySet
         , getKeySet
@@ -22,12 +19,9 @@ module Data.Abc.Notation
         , isCOrSharpKey
         , accidentalImplicitInKey
         , dotFactor
-        , noteTicks
-        , chordalNoteTicks
         , toMidiPitch
-        , midiTempo
-        , noteDuration
-        , chordalNoteDuration
+        -- , noteDuration     not sure if we need these now
+        -- , chordalNoteDuration  ditto
         , transposeKeySignatureBy
         , normaliseModalKey
         ) where
@@ -36,14 +30,13 @@ module Data.Abc.Notation
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
 import Data.Foldable (oneOf)
-import Data.Int (round)
 import Data.List (List(..), (:), elem, elemIndex, foldr, filter, index, length, null, reverse, slice)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
-import Data.Rational (Rational, fromInt, toNumber, (%))
+import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
-import Prelude (($), (<>), (+), (-), (*), (/), (<), (==), (/=), (||), show, negate, map, mod)
+import Prelude (($), (<>), (+), (-), (*), (<), (==), (/=), (||), show, negate, map, mod)
 
 -- | A diatonic scale presented as a list of notes in the scale.
 type DiatonicScale =
@@ -60,28 +53,9 @@ type Intervals =
 type MidiPitch =
     Int
 
--- | A MIDI tick - used to give a note duration.
-type MidiTick =
-    Int
-
 -- | The time taken when a note is played before the next note.
 type NoteTime =
     Number
-
--- | The tempo when the tune is being played. This is usually represented
--- | as (for example) 1/4 = 120 - i.e. 120 querter notes per minute.
--- | this is a consolidation of both the Tempo and the Unit Note length
--- | which thus encapsulates everything you need to calculate the overall
--- | tempo of the tune
--- |
--- | tempoNoteLength - the note length of a tempo definition
--- | bpm - the beats per minute of a tempo Definition
--- | unitNoteLength - the length of a 'unit note' in the ABC definition
-type AbcTempo =
-    { tempoNoteLength :: Rational
-    , bpm :: Int
-    , unitNoteLength :: Rational
-    }
 
 -- | A representation of the ABC headers as a Map, taking the first definition
 -- | of any header if multiple definitions are present in the ABC.
@@ -90,24 +64,15 @@ type HeaderMap =
 
 -- EXPORTED FUNCTIONS
 
-
--- | A standard MIDI tick - we use 1/4 note = 480 ticks.
-standardMidiTick :: MidiTick
-standardMidiTick =
-  480
-
-
 -- | Number of notes in a chromatic scale (i.e. 12)
 notesInChromaticScale :: Int
 notesInChromaticScale =
   12
 
-
 -- | The set of keys (pitch classes with accidental) that comprise the key signature.
 keySet :: KeySignature -> KeySet
 keySet ks =
  filter accidentalKey $ diatonicScale ks
-
 
 -- | The set of keys (pitch classes with accidental) that comprise a modified key signature
 modifiedKeySet :: ModifiedKeySignature -> KeySet
@@ -133,12 +98,10 @@ getKeySet t =
       Nothing ->
         Nil
 
-
 -- | Is the KeyAccidental is in the KeySet?
 inKeySet :: KeyAccidental -> KeySet -> Boolean
 inKeySet ka ks =
   elem ka ks
-
 
 -- | A map (Header code => Header) for the first instance of each Header
 getHeaderMap :: AbcTune -> HeaderMap
@@ -399,33 +362,22 @@ dotFactor i =
 
 -- | Find a real world note duration by translating an ABC note duration using
 -- | the tune's tempo and unit note length.
+{-
 noteDuration :: AbcTempo -> Rational -> NoteTime
 noteDuration t n =
   (60.0 * (toNumber t.unitNoteLength) * (toNumber n))
         / ((toNumber t.tempoNoteLength) * (toNumber $ fromInt t.bpm))
+}
 
 
 -- | Find a real world duration of a note in a chord by translating an ABC note duration together with
 -- | the chord duration using the tune's tempo and unit note length.
+{-
 chordalNoteDuration :: AbcTempo -> Rational -> Rational -> NoteTime
 chordalNoteDuration t note chord =
   noteDuration t note * (toNumber chord)
+-}
 
--- MIDI support
-
--- | Calculate a MIDI note duration from the note length.
--- | Assume a standard unit note length of 1/4 and a standard number of ticks per unit (1/4) note of 480.
-noteTicks :: Rational -> MidiTick
-noteTicks n =
-  -- (standardMidiTick * (numerator n)) // (denominator n)
-  round $ toNumber $ n * (fromInt standardMidiTick)
-
-
--- | Find the MIDI duration of a note within a chord in standard ticks
--- |    (1/4 note == 480 ticks)
-chordalNoteTicks :: Rational -> Rational -> MidiTick
-chordalNoteTicks note chord =
-  round $ toNumber $ note * chord * (fromInt standardMidiTick)
 
 
 {-| Convert an ABC note pitch to a MIDI pitch.
@@ -442,29 +394,7 @@ toMidiPitch n mks barAccidentals =
 
 
 
-{-
-   midiTempo algorithm is:
 
-   t.bpm beats occupy 1 minute or 60 * 10^16 μsec
-   1 bpm beat occupies 60 * 10^16/t.bpm μsec
-
-   but we use a standard beat of 1 unit when writing a note, whereas the bpm measures a tempo note length of
-   t.unitNoteLength/t.tempoNoteLength
-   i.e.
-   1 whole note beat occupies 60 * 10^16/t.bpm * t.unl/t.tnl μsec
-
--}
-
-
--- | The MIDI tempo measured in microseconds per beat.
--- | JMW!!! check
-midiTempo :: AbcTempo -> Int
-midiTempo t =
-  let
-    relativeNoteLength =
-      t.unitNoteLength / t.tempoNoteLength
-  in
-    round ((60.0 * 1000000.0 * (toNumber relativeNoteLength)) / (toNumber $ fromInt t.bpm))
 
     -- Basics.round ((60.0 * 1000000 * Basics.toFloat (numerator relativeNoteLength)) / (Basics.toFloat t.bpm * Basics.toFloat (denominator relativeNoteLength)))
 
