@@ -126,12 +126,11 @@ data Repeat
     | End
     | BeginAndEnd
 
-{-
+derive instance genericRepeat  :: Generic Repeat
 instance showRepeat :: Show Repeat where
   show Begin = "|:"
   show End = "|:"
   show BeginAndEnd = ":|:"
-  -}
 
 {-| A Bar line:
 

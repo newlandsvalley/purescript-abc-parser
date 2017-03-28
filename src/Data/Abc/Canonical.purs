@@ -30,23 +30,7 @@ bar b =
     let
         it =
             fromMaybe "" (map show b.iteration)
-
         lines = show b.thickness
-
-        {-
-            case b.thickness of
-                ThickThin ->
-                    "[|"
-
-                ThinThick ->
-                    "|]"
-
-                ThinThin ->
-                    "||"
-
-                _ ->
-                    "|"
-          -}
     in
         case b.repeat of
             Nothing ->
@@ -61,27 +45,6 @@ bar b =
             Just BeginAndEnd ->
                 ":" <> lines <> ":"
 
-{-
-accidental :: Accidental -> String
-accidental a =
-    case a of
-        Sharp ->
-            "^"
-
-        Flat ->
-            "_"
-
-        DoubleSharp ->
-            "^^"
-
-        DoubleFlat ->
-            "__"
-
-        Natural ->
-            "="
-            -}
-
-
 headerAccidental :: Accidental -> String
 headerAccidental a =
     case a of
@@ -93,7 +56,6 @@ headerAccidental a =
 
         _ ->
             ""
-
 
 -- | Pretty-print a tuplet.
 tuplet :: TupletSignature -> String
