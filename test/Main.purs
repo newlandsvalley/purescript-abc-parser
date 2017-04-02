@@ -13,6 +13,7 @@ import Test.Notation (notationSuite)
 import Test.Octave (octaveSuite)
 import Test.Tempo (tempoSuite)
 import Test.Transposition (transpositionSuite)
+import Test.Midi (midiSuite)
 
 main :: forall t.
         Eff
@@ -29,3 +30,4 @@ main = runTest do
     octaveSuite
     tempoSuite
     transpositionSuite
+    midiSuite
