@@ -4,12 +4,12 @@ import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
 import Data.Abc (AbcTune, AbcNote, Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
-import Data.Abc.Notation (dotFactor, toMidiPitch)
+import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
 import Data.Foldable (foldl)
 import Data.Generic (gShow, class Generic)
 import Data.List (List(..), (:), null, concatMap, reverse, singleton)
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..), fst, snd)
@@ -97,11 +97,12 @@ initialState :: AbcTune -> TransformationState
 initialState tune =
   let
     abcTempo = getAbcTempo tune
+    keySignature = fromMaybe defaultKey (getKeySig tune)
     initialMsg = midiTempoMsg abcTempo
     -- we must have a tempo indication at the very start
     -- startTrack = RawTrack $ (initialBar initialMsg) : Nil
   in
-    Tuple { modifiedKeySignature: defaultKey
+    Tuple { modifiedKeySignature: keySignature
           , abcTempo : abcTempo
           , currentBar : newBar 0
           , currentBarAccidentals : Accidentals.empty
@@ -278,15 +279,13 @@ addNoteToState chordal tempoModifier tstate abcNote =
     barAccidentals = tstate.currentBarAccidentals
     -- if the last note was tied, we treat this note simply as a rest (zero pitch) in order to pace the tune properly
     pitch =
-      if (tstate.lastNoteTied) then
-        0
-      else
         toMidiPitch abcNote tstate.modifiedKeySignature barAccidentals
     ticks =
         noteTicks (abcNote.duration * tempoModifier)
 
     msgOn = midiNoteOn 0 pitch
     msgOff = midiNoteOff ticks pitch
+    msgRest = midiNoteOn ticks 0
 
     bar = unwrap tstate.currentBar
     -- when we're adding a note, a 'normal note' is sounded by emitting
@@ -296,6 +295,8 @@ addNoteToState chordal tempoModifier tstate abcNote =
     bar' =
       if chordal then
         bar { midiMessages = (msgOn : bar.midiMessages)}
+      else if tstate.lastNoteTied then
+        bar { midiMessages = (msgRest : bar.midiMessages)}
       else
         bar { midiMessages = (msgOff : msgOn : bar.midiMessages)}
     barAccidentals' = addNoteToBarAccidentals abcNote barAccidentals
@@ -305,8 +306,6 @@ addNoteToState chordal tempoModifier tstate abcNote =
            , lastNoteTied = abcNote.tied
            , currentBarAccidentals = barAccidentals'
            }
-
-
 
 -- | add a bunch of notes to the state
 -- | chordal means that the notes form a chord and thus do not need
@@ -350,8 +349,12 @@ addUnitNoteLenToState tstate d =
   let
     abcTempo = tstate.abcTempo
     abcTempo' = abcTempo { unitNoteLength = d}
+    tempoMsg = midiTempoMsg abcTempo'
+    bar = unwrap tstate.currentBar
+    bar' = bar { midiMessages = (tempoMsg : bar.midiMessages)}
   in
-    tstate { abcTempo = abcTempo' }
+    tstate { abcTempo = abcTempo'
+           , currentBar = MidiBar bar' }
 
 -- | cater for a change in unit note length
 -- | this not only changes state but adds a change tempo message
@@ -362,7 +365,7 @@ addTempoToState tstate tempoSig =
     abcTempo' = abcTempo { tempoNoteLength = foldl (+) (fromInt 0) tempoSig.noteLengths
                          , bpm = tempoSig.bpm
                          }
-    tempoMsg = midiTempoMsg abcTempo
+    tempoMsg = midiTempoMsg abcTempo'
     bar = unwrap tstate.currentBar
     bar' = bar { midiMessages = (tempoMsg : bar.midiMessages)}
   in

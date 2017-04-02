@@ -32,11 +32,21 @@ assertMidi s midiTrack =
       failure ("parse failed: " <> (show err))
 
 midiSuite :: forall t. Free (TestF t) Unit
-midiSuite =
-  suite "midi" do
+midiSuite = do
+  transformationSuite
+
+transformationSuite :: forall t. Free (TestF t) Unit
+transformationSuite =
+  suite "transformation" do
     test "notes" do
       assertMidi "| CDE |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "tied notes" do  -- currently implemented by a delay induced by a rest
+      assertMidi "| CD-D |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> rest (fromInt 1)))
+    test "tie across bars" do
+      assertMidi "| CD- | D |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> rest (fromInt 1)))
     test "long notes" do
       assertMidi "| C2D2E2 |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 2) <> noteD (fromInt 2) <> noteE (fromInt 2)))
@@ -79,9 +89,31 @@ midiSuite =
     test "unit note length header" do
       assertMidi "L: 1/16\r\n| CDE |\r\n"
         (Midi.Track (tempo (rational 1 2) <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
-    test "key signature header" do  -- this test currently fails
+    test "key signature header" do
       assertMidi "K: D\r\n| CDE |\r\n"
         (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "accidental impact" do  -- an accidental influences the pitch of notes later in the bar
+      assertMidi "| ^CDEC |\r\n"
+        (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+    test "change tempo" do
+      assertMidi "| CD |\r\nQ: 1/4=180\r\n| E |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 2 3) <> noteE (fromInt 1)))
+    test "change tempo inline " do
+      assertMidi "| CD | [Q: 1/4=180] | E |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 2 3) <> noteE (fromInt 1)))
+    test "change unit note length" do
+      assertMidi "| CD |\r\nL: 1/16\r\n| E |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 1 2) <> noteE (fromInt 1)))
+    test "change unit note length inline" do
+      assertMidi "| CD | [L: 1/16] | E |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 1 2) <> noteE (fromInt 1)))
+    test "change key" do
+      assertMidi "| CDE |\r\nK: D\r\n| C |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+    test "change key inline" do
+      assertMidi "| CDE | [K: D] | C |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+
 
 -- | the number of MIDI ticks that equates to 1/4=120
 standardTicks :: Int
