@@ -167,12 +167,12 @@ transformMusic m =
       case broken of
         LeftArrow i ->
           do
-            updateState (addNoteToState false (brokenTempo i true)) note1
-            updateState (addNoteToState false (brokenTempo i false)) note2
-        RightArrow i ->
-          do
             updateState (addNoteToState false (brokenTempo i false)) note1
             updateState (addNoteToState false (brokenTempo i true)) note2
+        RightArrow i ->
+          do
+            updateState (addNoteToState false (brokenTempo i true)) note1
+            updateState (addNoteToState false (brokenTempo i false)) note2
 
     Barline bar ->
       transformBar bar
