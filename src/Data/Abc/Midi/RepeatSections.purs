@@ -1,18 +1,21 @@
 module Data.Abc.Midi.RepeatSections
-        ( Section
+        ( Section(..)
         , Sections
         , RepeatState
         , initialRepeatState
         , indexBar
+        , finalBar
         ) where
 
 import Data.Abc (Repeat(..))
-import Data.Generic (gEq, class Generic)
+import Data.Generic (gEq, gShow, class Generic)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Tuple (Tuple(..))
-import Prelude (class Eq, (==), (&&), not)
+import Prelude (class Eq, class Show, (==), (&&), not)
+
+import Debug.Trace (trace, traceShow)
 
 -- | Handle any repeated sections of a tune
 -- | Repeats are optional and can take the form:
@@ -34,6 +37,7 @@ newtype Section = Section
 derive instance newtypeSection :: Newtype Section _
 derive instance genericSection :: Generic Section
 instance eqSection :: Eq Section where  eq = gEq
+instance showSection :: Show Section where show = gShow
 
 -- | a set of sections
 type Sections = List Section
@@ -52,6 +56,9 @@ initialRepeatState =
 -- | index a bar by identifying any repeat markings and saving the marking against the bar number
 indexBar :: (Maybe Int) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
 indexBar iteration repeat barNumber r =
+  -- trace "indexBar" \_ ->
+  -- traceShow barNumber \_ ->
+  -- traceShow repeat \_ ->
   case (Tuple iteration repeat) of
     -- |1
     Tuple (Just 1) _ ->
@@ -70,6 +77,21 @@ indexBar iteration repeat barNumber r =
       endAndStartSection barNumber true true r
     _ ->
      r
+
+{-| accumulate any residual current state from the final bar in the tune -}
+finalBar :: (Maybe Int) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
+finalBar iteration repeat barNumber r =
+  let
+    isRepeatEnd = case repeat of
+      Just End -> true
+      _ -> false
+    repeatState = endSection barNumber isRepeatEnd r
+  in
+    if not (isNullSection r.current) then
+      accumulateSection barNumber false repeatState
+    else
+      repeatState
+
 
 -- | default sections i.e. no repeats yet
 defaultSections :: RepeatState
@@ -121,10 +143,11 @@ accumulateSection pos isRepeatStart r =
   let
     newCurrent = newSection pos isRepeatStart
   in
+    -- trace "accumulateSection" \_ ->
     if not (isNullSection r.current) then
       r { sections = r.current : r.sections, current = newCurrent}
-  else
-    r { current = newCurrent }
+    else
+      r { current = newCurrent }
 
 --  | return true if the section is devoid of any useful content
 isNullSection :: Section -> Boolean

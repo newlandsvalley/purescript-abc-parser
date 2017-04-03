@@ -4,16 +4,18 @@ import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
 import Data.Abc (AbcTune, AbcNote, Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
+import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
-import Data.Foldable (foldl)
-import Data.List (List(..), (:), null, concatMap, reverse, singleton)
+import Data.Foldable (foldl, foldr)
+import Data.List (List(..), (:), null, concatMap, filter, length, reverse, singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, pure, ($), (+), (-), (*))
-import Data.Abc.Midi.RepeatSections (RepeatState, initialRepeatState, indexBar)
+import Prelude (bind, map, pure, show, ($), (+), (-), (*), (<>), (>=), (<), (&&))
+
+import Debug.Trace (trace, traceShow)
 
 -- | Transform ABC into a MIDI recording.
 toMidi :: AbcTune -> Midi.Recording
@@ -38,7 +40,7 @@ type TState =
                                                        -- any notes marked explicitly as accidentals in the current bar
     , lastNoteTied :: Boolean                          -- was the last note tied?
     , repeatState :: RepeatState                       -- the repeat state of the tune
-    , rawTrack :: List MidiBar
+    , rawTrack :: List MidiBar                         -- the growing list of completed bars
     }
 
 type TransformationState =
@@ -58,7 +60,6 @@ skeletalRecording =
     , tracks : Nil
     }
 
-
 -- | The very first bar has a default tempo as the only message
 initialBar :: Midi.Message -> MidiBar
 initialBar initialMsg =
@@ -68,13 +69,13 @@ initialBar initialMsg =
   , midiMessages : (initialMsg : Nil)
   }
 
--- | generate a new bar
-newBar :: Int -> MidiBar
-newBar n =
-  { number : n
-  , repeat : Nothing
-  , iteration : Nothing
-  , midiMessages : Nil
+-- | build a new bar from a bar number and an ABC bar
+buildNewBar :: Int -> Bar -> MidiBar
+buildNewBar i abcBar =
+  {  number : i
+  ,  repeat : abcBar.repeat
+  ,  iteration : abcBar.iteration
+  ,  midiMessages : Nil
   }
 
 -- | default to C Major (i.e. no accidental modifiers)
@@ -99,11 +100,11 @@ initialState tune =
   in
     Tuple { modifiedKeySignature: keySignature
           , abcTempo : abcTempo
-          , currentBar : newBar 0
+          , currentBar : initialBar initialMsg
           , currentBarAccidentals : Accidentals.empty
           , lastNoteTied : false
           , repeatState : initialRepeatState
-          , rawTrack : ((initialBar initialMsg) : Nil )
+          , rawTrack : Nil
           } skeletalRecording
 
 transformTune :: AbcTune -> State TransformationState Midi.Recording
@@ -185,35 +186,32 @@ transformMusic m =
 -- | add a bar tio the state.  index it and add it to the growing list of bars
 addBarToState :: TState -> Bar -> TState
 addBarToState tstate bar =
-  let
-    currentBar = tstate.currentBar
-    -- index this bar in the repeat state
-    repeatState =
+  -- the current bar held in state is empty so we coalesce
+  if (isBarEmpty tstate.currentBar) then
+    coalesceBar tstate bar
+  -- it's not emmpty so we initialise the new bar
+  else
+    let
+      currentBar = tstate.currentBar
+      repeatState =
         indexBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
-    -- ad this bar to the growing list of bars
-    rawTrack =
-      -- the current bar is not empty so we aggregate the new bar into the track
-      currentBar : tstate.rawTrack
+      -- ad this bar to the growing list of bars
+      rawTrack =
+        -- the current bar is not empty so we aggregate the new bar into the track
+        currentBar : tstate.rawTrack
     in
-      -- the current bar held in state is empty so we coalesce
-      if (isBarEmpty currentBar) then
-        coalesceBar tstate bar
-      -- it's not emmpty so we initialise the new bar and index the
-      -- last bar which keeps track of repeated sections in the melody
-      else
-        tstate { currentBar = newBar (currentBar.number + 1)
-               , currentBarAccidentals = Accidentals.empty
-               , repeatState = repeatState
-               , rawTrack = rawTrack
-               }
+      tstate { currentBar = buildNewBar (currentBar.number + 1) bar
+             , currentBarAccidentals = Accidentals.empty
+             , repeatState = repeatState
+             , rawTrack = rawTrack
+             }
 
 -- | coalesce the new bar from ABC with the current one held in the state
 -- | (which has previously been tested for emptiness)
 coalesceBar :: TState -> Bar -> TState
 coalesceBar tstate abcBar =
   let
-    currentBar = tstate.currentBar
-    barRepeats = Tuple currentBar.repeat abcBar.repeat
+    barRepeats = Tuple tstate.currentBar.repeat abcBar.repeat
     newRepeat = case barRepeats of
      Tuple (Just End) (Just Begin) ->
         Just BeginAndEnd
@@ -221,17 +219,10 @@ coalesceBar tstate abcBar =
         Just x
      _ ->
         abcBar.repeat
-    bar' = currentBar { repeat = newRepeat, iteration = abcBar.iteration }
+    bar' = tstate.currentBar { repeat = newRepeat, iteration = abcBar.iteration }
   in
     tstate { currentBar = bar' }
 
-buildNewBar :: Int -> Bar -> MidiBar
-buildNewBar i abcBar =
-  {  number : i
-  ,  repeat : abcBar.repeat
-  ,  iteration : abcBar.iteration
-  ,  midiMessages : Nil
-  }
 
 -- | The unit note length and tempo headers affect tempo
 -- | The key signature header affects pitch
@@ -304,19 +295,17 @@ addNoteOffToState tstate duration =
   let
     -- we take 0 to represent any arbitrary note in the chord
     msg = midiNoteOff (noteTicks duration) 0
-    bar = tstate.currentBar
-    bar' = bar { midiMessages = (msg : bar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages)}
   in
     tstate { currentBar = bar' }
 
--- | add a pitchless NoteOn message which indicates a rest
+-- | add a pitchless NoteOn which indicates a rest
 addRestToState :: TState-> Rational -> TState
 addRestToState tstate duration =
   let
     -- a rest is a note without a pitch
     msg = midiNoteOn (noteTicks duration) 0
-    bar = tstate.currentBar
-    bar' = bar { midiMessages = (msg : bar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages)}
   in
     tstate { currentBar = bar' }
 
@@ -329,11 +318,9 @@ addKeySigToState tstate mks =
 addUnitNoteLenToState :: TState-> Rational -> TState
 addUnitNoteLenToState tstate d =
   let
-    abcTempo = tstate.abcTempo
-    abcTempo' = abcTempo { unitNoteLength = d}
+    abcTempo' = tstate.abcTempo { unitNoteLength = d}
     tempoMsg = midiTempoMsg abcTempo'
-    bar = tstate.currentBar
-    bar' = bar { midiMessages = (tempoMsg : bar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (tempoMsg : tstate.currentBar.midiMessages)}
   in
     tstate { abcTempo = abcTempo'
            , currentBar = bar' }
@@ -343,13 +330,12 @@ addUnitNoteLenToState tstate d =
 addTempoToState :: TState-> TempoSignature -> TState
 addTempoToState tstate tempoSig =
   let
-    abcTempo = tstate.abcTempo
-    abcTempo' = abcTempo { tempoNoteLength = foldl (+) (fromInt 0) tempoSig.noteLengths
-                         , bpm = tempoSig.bpm
-                         }
+    abcTempo' =
+      tstate.abcTempo { tempoNoteLength = foldl (+) (fromInt 0) tempoSig.noteLengths
+                      , bpm = tempoSig.bpm
+                      }
     tempoMsg = midiTempoMsg abcTempo'
-    bar = tstate.currentBar
-    bar' = bar { midiMessages = (tempoMsg : bar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (tempoMsg : tstate.currentBar.midiMessages)}
   in
     tstate { abcTempo = abcTempo'
            , currentBar = bar' }
@@ -394,18 +380,6 @@ isBarEmpty :: MidiBar -> Boolean
 isBarEmpty mb =
     null mb.midiMessages
 
--- concatMap :: forall a b. (a -> List b) -> List a -> List b
-
--- | turn a list of bars into a track
--- | temporary measure until we integrate repeats
-buildTrack :: List MidiBar -> Midi.Track
-buildTrack rt =
-  let
-    f :: MidiBar -> List Midi.Message
-    f b  = b.midiMessages
-  in
-    Midi.Track $ reverse $ concatMap f rt
-
 -- | generic function to update the State
 -- | a is an ABC value
 -- | f is a function that transforms the ABC value and adds it to the state
@@ -421,7 +395,8 @@ updateState f abc =
     _ <- put tpl'
     pure recording
 
--- | move the final bar from state into the final track
+    -- _ = log "last bar" lastBar
+-- | move the final bar from state into the final track and then build the recording
 finaliseMelody :: State TransformationState Midi.Recording
 finaliseMelody =
   do
@@ -429,10 +404,108 @@ finaliseMelody =
     let
       recording = snd tpl
       tstate = fst tpl
-      tstate' = tstate { rawTrack = tstate.currentBar : tstate.rawTrack }
-      track = buildTrack (tstate'.rawTrack)
+      currentBar = tstate.currentBar
+      -- index the final bar and finalise the repear state
+      repeatState =
+        -- indexBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
+        finalBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
+        -- tstate.repeatState
+      -- ensure we incorporate the very last bar
+      tstate' = tstate { rawTrack = tstate.currentBar : tstate.rawTrack
+                       , repeatState = repeatState }
+      -- track = buildSimpleTrack (tstate'.rawTrack)
+      track = buildRepeatedMelody tstate'.rawTrack tstate'.repeatState.sections
       recording' :: Midi.Recording
       recording' = Midi.Recording (unwrap recording) { tracks = singleton $ track }
       tpl' = Tuple tstate' recording'
     _ <- put tpl'
     pure recording'
+
+-- the following functions deal with interpreting repeated sections
+
+-- | accumulate the MIDI messages from the List of bars
+accumulateMessages :: List MidiBar -> List Midi.Message
+accumulateMessages mbs =
+  reverse $ concatMap _.midiMessages mbs
+
+-- | turn a list of bars (with repeats removed) into a track
+-- | temporary measure until we integrate repeats
+buildSimpleTrack :: List MidiBar -> Midi.Track
+buildSimpleTrack mbs =
+    Midi.Track $ accumulateMessages mbs
+
+-- | select a subset of MIDI bars
+barSelector :: Int -> Int -> MidiBar -> Boolean
+barSelector strt fin mb =
+  mb.number >= strt && mb.number < fin
+
+-- | build the notes from a subsection of the track
+trackSlice :: Int -> Int -> List MidiBar -> List Midi.Message
+trackSlice start finish mbs =
+  accumulateMessages $ filter (barSelector start finish) mbs
+
+-- | take two variant slices of a melody line between start and finish
+-- |    taking account of first repeat and second repeat sections
+variantSlice :: Int -> Int -> Int -> Int -> List MidiBar-> List Midi.Message
+variantSlice start firstRepeat secondRepeat end mbs =
+  let
+    -- save the section of the tune we're interested in
+    section = filter (barSelector start end) mbs
+    -- |: ..... |2
+    firstSection = trackSlice start secondRepeat section
+    -- |: .... |1  + |2 ..... :|
+    secondSection = trackSlice start firstRepeat section <> trackSlice secondRepeat end section
+  in
+    firstSection <> secondSection
+
+{-}
+     Section = Section
+        { start :: Maybe Int
+        , firstEnding :: Maybe Int
+        , secondEnding :: Maybe Int
+        , end :: Maybe Int
+        , isRepeated :: Boolean
+        }
+  -}
+
+-- | build a repeat section
+-- | this function is intended for use within foldl
+repeatedSection ::  List MidiBar -> List Midi.Message -> Section -> List Midi.Message
+repeatedSection mbs acc (Section { start: Just a, firstEnding: Just b, secondEnding : Just c, end: Just d, isRepeated : _ })  =
+  (variantSlice a b c d mbs) <> acc
+repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : false })   =
+  -- trace "raw track unrepeated" \_ ->
+  -- trace (showBars mbs) \_ ->
+    (trackSlice a d mbs) <> acc
+repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : true })  =
+  -- trace "raw track repeated" \_ ->
+  -- trace (showBars mbs) \_ ->
+    (trackSlice a d mbs) <> (trackSlice a d mbs) <> acc
+repeatedSection mbs acc _ =
+  acc
+
+-- | build any repeated section into an extended melody with all repeats realised -}
+buildRepeatedMelody :: List MidiBar -> Sections -> Midi.Track
+buildRepeatedMelody mbs sections =
+  trace "Sections" \_ ->
+  traceShow sections \_ ->
+  if (null sections) then
+     Midi.Track Nil
+      -- buildSimpleTrack mbs
+  else
+    --trace "section count" \_ ->
+    --trace (show $ length sections) \_ ->
+      Midi.Track $ foldl (repeatedSection mbs) Nil sections
+
+-- temp Debug
+showBar :: MidiBar -> String
+showBar mb =
+  "barnum: " <> show (mb.number) <>  " message count: " <> show (length mb.midiMessages) <> " repeat " <>  show mb.repeat <>" "
+
+showBars :: List MidiBar -> String
+showBars mbs =
+  let
+    f :: MidiBar -> String -> String
+    f mb acc = acc <> showBar mb
+  in
+   foldr f "" mbs

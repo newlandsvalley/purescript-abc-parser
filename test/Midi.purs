@@ -34,6 +34,7 @@ assertMidi s midiTrack =
 midiSuite :: forall t. Free (TestF t) Unit
 midiSuite = do
   transformationSuite
+  repeatSuite
 
 transformationSuite :: forall t. Free (TestF t) Unit
 transformationSuite =
@@ -113,6 +114,33 @@ transformationSuite =
     test "change key inline" do
       assertMidi "| CDE | [K: D] | C |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+
+repeatSuite :: forall t. Free (TestF t) Unit
+repeatSuite =
+  suite "repeats" do
+    test "simple repeat" do
+      assertMidi "|: CDE :|\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "simple repeat implicit start" do
+      assertMidi "| CDE :|\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "simple repeat then unrepeated" do
+      assertMidi "|: CDE :| F |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteF (fromInt 1)
+          ))
+    test "unrepeated then simple repeat" do
+      assertMidi "| F |: CDE :|\r\n"
+        (Midi.Track (standardTempo <> noteF (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          ))
+
+
+
 
 
 -- | the number of MIDI ticks that equates to 1/4=120
