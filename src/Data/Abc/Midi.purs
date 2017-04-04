@@ -7,15 +7,15 @@ import Data.Abc (AbcTune, AbcNote, Bar, Broken(..), Header(..), TuneBody, Repeat
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
-import Data.Foldable (foldl, foldr)
-import Data.List (List(..), (:), null, concatMap, filter, length, reverse, singleton)
+import Data.Foldable (foldl)
+import Data.List (List(..), (:), null, concatMap, filter, reverse, singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, map, pure, show, ($), (+), (-), (*), (<>), (>=), (<), (&&))
+import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
 
-import Debug.Trace (trace, traceShow)
+-- import Debug.Trace (trace, traceShow)
 
 -- | Transform ABC into a MIDI recording.
 toMidi :: AbcTune -> Midi.Recording
@@ -395,8 +395,8 @@ updateState f abc =
     _ <- put tpl'
     pure recording
 
-    -- _ = log "last bar" lastBar
 -- | move the final bar from state into the final track and then build the recording
+-- | complete the RepeatState and then build the MIDI melody
 finaliseMelody :: State TransformationState Midi.Recording
 finaliseMelody =
   do
@@ -407,13 +407,10 @@ finaliseMelody =
       currentBar = tstate.currentBar
       -- index the final bar and finalise the repear state
       repeatState =
-        -- indexBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
         finalBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
-        -- tstate.repeatState
       -- ensure we incorporate the very last bar
       tstate' = tstate { rawTrack = tstate.currentBar : tstate.rawTrack
                        , repeatState = repeatState }
-      -- track = buildSimpleTrack (tstate'.rawTrack)
       track = buildRepeatedMelody tstate'.rawTrack tstate'.repeatState.sections
       recording' :: Midi.Recording
       recording' = Midi.Recording (unwrap recording) { tracks = singleton $ track }
@@ -458,46 +455,30 @@ variantSlice start firstRepeat secondRepeat end mbs =
   in
     firstSection <> secondSection
 
-{-}
-     Section = Section
-        { start :: Maybe Int
-        , firstEnding :: Maybe Int
-        , secondEnding :: Maybe Int
-        , end :: Maybe Int
-        , isRepeated :: Boolean
-        }
-  -}
-
 -- | build a repeat section
 -- | this function is intended for use within foldl
 repeatedSection ::  List MidiBar -> List Midi.Message -> Section -> List Midi.Message
-repeatedSection mbs acc (Section { start: Just a, firstEnding: Just b, secondEnding : Just c, end: Just d, isRepeated : _ })  =
+repeatedSection mbs acc (Section { start: Just a, firstEnding: Just b, secondEnding : Just c, end: Just d, isRepeated : _ }) =
   (variantSlice a b c d mbs) <> acc
-repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : false })   =
-  -- trace "raw track unrepeated" \_ ->
-  -- trace (showBars mbs) \_ ->
-    (trackSlice a d mbs) <> acc
-repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : true })  =
-  -- trace "raw track repeated" \_ ->
-  -- trace (showBars mbs) \_ ->
-    (trackSlice a d mbs) <> (trackSlice a d mbs) <> acc
+repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : false }) =
+  (trackSlice a d mbs) <> acc
+repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : true }) =
+  (trackSlice a d mbs) <> (trackSlice a d mbs) <> acc
 repeatedSection mbs acc _ =
   acc
 
 -- | build any repeated section into an extended melody with all repeats realised -}
 buildRepeatedMelody :: List MidiBar -> Sections -> Midi.Track
 buildRepeatedMelody mbs sections =
-  trace "Sections" \_ ->
-  traceShow sections \_ ->
+   -- trace "Sections" \_ ->
+   -- traceShow sections \_ ->
   if (null sections) then
-     Midi.Track Nil
-      -- buildSimpleTrack mbs
+    Midi.Track Nil
   else
-    --trace "section count" \_ ->
-    --trace (show $ length sections) \_ ->
-      Midi.Track $ foldl (repeatedSection mbs) Nil sections
+    Midi.Track $ foldl (repeatedSection mbs) Nil sections
 
 -- temp Debug
+{-
 showBar :: MidiBar -> String
 showBar mb =
   "barnum: " <> show (mb.number) <>  " message count: " <> show (length mb.midiMessages) <> " repeat " <>  show mb.repeat <>" "
@@ -509,3 +490,4 @@ showBars mbs =
     f mb acc = acc <> showBar mb
   in
    foldr f "" mbs
+-}

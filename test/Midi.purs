@@ -122,6 +122,18 @@ repeatSuite =
       assertMidi "|: CDE :|\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "lead-in then repeat" do
+      assertMidi "FC |: CDE :|\r\n"
+        (Midi.Track (standardTempo <> noteF (fromInt 1) <> noteC (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "pair of repeats" do
+        assertMidi "|: CDE :|: DEF :|\r\n"
+          (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+            <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+            <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteF (fromInt 1)
+            <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteF (fromInt 1)
+            ))
     test "simple repeat implicit start" do
       assertMidi "| CDE :|\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
@@ -138,6 +150,17 @@ repeatSuite =
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
           ))
+    test "alternate endings" do
+      assertMidi "|: CD |1 E :|2 F |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)))
+    test "alternate endings then repeat" do
+      assertMidi "|: CD |1 E :|2 F |: CDE :|\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
+          <>noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+        ))
 
 
 

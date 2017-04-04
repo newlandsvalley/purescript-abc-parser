@@ -15,8 +15,6 @@ import Data.Newtype (class Newtype, unwrap)
 import Data.Tuple (Tuple(..))
 import Prelude (class Eq, class Show, (==), (&&), not)
 
-import Debug.Trace (trace, traceShow)
-
 -- | Handle any repeated sections of a tune
 -- | Repeats are optional and can take the form:
 -- |    |: ABC :|
@@ -56,9 +54,6 @@ initialRepeatState =
 -- | index a bar by identifying any repeat markings and saving the marking against the bar number
 indexBar :: (Maybe Int) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
 indexBar iteration repeat barNumber r =
-  -- trace "indexBar" \_ ->
-  -- traceShow barNumber \_ ->
-  -- traceShow repeat \_ ->
   case (Tuple iteration repeat) of
     -- |1
     Tuple (Just 1) _ ->
@@ -91,7 +86,6 @@ finalBar iteration repeat barNumber r =
       accumulateSection barNumber false repeatState
     else
       repeatState
-
 
 -- | default sections i.e. no repeats yet
 defaultSections :: RepeatState
@@ -143,7 +137,6 @@ accumulateSection pos isRepeatStart r =
   let
     newCurrent = newSection pos isRepeatStart
   in
-    -- trace "accumulateSection" \_ ->
     if not (isNullSection r.current) then
       r { sections = r.current : r.sections, current = newCurrent}
     else
