@@ -8,7 +8,7 @@ import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initial
 import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
 import Data.Foldable (foldl)
-import Data.List (List(..), (:), null, concatMap, filter, reverse, singleton)
+import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
@@ -154,11 +154,27 @@ transformMusic m =
       updateState (addNotesToState false (rational signature.q signature.p)) tnotes
 
     Chord abcChord ->
-      do
-        -- set the notes all to start at the same time
-        updateState (addNotesToState true (rational 1 1)) abcChord.notes
-        -- pace by adding a NoteOff
-        updateState addNoteOffToState abcChord.duration
+      let
+        arbitraryNote =
+          { pitchClass : C
+          , accidental : Nothing
+          , octave : 0
+          , duration : (fromInt 0)
+          , tied : false
+          }
+        -- chordal notes should really be a non-empty list - the default is arbitrary
+        first = fromMaybe arbitraryNote $
+                   head abcChord.notes
+        others = fromMaybe Nil $
+                   tail abcChord.notes
+      in
+        do
+          -- set the notes all to start at the same time
+          updateState (addNotesToState true (rational 1 1)) abcChord.notes
+          -- pace by adding a NoteOff for the first note
+          updateState (addNoteOffToState abcChord.duration) first
+          -- and terminate all the other notes with a NoteOff at 0 duration
+          updateState (addNoteOffsToState (fromInt 0)) others
 
     BrokenRhythmPair note1 broken note2 ->
       case broken of
@@ -290,14 +306,20 @@ addNotesToState chordal tempoModifier tstate abcNotes =
 -- possibly combine these next rwo routines
 
 -- | add a NoteOff message which will terminate a chord
-addNoteOffToState :: TState -> Rational -> TState
-addNoteOffToState tstate duration =
+addNoteOffToState :: Rational -> TState -> AbcNote -> TState
+addNoteOffToState duration tstate abcNote =
   let
-    -- we take 0 to represent any arbitrary note in the chord
-    msg = midiNoteOff (noteTicks duration) 0
+    pitch =
+      toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
+    msg = midiNoteOff (noteTicks duration) pitch
     bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages)}
   in
     tstate { currentBar = bar' }
+
+-- | add a bunch of NoteOffs at the same duration
+addNoteOffsToState :: Rational -> TState -> List AbcNote  -> TState
+addNoteOffsToState duration tstate abcNotes =
+  foldl (addNoteOffToState duration) tstate abcNotes
 
 -- | add a pitchless NoteOn which indicates a rest
 addRestToState :: TState-> Rational -> TState

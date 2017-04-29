@@ -225,7 +225,9 @@ chordC abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 60 80)
   : Midi.Message 0 (Midi.NoteOn 0 64 80)
   : Midi.Message 0 (Midi.NoteOn 0 67 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 0 80)
+  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
+  : Midi.Message 0 (Midi.NoteOff 0 64 80)
+  : Midi.Message 0 (Midi.NoteOff 0 67 80)
   : Nil
 
 
