@@ -13,7 +13,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, discard, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
+import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
 
 -- import Debug.Trace (trace, traceShow)
 
