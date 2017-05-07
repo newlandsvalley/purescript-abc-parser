@@ -6,12 +6,13 @@ module Data.Abc.Parser
 
 import Prelude (class Show, ($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip, show)
 import Control.Alt ((<|>))
+import Data.Array as Array
 import Data.Either (Either(..))
 import Data.List (List(..), (:))
 import Data.List (length, singleton) as List
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String.Utils (length, filter, startsWith, mapChars, includes)
-import Data.String (toUpper, charAt, singleton, fromCharArray)
+import Data.String.Utils (length, startsWith, includes)
+import Data.String (toUpper, charAt, singleton, fromCharArray, toCharArray)
 import Data.Int (fromString, pow)
 import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
@@ -249,8 +250,8 @@ moveOctave =
 octaveShift :: String -> Int
 octaveShift s =
     let
-      up = length $ filter ( (==) '\'') s
-      down = length $ filter ( (==) ',') s
+      up = Array.length $ Array.filter ( (==) '\'') (toCharArray s)
+      down = Array.length $ Array.filter ( (==) ',') (toCharArray s)
     in
       up - down
 
@@ -1059,18 +1060,18 @@ buildBarline s i =
                     c
 
         normalised =
-            mapChars f s
+            map f (toCharArray s)
 
         -- count the repeat markers
         repeatCount =
-            length (filter (\c -> c == ':') normalised)
+            Array.length (Array.filter (\c -> c == ':') normalised)
 
         -- set the repeat
         repeat =
             if (repeatCount == 0) then
                 Nothing
             else if (repeatCount == 1) then
-                if includes ":|" normalised then
+                if includes ":|" (fromCharArray normalised) then
                     Just End
                 else
                     Just Begin

@@ -13,7 +13,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
+import Prelude (bind, discard, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
 
 -- import Debug.Trace (trace, traceShow)
 
@@ -120,7 +120,7 @@ transformBody Nil =
     finaliseMelody
 transformBody (p : ps) =
   do
-    transformBodyPart p
+    _ <- transformBodyPart p
     transformBody ps
 
 transformBodyPart :: BodyPart -> State TransformationState Midi.Recording
@@ -138,7 +138,7 @@ transformMusicLine Nil =
     pure $ snd tpl
 transformMusicLine (l : ls) =
   do
-    transformMusic l
+    _ <- transformMusic l
     transformMusicLine ls
 
 transformMusic :: Music -> State TransformationState Midi.Recording
@@ -170,9 +170,9 @@ transformMusic m =
       in
         do
           -- set the notes all to start at the same time
-          updateState (addNotesToState true (rational 1 1)) abcChord.notes
+          _ <- updateState (addNotesToState true (rational 1 1)) abcChord.notes
           -- pace by adding a NoteOff for the first note
-          updateState (addNoteOffToState abcChord.duration) first
+          _ <- updateState (addNoteOffToState abcChord.duration) first
           -- and terminate all the other notes with a NoteOff at 0 duration
           updateState (addNoteOffsToState (fromInt 0)) others
 
@@ -180,11 +180,11 @@ transformMusic m =
       case broken of
         LeftArrow i ->
           do
-            updateState (addNoteToState false (brokenTempo i false)) note1
+            _ <- updateState (addNoteToState false (brokenTempo i false)) note1
             updateState (addNoteToState false (brokenTempo i true)) note2
         RightArrow i ->
           do
-            updateState (addNoteToState false (brokenTempo i true)) note1
+            _ <- updateState (addNoteToState false (brokenTempo i true)) note1
             updateState (addNoteToState false (brokenTempo i false)) note2
 
     Barline bar ->

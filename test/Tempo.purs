@@ -1,7 +1,7 @@
 module Test.Tempo (tempoSuite) where
 
 
-import Prelude (Unit, bind)
+import Prelude (Unit, bind, discard)
 import Control.Monad.Free (Free)
 
 import Data.Abc.Tempo (getBpm, setBpm)

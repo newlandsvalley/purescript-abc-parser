@@ -1,6 +1,6 @@
 module Test.Octave (octaveSuite) where
 
-import Prelude (Unit, bind)
+import Prelude (Unit, bind, discard)
 import Control.Monad.Free (Free)
 
 import Data.Abc.Octave (down, up)

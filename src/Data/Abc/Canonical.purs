@@ -10,7 +10,7 @@ import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
 import Data.List (List, length)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Rational (Rational(..))
+import Data.Rational (Rational, runRational)
 import Data.Ratio (Ratio(..))
 import Data.Tuple (Tuple(..))
 import Data.String (trim, toLower, singleton, length, take) as Str
@@ -19,7 +19,6 @@ import Data.Either (Either)
 import Data.Newtype (unwrap)
 
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
-
 
 enquote :: String -> String
 enquote s =
@@ -87,15 +86,22 @@ tempo t =
             <> show t.bpm
             <> text
 
+{-  ps 0.10.7
 rational :: Rational -> String
 rational (Rational (Ratio n d)) =
     show n <> "/" <> show d
+-}
+
+
+showRatio :: Ratio Int -> String
+showRatio (Ratio n d) =
+    (show n) <> "/" <> (show d)
 
 ratlist :: List Rational -> String
 ratlist rs =
     let
         f r acc =
-            (rational r) <> " " <> acc
+            (showRatio (runRational r)) <> " " <> acc
     in
       Str.trim $ foldr f "" rs
     {-
@@ -112,12 +118,15 @@ meter ms =
         Just (Tuple n d) ->
             show n <> "/" <> show d
 
+duration :: Rational -> String
+duration r =
+  duration' (runRational r)
 
-duration :: NoteDuration -> String
-duration (Rational (Ratio 1 1 ))  = ""
-duration (Rational (Ratio 1 2 ))  = "/"
-duration (Rational (Ratio n 1 ))  = show n
-duration r = rational r
+duration' :: Ratio Int -> String
+duration' (Ratio 1 1 )  = ""
+duration' (Ratio 1 2 )  = "/"
+duration' (Ratio n 1 )  = show n
+duration' r = showRatio r
 
 key :: KeySignature -> String
 key k =

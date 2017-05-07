@@ -1,6 +1,6 @@
 module Test.Midi (midiSuite) where
 
-import Prelude (Unit, bind, show, (<>), (*), (<<<))
+import Prelude (Unit, discard, show, (<>), (*), (<<<))
 import Control.Monad.Free (Free)
 import Data.List (List(..), head, (:))
 import Data.Either (Either(..))

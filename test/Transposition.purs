@@ -12,7 +12,7 @@ import Data.List (List(..))
 import Data.Maybe (Maybe(..))
 import Data.Bifunctor (lmap)
 import Data.Rational (fromInt)
-import Prelude (Unit, (>>=), bind, map, negate, show)
+import Prelude (Unit, (>>=), bind, discard, map, negate, show)
 import Test.Unit (Test, TestF, failure, suite, test)
 
 assertTranspositionMatches :: forall e. String -> ModifiedKeySignature -> String -> Test e
