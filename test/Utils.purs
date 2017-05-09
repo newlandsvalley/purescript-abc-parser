@@ -24,6 +24,7 @@ assertMoveMatches s move target =
             Left errs ->
                 failure "unexpected error"
 
+
 {- assert the value of some Int producing function on a parsed tune -}
 assertIntFuncMatches :: forall e .String -> (AbcTune -> Int) -> Int -> Test e
 assertIntFuncMatches s f target =

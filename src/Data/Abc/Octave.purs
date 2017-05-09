@@ -1,5 +1,6 @@
 module Data.Abc.Octave
-        ( up
+        ( move
+        , up
         , down
         ) where
 
@@ -10,16 +11,24 @@ import Data.Abc
 -- import Test.Unit.Assert as Assert
 -- Exposed API
 
+-- | if true, then move the tune up an octave, else down.
+move :: Boolean -> AbcTune -> AbcTune
+move isUp =
+  if isUp then
+    up
+  else
+    down
+
 -- | Move the tune up an octave.
 up :: AbcTune -> AbcTune
 up t =
-    moveTune 1 t
+  moveTune 1 t
 
 
 -- | Move the tune down octave.
 down :: AbcTune -> AbcTune
 down t =
-    moveTune (-1) t
+  moveTune (-1) t
 
 -- Implementation
 moveTune :: Int -> AbcTune -> AbcTune

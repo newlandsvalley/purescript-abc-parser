@@ -3,7 +3,7 @@ module Test.Octave (octaveSuite) where
 import Prelude (Unit, bind, discard)
 import Control.Monad.Free (Free)
 
-import Data.Abc.Octave (down, up)
+import Data.Abc.Octave (move, down, up)
 import Test.Utils
 
 import Test.Unit (TestF, suite, test)
@@ -51,6 +51,16 @@ octaveSuite = do
         phrase2High
         down
         phrase2Med
+    test "alternative octave API up" do
+      assertMoveMatches
+        phrase1Low
+        (move true)
+        phrase1Med
+    test "alternativeoctavee API down" do
+      assertMoveMatches
+        phrase2Med
+        (move false)
+        phrase2Low
 
 phrase1Low =
     "K: CMajor\x0D\n| A,B, (3CDE [FG] |\x0D\n"
