@@ -38,7 +38,7 @@ midiSuite = do
 
 transformationSuite :: forall t. Free (TestF t) Unit
 transformationSuite =
-  suite "transformation" do
+  suite "MIDI transformation" do
     test "notes" do
       assertMidi "| CDE |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))

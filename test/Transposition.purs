@@ -12,25 +12,16 @@ import Data.List (List(..))
 import Data.Maybe (Maybe(..))
 import Data.Bifunctor (lmap)
 import Data.Rational (fromInt)
-import Prelude (Unit, (>>=), bind, discard, map, negate, show)
+import Prelude (Unit, (>>=), ($), bind, discard, map, negate, show)
 import Test.Unit (Test, TestF, failure, suite, test)
 
-assertTranspositionMatches :: forall e. String -> ModifiedKeySignature -> String -> Test e
-assertTranspositionMatches s targetks target =
-    let
-        transposedResult :: Either String AbcTune
-        transposedResult =
-          -- convert the ParseError to a String
-          lmap show (parse s)
-             >>= (transposeTo targetks)
-    in
-        case transposedResult of
-            Right res ->
-                Assert.equal target (fromTune res)
-
-            Left errs ->
-              failure "unexpected transposition error"
-
+assertTranspositionMatches :: forall e. String -> KeyAccidental -> String -> Test e
+assertTranspositionMatches s targetka target =
+  case parse s of
+    Right tune ->
+      Assert.equal target $ fromTune (transposeTo targetka tune)
+    Left _ ->
+      failure "unexpected parse error"
 
 transpositionSuite :: forall t. Free (TestF t) Unit
 transpositionSuite = do
@@ -64,7 +55,7 @@ keySuite = do
 -- | This is another example of where I find PureScript awkward
 -- | no derived instances are available for AbcNote because it's defined
 -- | as simply as possible as a record.  However we can 'show' an AbcNote
--- | because it's there in Xanonical.  So we compare the stringified versions.
+-- | because it's there in Canonical.  So we compare the stringified versions.
 noteSuite :: forall t. Free (TestF t) Unit
 noteSuite = do
   suite "notes" do
@@ -99,58 +90,70 @@ phraseSuite = do
     test "C phrase to D phrase" do
       assertTranspositionMatches
         cPhrase
-        dMajor
+        -- dMajor
+        (KeyAccidental { pitchClass : D, accidental : Natural })
         dPhrase
     test "D phrase to C phrase" do
       assertTranspositionMatches
         dPhrase
-        cMajor
+        -- cMajor
+        (KeyAccidental { pitchClass : C, accidental : Natural })
         cPhrase
     test "C phrase to F phrase" do
       assertTranspositionMatches
         cPhrase
-        fMajor
+        -- fMajor
+        (KeyAccidental { pitchClass : F, accidental : Natural })
         fPhrase
     test "Gm phrase to Dm phrase" do
       assertTranspositionMatches
         gmPhrase
-        dMinor
+        -- dMinor
+        (KeyAccidental { pitchClass : D, accidental : Natural })
         dmPhrase
     test "Gm phrase with in-bar accidental" do
       assertTranspositionMatches
         gmPhraseLocal
-        dMinor
+        -- dMinor
+        (KeyAccidental { pitchClass : D, accidental : Natural })
         dmPhrase
     test "Dm phrase to Gm phrase" do
       assertTranspositionMatches
         dmPhrase
-        gMinor
+        -- gMinor
+        (KeyAccidental { pitchClass : G, accidental : Natural })
         gmPhraseLocal
     test "Bm phrase to Em phrase" do
       assertTranspositionMatches
         bmPhrase
-        eMinor
+        -- eMinor
+        (KeyAccidental { pitchClass : E, accidental : Natural })
         emPhrase
     test "Am phrase to Fm phrase" do
       assertTranspositionMatches
         amPhrase
-        fMinor
+        -- fMinor
+        (KeyAccidental { pitchClass : F, accidental : Natural })
         fmPhrase
     test "Am phrase to F#m phrase" do
       assertTranspositionMatches
         amPhrase0
-        fSharpMinor
+        -- fSharpMinor
+        (KeyAccidental { pitchClass : F, accidental : Sharp })
         fsharpmPhrase0
     test "identity transposition" do
       assertTranspositionMatches
         dmPhrase
-        dMinor
+        -- dMinor
+        (KeyAccidental { pitchClass : D, accidental : Natural })
         dmPhrase
     test "Cm phrase to Am phrase" do
       assertTranspositionMatches
         cmPhrase1
-        aMinor
+        -- aMinor
+        (KeyAccidental { pitchClass : A, accidental : Natural })
         amPhrase1High
+
 
 keyChangeSuite :: forall t. Free (TestF t) Unit
 keyChangeSuite = do
@@ -158,38 +161,46 @@ keyChangeSuite = do
     test "key change Bm to Am" do
       assertTranspositionMatches
         keyChangeBm
-        aMinor
+        -- aMinor
+        (KeyAccidental { pitchClass : A, accidental : Natural })
         keyChangeAm
     test "key change Am to Bm" do
       assertTranspositionMatches
         keyChangeAm
-        bMinor
+        -- bMinor
+        (KeyAccidental { pitchClass : B, accidental : Natural })
         keyChangeBm
     test "key change Bm to Em" do
       assertTranspositionMatches
         keyChangeBm
-        eMinor
+        -- eMinor
+        (KeyAccidental { pitchClass : E, accidental : Natural })
         keyChangeEmHigh
     test "key change Em to Bm" do
       assertTranspositionMatches
         keyChangeEm
-        bMinor
+        -- bMinor
+        (KeyAccidental { pitchClass : B, accidental : Natural })
         keyChangeBm
     test "key change Bm to C#m" do
       assertTranspositionMatches
         keyChangeBm
-        cSharpMinor
+        -- cSharpMinor
+        (KeyAccidental { pitchClass : C, accidental : Sharp })
         keyChangeCSharpmHigh
     test "key change C#m to Bm" do
       assertTranspositionMatches
         keyChangeCSharpm
-        bMinor
+        -- bMinor
+        (KeyAccidental { pitchClass : B, accidental : Natural })
         keyChangeBm
     test "key change Bm to Am inline" do
       assertTranspositionMatches
         keyChangeBmInline
-        aMinor
+        -- aMinor
+        (KeyAccidental { pitchClass : A, accidental : Natural })
         keyChangeAmInline
+
 
 -- note C Sharp and D Sharp are in octave 5 all the other notes are in octave 4
 
@@ -197,50 +208,49 @@ buildKeySig :: PitchClass -> Maybe Accidental -> Mode -> ModifiedKeySignature
 buildKeySig pc acc mode =
   { keySignature:  { pitchClass: pc, accidental: acc, mode: mode }, modifications: Nil }
 
-
 cs :: AbcNote
 cs =
-    { pitchClass: C, accidental: Just Sharp, octave: 5, duration: fromInt 1, tied: false }
+  { pitchClass: C, accidental: Just Sharp, octave: 5, duration: fromInt 1, tied: false }
 
 
 ds :: AbcNote
 ds =
-    { pitchClass: D, accidental: Just Sharp, octave: 5, duration: fromInt 1, tied: false }
+  { pitchClass: D, accidental: Just Sharp, octave: 5, duration: fromInt 1, tied: false }
 
 
 eb :: AbcNote
 eb =
-    { pitchClass: E, accidental: Just Flat, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: E, accidental: Just Flat, octave: 4, duration: fromInt 1, tied: false }
 
 
 enat :: AbcNote
 enat =
-    { pitchClass: E, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: E, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
 b ::AbcNote
 b =
-    { pitchClass: B, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: B, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
 
 
 bnat :: AbcNote
 bnat =
-    { pitchClass: B, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: B, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
 f :: AbcNote
 f =
-    { pitchClass: F, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: F, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
 
 
 fnat :: AbcNote
 fnat =
-    { pitchClass: F, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: F, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
 g :: AbcNote
 g =
-    { pitchClass: G, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: G, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
 
 
 gs :: AbcNote
@@ -249,7 +259,7 @@ gs =
 
 a :: AbcNote
 a =
-    { pitchClass: A, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: A, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
 
 
 fMajor :: ModifiedKeySignature
@@ -270,7 +280,6 @@ fSharpMinor =
 gMajor :: ModifiedKeySignature
 gMajor =
   buildKeySig G Nothing Major
-
 
 gMinor :: ModifiedKeySignature
 gMinor =
@@ -324,8 +333,6 @@ eMinor =
 bFlatDorian :: ModifiedKeySignature
 bFlatDorian =
   { keySignature:  { pitchClass: B, accidental:  Just Flat, mode: Dorian }, modifications: Nil }
-
-
 
 bFlat :: ModifiedKeySignature
 bFlat =

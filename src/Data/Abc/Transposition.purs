@@ -53,6 +53,7 @@ defaultKey =
 
 -- | Calculate the distance between the keys (target - source) measured in semitones.
 -- | Keys must be in compatible modes.
+-- | not sure whether we need to expose this
 keyDistance :: ModifiedKeySignature -> ModifiedKeySignature -> Either String Int
 keyDistance targetmks srcmks =
   let
@@ -75,7 +76,6 @@ keyDistance targetmks srcmks =
               ( KeyAccidental { pitchClass: target.pitchClass, accidental: targetAcc })
               ( KeyAccidental { pitchClass: src.pitchClass, accidental: srcAcc })
             )
-
 
 -- | Transpose a note from its source key to its target.
 transposeNote :: ModifiedKeySignature -> ModifiedKeySignature -> AbcNote -> Either String AbcNote
@@ -107,40 +107,42 @@ transposeNote targetmks srcKey note =
             Tuple transposedNote _ ->
               Right transposedNote
 
-
--- | Transpose a tune to the target key.
-transposeTo :: ModifiedKeySignature -> AbcTune -> Either String AbcTune
-transposeTo targetmks t =
+-- | transposition where the target mode is taken from the source tune's key signature
+-- | (it doesn't make any sense to transpose to a different mode)
+transposeTo :: KeyAccidental -> AbcTune -> AbcTune
+transposeTo targetKA t =
   let
-    -- get the key signature from the tune if there is one, default to C Major
-    mks =
-      fromMaybe defaultKey $ getKeySig t
-
-    -- find the distance between the keys
-    rdistance =
-      keyDistance targetmks mks
+    -- get the source key signature stuff
+    mks = fromMaybe defaultKey $ getKeySig t
+    srcAcc = explicitAccidental mks.keySignature.accidental
+    srcPc = mks.keySignature.pitchClass
+    -- get the target key signature stuff, retaining the mode
+    targetMacc = implicitAccidental (unwrap targetKA).accidental
+    targetPc = (unwrap targetKA).pitchClass
+    targetmks =
+        { keySignature: { pitchClass: targetPc, accidental: targetMacc, mode: mks.keySignature.mode }, modifications: Nil }
+    -- work out the distance between them
+    d = transpositionDistance
+           targetKA
+           ( KeyAccidental { pitchClass: srcPc, accidental: srcAcc })
   in
-    case rdistance of
-      Left e ->
-        Left e
+    -- don't bother transposing if there's no distance between the keys
+    if (d == 0) then
+      t
+    else
+      let
+        transpositionState =
+          { keyDistance: d
+          , sourcemks: mks
+          , sourceBarAccidentals: Accidentals.empty
+          , targetmks: targetmks
+          , targetKeySet: modifiedKeySet targetmks
+          , targetScale: diatonicScale (targetmks.keySignature)
+          , targetBarAccidentals: Accidentals.empty
+          }
+      in
+        transposeTune transpositionState t
 
-      Right d ->
-        -- don't bother transposing if there's no distance between the keys
-        if (d == 0) then
-            Right t
-        else
-          let
-            transpositionState =
-              { keyDistance: d
-              , sourcemks: mks
-              , sourceBarAccidentals: Accidentals.empty
-              , targetmks: targetmks
-              , targetKeySet: modifiedKeySet targetmks
-              , targetScale: diatonicScale (targetmks.keySignature)
-              , targetBarAccidentals: Accidentals.empty
-              }
-          in
-            Right (transposeTune transpositionState t)
 
 -- Implementation
 
@@ -151,8 +153,6 @@ transposeTune state t =
       replaceKeyHeader state.targetmks t.headers
   in
     { headers: newHeaders, body: (transposeTuneBody state t.body) }
-
-
 
 {- transpose the tune body.  We need to thread state through the tune in case there's an inline
    information header which changes key part way through the tune
@@ -629,6 +629,12 @@ pitchNumber ka =
 explicitAccidental :: Maybe Accidental -> Accidental
 explicitAccidental ma =
   fromMaybe Natural ma
+
+implicitAccidental :: Accidental -> Maybe Accidental
+implicitAccidental a =
+  case a of
+    Natural -> Nothing
+    x -> Just x
 
 {- look up the note and return the number of its pitch in the range 0 <= n < notesInChromaticScale (0 is C Natural) -}
 noteNumber :: AbcNote -> Int

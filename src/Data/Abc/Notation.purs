@@ -20,8 +20,6 @@ module Data.Abc.Notation
         , accidentalImplicitInKey
         , dotFactor
         , toMidiPitch
-        -- , noteDuration     not sure if we need these now
-        -- , chordalNoteDuration  ditto
         , transposeKeySignatureBy
         , normaliseModalKey
         ) where
