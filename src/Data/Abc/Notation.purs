@@ -358,26 +358,6 @@ dotFactor i =
       0 % 1
 
 
--- | Find a real world note duration by translating an ABC note duration using
--- | the tune's tempo and unit note length.
-{-
-noteDuration :: AbcTempo -> Rational -> NoteTime
-noteDuration t n =
-  (60.0 * (toNumber t.unitNoteLength) * (toNumber n))
-        / ((toNumber t.tempoNoteLength) * (toNumber $ fromInt t.bpm))
-}
-
-
--- | Find a real world duration of a note in a chord by translating an ABC note duration together with
--- | the chord duration using the tune's tempo and unit note length.
-{-
-chordalNoteDuration :: AbcTempo -> Rational -> Rational -> NoteTime
-chordalNoteDuration t note chord =
-  noteDuration t note * (toNumber chord)
--}
-
-
-
 {-| Convert an ABC note pitch to a MIDI pitch.
 
 *  AbcNote - the note in question
@@ -390,27 +370,11 @@ toMidiPitch :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> Mid
 toMidiPitch n mks barAccidentals =
   (n.octave * notesInChromaticScale) + midiPitchOffset n mks barAccidentals
 
-
-
-
-
-    -- Basics.round ((60.0 * 1000000 * Basics.toFloat (numerator relativeNoteLength)) / (Basics.toFloat t.bpm * Basics.toFloat (denominator relativeNoteLength)))
-
-
 -- temporary
 lookupScale :: ChromaticScale -> Int -> Maybe KeyAccidental
 lookupScale scale idx =
   index scale idx
 
-{-
-  let
-    result = index scale idx
-  in
-    trace "lookup chromatic scale at" \_ ->
-    traceShow idx \_ ->
-    traceShow result \_ ->
-    result
--}
 
 -- | Transpose a key signature by a given distance.
 transposeKeySignatureBy :: Int -> ModifiedKeySignature -> ModifiedKeySignature
@@ -447,7 +411,6 @@ transposeKeySignatureBy i mks =
       equivalentEnharmonicKeySig  (unwrap ka).pitchClass (unwrap ka).accidental mks.keySignature.mode
   in
     { keySignature: newks, modifications: accs }
-
 
 
 -- implementation
@@ -490,8 +453,6 @@ extremeSharpScale =
   in
     map f sharpScale
 
-
-
 {- works from C major down to Db major but not beyond
    (Gb major requires B->Cb, Cb major also requires E->Fb)
 import Data.Newtype (unwrap)
@@ -514,11 +475,7 @@ flatScale =
     : Nil
     )
 
-
-
--- "C", "Db", "D", "Eb", "Fb", "F", "Gb", "G", "Ab", "A", "Bb", "Cb"
-
-
+-- | "C", "Db", "D", "Eb", "Fb", "F", "Gb", "G", "Ab", "A", "Bb", "Cb"
 extremeFlatScale :: ChromaticScale
 extremeFlatScale =
   let
@@ -737,7 +694,7 @@ normaliseModalKey ks =
       modalDistance ks.mode
 
     sourceAccidental =
-      maccToAcc ks.accidental
+      Accidentals.explicitAccidental ks.accidental
 
     scale =
       case ks.accidental of
@@ -767,7 +724,7 @@ normaliseModalKey ks =
       lookUpScale scale majorKeyIndex
 
     targetAccidental =
-      accToMacc (unwrap majorKeyAcc).accidental
+      Accidentals.implicitAccidental (unwrap majorKeyAcc).accidental
   in
     if (0 == distance) then
       ks
@@ -777,29 +734,7 @@ normaliseModalKey ks =
       , mode: Major
       }
 
-{- convert a Maybe Accidental (used in key signatures)
-   to an explict accidental (used in scales) where the
-   explict form uses Natural
--}
-maccToAcc :: Maybe Accidental -> Accidental
-maccToAcc macc =
-   fromMaybe Natural macc
 
-{- convert an explict accidental (used in scales)
-   to a Maybe Accidental (used in key signatures) where the
-   explict form uses Natural
--}
-accToMacc :: Accidental -> Maybe Accidental
-accToMacc acc =
-  case acc of
-    Sharp ->
-      Just Sharp
-
-    Flat ->
-      Just Flat
-
-    _ ->
-      Nothing
 
 modalDistance :: Mode -> Int
 modalDistance mode =

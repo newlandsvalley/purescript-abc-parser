@@ -64,10 +64,10 @@ keyDistance targetmks srcmks =
       srcmks.keySignature
 
     targetAcc =
-      explicitAccidental target.accidental
+      Accidentals.explicitAccidental target.accidental
 
     srcAcc =
-      explicitAccidental src.accidental
+      Accidentals.explicitAccidental src.accidental
   in
     if (target.mode /= src.mode) then
       Left "incompatible modes"
@@ -114,10 +114,10 @@ transposeTo targetKA t =
   let
     -- get the source key signature stuff
     mks = fromMaybe defaultKey $ getKeySig t
-    srcAcc = explicitAccidental mks.keySignature.accidental
+    srcAcc = Accidentals.explicitAccidental mks.keySignature.accidental
     srcPc = mks.keySignature.pitchClass
     -- get the target key signature stuff, retaining the mode
-    targetMacc = implicitAccidental (unwrap targetKA).accidental
+    targetMacc = Accidentals.implicitAccidental (unwrap targetKA).accidental
     targetPc = (unwrap targetKA).pitchClass
     targetmks =
         { keySignature: { pitchClass: targetPc, accidental: targetMacc, mode: mks.keySignature.mode }, modifications: Nil }
@@ -626,21 +626,11 @@ pitchNumber ka =
   lookupChromatic chromaticScaleDict ka
 
 
-explicitAccidental :: Maybe Accidental -> Accidental
-explicitAccidental ma =
-  fromMaybe Natural ma
-
-implicitAccidental :: Accidental -> Maybe Accidental
-implicitAccidental a =
-  case a of
-    Natural -> Nothing
-    x -> Just x
-
 {- look up the note and return the number of its pitch in the range 0 <= n < notesInChromaticScale (0 is C Natural) -}
 noteNumber :: AbcNote -> Int
 noteNumber n =
   let
-    acc = explicitAccidental n.accidental
+    acc = Accidentals.explicitAccidental n.accidental
   in
     pitchNumber ( KeyAccidental { pitchClass: n.pitchClass, accidental: acc })
 
