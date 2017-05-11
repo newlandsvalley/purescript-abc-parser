@@ -204,7 +204,7 @@ keyChangeSuite = do
 
 -- note C Sharp and D Sharp are in octave 5 all the other notes are in octave 4
 
-buildKeySig :: PitchClass -> Maybe Accidental -> Mode -> ModifiedKeySignature
+buildKeySig :: PitchClass -> Accidental -> Mode -> ModifiedKeySignature
 buildKeySig pc acc mode =
   { keySignature:  { pitchClass: pc, accidental: acc, mode: mode }, modifications: Nil }
 
@@ -264,79 +264,79 @@ a =
 
 fMajor :: ModifiedKeySignature
 fMajor =
-  buildKeySig F Nothing Major
+  buildKeySig F Natural Major
 
 
 fMinor :: ModifiedKeySignature
 fMinor =
-  buildKeySig F Nothing Minor
+  buildKeySig F Natural Minor
 
 
 fSharpMinor :: ModifiedKeySignature
 fSharpMinor =
-  buildKeySig F (Just Sharp) Minor
+  buildKeySig F Sharp Minor
 
 
 gMajor :: ModifiedKeySignature
 gMajor =
-  buildKeySig G Nothing Major
+  buildKeySig G Natural Major
 
 gMinor :: ModifiedKeySignature
 gMinor =
-  buildKeySig G Nothing Minor
+  buildKeySig G Natural Minor
 
 
 aMajor :: ModifiedKeySignature
 aMajor =
-  buildKeySig A Nothing Major
+  buildKeySig A Natural Major
 
 
 aMinor :: ModifiedKeySignature
 aMinor =
-  buildKeySig A Nothing Minor
+  buildKeySig A Natural Minor
 
 
 bMinor :: ModifiedKeySignature
 bMinor =
-  buildKeySig B Nothing Minor
+  buildKeySig B Natural Minor
 
 
 gSharpMajor :: ModifiedKeySignature
 gSharpMajor =
-  buildKeySig G (Just Sharp) Major
+  buildKeySig G Sharp Major
 
 
 cMajor :: ModifiedKeySignature
 cMajor =
-  buildKeySig C Nothing Major
+  buildKeySig C Natural Major
 
 
 cSharpMinor :: ModifiedKeySignature
 cSharpMinor =
-  buildKeySig C (Just Sharp) Minor
+  buildKeySig C Sharp Minor
 
 
 dMajor :: ModifiedKeySignature
 dMajor =
-  buildKeySig D Nothing Major
+  buildKeySig D Natural Major
 
 dMinor :: ModifiedKeySignature
 dMinor =
-  buildKeySig D Nothing Minor
+  buildKeySig D Natural Minor
 
 
 eMinor :: ModifiedKeySignature
 eMinor =
-  buildKeySig E Nothing Minor
+  buildKeySig E Natural Minor
 
 
 bFlatDorian :: ModifiedKeySignature
 bFlatDorian =
-  { keySignature:  { pitchClass: B, accidental:  Just Flat, mode: Dorian }, modifications: Nil }
+  { keySignature:  { pitchClass: B, accidental:  Flat, mode: Dorian }, modifications: Nil }
 
 bFlat :: ModifiedKeySignature
 bFlat =
-  buildKeySig B (Just Flat) Major
+  buildKeySig B Flat Major
 
 
 cPhrase =

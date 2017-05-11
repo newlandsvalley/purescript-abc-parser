@@ -80,4 +80,5 @@ implicitAccidental acc =
 fromKeySig :: KeySignature -> KeyAccidental
 fromKeySig ks =
   KeyAccidental { pitchClass : ks.pitchClass
-                , accidental : (explicitAccidental ks.accidental)}
+                , accidental : ks.accidental
+                }

@@ -27,6 +27,7 @@ module Data.Abc.Notation
 
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
+import Data.Abc.Canonical as Canonical
 import Data.Foldable (oneOf)
 import Data.List (List(..), (:), elem, elemIndex, foldr, filter, index, length, null, reverse, slice)
 import Data.Map (Map, fromFoldable, lookup)
@@ -259,16 +260,8 @@ getHeader code t =
 diatonicScale :: KeySignature -> DiatonicScale
 diatonicScale ks =
   let
-    accidental =
-      case ks.accidental of
-        Just a ->
-          a
-
-        Nothing ->
-          Natural
-
     target =
-      KeyAccidental {pitchClass: ks.pitchClass, accidental: accidental}
+      KeyAccidental {pitchClass: ks.pitchClass, accidental: ks.accidental}
   in
     case ks.mode of
       Major ->
@@ -382,7 +375,7 @@ transposeKeySignatureBy i mks =
   let
     -- turn the key sig to a string pattern and look up its index
     pattern =
-      (show mks.keySignature.pitchClass) <> (accidentalPattern mks.keySignature.accidental)
+      (show mks.keySignature.pitchClass) <> (Canonical.keySignatureAccidental mks.keySignature.accidental)
 
     idx =
       fromMaybe 0 $ lookup pattern chromaticScaleMap
@@ -539,26 +532,26 @@ equivalentEnharmonicKeySig pc a m =
     case pattern of
       -- major key signatures
       Tuple (KeyAccidental { pitchClass: A, accidental: Sharp }) Major ->
-        { pitchClass: B, accidental: Just Flat, mode: Major }
+        { pitchClass: B, accidental: Flat, mode: Major }
 
       Tuple (KeyAccidental { pitchClass: D, accidental: Sharp}) Major  ->
-        { pitchClass: E, accidental: Just Flat, mode: Major }
+        { pitchClass: E, accidental: Flat, mode: Major }
 
       Tuple (KeyAccidental { pitchClass: G, accidental: Sharp }) Major   ->
-        { pitchClass: A, accidental: Just Flat, mode: Major }
+        { pitchClass: A, accidental: Flat, mode: Major }
 
       -- minor key signatures
       Tuple (KeyAccidental { pitchClass: G, accidental: Flat}) Minor   ->
-        { pitchClass: F, accidental: Just Sharp, mode: Minor }
+        { pitchClass: F, accidental: Sharp, mode: Minor }
 
       Tuple (KeyAccidental { pitchClass: D, accidental: Flat})  Minor  ->
-        { pitchClass: C, accidental: Just Sharp, mode: Minor }
+        { pitchClass: C, accidental: Sharp, mode: Minor }
 
       Tuple (KeyAccidental { pitchClass: A, accidental: Flat}) Minor ->
-        { pitchClass: G, accidental: Just Sharp, mode: Minor }
+        { pitchClass: G, accidental: Sharp, mode: Minor }
 
       _ ->
-       { pitchClass: pc, accidental: Just a, mode: m }
+       { pitchClass: pc, accidental: a, mode: m }
 
 
 {- The major scale intervals are 2,2,1,2,2,2,1
@@ -692,14 +685,14 @@ normaliseModalKey ks =
       modalDistance ks.mode
 
     sourceAccidental =
-      Accidentals.explicitAccidental ks.accidental
+      ks.accidental
 
     scale =
       case ks.accidental of
-        Just Sharp ->
+        Sharp ->
           sharpScale
 
-        Just Flat ->
+        Flat ->
           flatScale
 
         _ ->
@@ -722,7 +715,7 @@ normaliseModalKey ks =
       lookUpScale scale majorKeyIndex
 
     targetAccidental =
-      Accidentals.implicitAccidental (unwrap majorKeyAcc).accidental
+      (unwrap majorKeyAcc).accidental
   in
     if (0 == distance) then
       ks
@@ -801,7 +794,7 @@ midiPitchOffset n mks barAccidentals =
   in
     fromMaybe 0 (lookup pattern chromaticScaleMap)
 
-{- turn an optional accidental into a string pattern for use in lookups -}
+{- turn an optional accidental into a string pattern for use in lookups -}{- turn an optional accidental into a string pattern for use in lookups -}
 accidentalPattern :: Maybe Accidental -> String
 accidentalPattern ma =
   let
@@ -814,7 +807,7 @@ accidentalPattern ma =
         _ ->
           ""
   in
-    fromMaybe "" $ map f ma
+    fromMaybe "" $ map Canonical.keySignatureAccidental ma
 
 {- transpose a key accidental  (a key signature modifier)
    not finished

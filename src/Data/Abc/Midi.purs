@@ -3,7 +3,7 @@ module Data.Abc.Midi (toMidi) where
 import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
+import Data.Abc (AbcTune, AbcNote, Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
@@ -81,7 +81,7 @@ buildNewBar i abcBar =
 -- | default to C Major (i.e. no accidental modifiers)
 defaultKey :: ModifiedKeySignature
 defaultKey =
-  { keySignature: { pitchClass: C, accidental:  Nothing, mode: Major }, modifications: Nil }
+  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }, modifications: Nil }
 
 -- the default MIDI volume (velocity)
 defaultVolume :: Int

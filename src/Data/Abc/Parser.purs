@@ -943,7 +943,7 @@ keyName =
 
 keySignature :: Parser KeySignature
 keySignature =
-    buildKeySignature <$> keyName <*> optionMaybe sharpOrFlat <* whiteSpace <*> optionMaybe mode
+    buildKeySignature <$> keyName <*> option Natural sharpOrFlat <* whiteSpace <*> optionMaybe mode
 
 {- a key accidental as an amendment to a key signature - as in e.g. K:D Phr ^f -}
 keyAccidental :: Parser KeyAccidental
@@ -1264,7 +1264,7 @@ buildTempoSignature3 bpm  =
 
 
 {- build a key signature -}
-buildKeySignature :: String -> Maybe Accidental -> Maybe Mode -> KeySignature
+buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
 buildKeySignature pStr ma mm =
     { pitchClass : lookupPitch pStr, accidental : ma, mode : fromMaybe Major mm }
 

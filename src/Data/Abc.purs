@@ -215,7 +215,7 @@ derive instance ordPitchCLass :: Ord PitchClass
 -- | A Key Signature.
 type KeySignature =
     { pitchClass :: PitchClass
-    , accidental :: Maybe Accidental
+    , accidental :: Accidental   -- Sharp, Flat or (explicitly) Natural
     , mode :: Mode
     }
 

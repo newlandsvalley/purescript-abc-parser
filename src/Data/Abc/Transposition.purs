@@ -49,7 +49,7 @@ type NoteIndex =
 -- | The default Key - C Major.
 defaultKey :: ModifiedKeySignature
 defaultKey =
-  { keySignature: { pitchClass: C, accidental: Nothing, mode: Major }, modifications: Nil }
+  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }, modifications: Nil }
 
 -- | Calculate the distance between the keys (target - source) measured in semitones.
 -- | Keys must be in compatible modes.
@@ -64,10 +64,10 @@ keyDistance targetmks srcmks =
       srcmks.keySignature
 
     targetAcc =
-      Accidentals.explicitAccidental target.accidental
+      target.accidental
 
     srcAcc =
-      Accidentals.explicitAccidental src.accidental
+      src.accidental
   in
     if (target.mode /= src.mode) then
       Left "incompatible modes"
@@ -114,13 +114,13 @@ transposeTo targetKA t =
   let
     -- get the source key signature stuff
     mks = fromMaybe defaultKey $ getKeySig t
-    srcAcc = Accidentals.explicitAccidental mks.keySignature.accidental
+    srcAcc = mks.keySignature.accidental
     srcPc = mks.keySignature.pitchClass
     -- get the target key signature stuff, retaining the mode
-    targetMacc = Accidentals.implicitAccidental (unwrap targetKA).accidental
+    targetAcc = (unwrap targetKA).accidental
     targetPc = (unwrap targetKA).pitchClass
     targetmks =
-        { keySignature: { pitchClass: targetPc, accidental: targetMacc, mode: mks.keySignature.mode }, modifications: Nil }
+        { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }, modifications: Nil }
     -- work out the distance between them
     d = transpositionDistance
            targetKA

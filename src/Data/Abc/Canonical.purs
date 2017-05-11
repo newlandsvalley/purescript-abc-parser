@@ -4,6 +4,7 @@ module Data.Abc.Canonical
         , abcNote
         , abcChord
         , tuplet
+        , keySignatureAccidental
         ) where
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
@@ -44,17 +45,15 @@ bar b =
             Just BeginAndEnd ->
                 ":" <> lines <> ":"
 
-headerAccidental :: Accidental -> String
-headerAccidental a =
-    case a of
-        Sharp ->
-            "#"
-
-        Flat ->
-            "b"
-
-        _ ->
-            ""
+keySignatureAccidental :: Accidental -> String
+keySignatureAccidental a =
+  case a of
+    Sharp ->
+      "#"
+    Flat ->
+      "b"
+    _ ->
+      ""
 
 -- | Pretty-print a tuplet.
 tuplet :: TupletSignature -> String
@@ -130,17 +129,11 @@ duration' r = showRatio r
 
 key :: KeySignature -> String
 key k =
-    let
-        acc =
-            fromMaybe "" $ map headerAccidental k.accidental
-    in
-        show k.pitchClass <> acc <> show k.mode
-
+  show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
 
 keyAccidental :: KeyAccidental -> String
 keyAccidental nka =
   show (unwrap nka).accidental <> Str.toLower (show (unwrap nka).pitchClass)
-
 
 keyAccidentals :: List KeyAccidental -> String
 keyAccidentals =
