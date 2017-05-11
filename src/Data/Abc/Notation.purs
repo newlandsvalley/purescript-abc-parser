@@ -683,9 +683,7 @@ modalScale target mode =
 
 
 {-| normalise a modal key signature to that of the equivalent major key
-
   Maybe, once this is completed and tested, implement modalScale in terms of this
-
 -}
 normaliseModalKey :: KeySignature -> KeySignature
 normaliseModalKey ks =

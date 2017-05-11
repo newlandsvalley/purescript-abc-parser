@@ -7,10 +7,11 @@ module Data.Abc.Accidentals
         , member
         , explicitAccidental
         , implicitAccidental
+        , fromKeySig
         ) where
 
 import Prelude ((==), (<<<), map)
-import Data.Abc (PitchClass, Accidental(..), KeyAccidental, KeySet)
+import Data.Abc (PitchClass, Accidental(..), KeyAccidental(..), KeySet, KeySignature)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map as Map
 import Data.Tuple (Tuple(..))
@@ -74,3 +75,9 @@ implicitAccidental acc =
       Nothing
     x ->
       Just x
+
+-- | extract the KeyAccidental from a KeySignature
+fromKeySig :: KeySignature -> KeyAccidental
+fromKeySig ks =
+  KeyAccidental { pitchClass : ks.pitchClass
+                , accidental : (explicitAccidental ks.accidental)}
