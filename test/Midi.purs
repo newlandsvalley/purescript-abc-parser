@@ -42,12 +42,15 @@ transformationSuite =
     test "notes" do
       assertMidi "| CDE |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
-    test "tied notes" do  -- currently implemented by a delay induced by a rest
+    test "tied notes" do
       assertMidi "| CD-D |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> rest (fromInt 1)))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 2)))
+    test "doubly tied notes" do
+      assertMidi "| CD-D-D |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 3)))
     test "tie across bars" do
       assertMidi "| CD- | D |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> rest (fromInt 1)))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 2)))
     test "long notes" do
       assertMidi "| C2D2E2 |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 2) <> noteD (fromInt 2) <> noteE (fromInt 2)))
@@ -84,6 +87,9 @@ transformationSuite =
     test "long chord" do
       assertMidi "| [CEG]2 |\r\n"
         (Midi.Track (standardTempo <> chordC (fromInt 2)))
+    test "tie into chord" do  -- we don't support ties into chords - it's ambiguous
+      assertMidi "| C-[CEG] |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> chordC (fromInt 1)))
     test "tempo header" do
       assertMidi "Q: 1/4=180\r\n| CDE |\r\n"
         (Midi.Track (tempo (rational 2 3) <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))

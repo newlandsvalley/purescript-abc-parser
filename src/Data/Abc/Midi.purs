@@ -38,7 +38,7 @@ type TState =
     , currentBar :: MidiBar                            -- the current bar being translated
     , currentBarAccidentals :: Accidentals.Accidentals -- can't put this in MidiBar because of typeclass constraints
                                                        -- any notes marked explicitly as accidentals in the current bar
-    , lastNoteTied :: Boolean                          -- was the last note tied?
+    , lastNoteTied :: Maybe AbcNote                    -- the last note, if it was tied?
     , repeatState :: RepeatState                       -- the repeat state of the tune
     , rawTrack :: List MidiBar                         -- the growing list of completed bars
     }
@@ -102,7 +102,7 @@ initialState tune =
           , abcTempo : abcTempo
           , currentBar : initialBar initialMsg
           , currentBarAccidentals : Accidentals.empty
-          , lastNoteTied : false
+          , lastNoteTied : Nothing
           , repeatState : initialRepeatState
           , rawTrack : Nil
           } skeletalRecording
@@ -262,6 +262,22 @@ transformHeader h =
 -- | there are other implications for state - if the note has an explicit
 -- | accidental, overriding the key then it is added to state because it
 -- | influences other notes later in the bar
+
+addNoteToState :: Boolean -> Rational -> TState-> AbcNote -> TState
+addNoteToState chordal tempoModifier tstate abcNote =
+  let
+    Tuple msgs newTie =
+      processNoteWithTie chordal tempoModifier tstate abcNote
+    barAccidentals =
+      addNoteToBarAccidentals abcNote tstate.currentBarAccidentals
+  in
+    tstate { currentBar = tstate.currentBar { midiMessages = msgs }
+           , lastNoteTied = newTie
+           , currentBarAccidentals = barAccidentals
+           }
+
+
+{-}
 addNoteToState :: Boolean -> Rational -> TState-> AbcNote -> TState
 addNoteToState chordal tempoModifier tstate abcNote =
   let
@@ -284,7 +300,7 @@ addNoteToState chordal tempoModifier tstate abcNote =
     bar' =
       if chordal then
         bar { midiMessages = (msgOn : bar.midiMessages)}
-      else if tstate.lastNoteTied then
+      else if isJust (tstate.lastNoteTied) then
         bar { midiMessages = (msgRest : bar.midiMessages)}
       else
         bar { midiMessages = (msgOff : msgOn : bar.midiMessages)}
@@ -292,9 +308,88 @@ addNoteToState chordal tempoModifier tstate abcNote =
 
   in
     tstate { currentBar = bar'
-           , lastNoteTied = abcNote.tied
+           , lastNoteTied =
+              if abcNote.tied then
+                Just abcNote
+              else
+                Nothing
            , currentBarAccidentals = barAccidentals'
            }
+-}
+
+-- | process the incoming note, accounting for the fact that the previous note may have been tied.
+-- |
+-- | Chordal notes:
+-- |
+-- | we don't support ties into chords.  Just ensure the wrongly tied note is emitted
+-- |
+-- | Standard Notes:
+-- |
+-- | if it was tied, then we simply coalesce the notes by adding their durations.  If the incoming note
+-- | is tied, then the (possibly combined) note is saved as the 'lastNoteTied' so that the whole
+-- | process will begin again at the next note.  If not tied, then the (possibly combined) note
+-- | is written into the current MIDI bar
+processNoteWithTie ::  Boolean -> Rational -> TState -> AbcNote -> Tuple (List Midi.Message) (Maybe AbcNote)
+processNoteWithTie chordal tempoModifier tstate abcNote =
+  if chordal then
+    let
+      msgOn = emitNoteOn tstate abcNote
+    in
+      case tstate.lastNoteTied of
+        Just lastNote ->
+          -- we don't support ties into chords - just emit the tied note before the chordal note
+          let
+            tiedNotes = emitNoteOnOff tempoModifier tstate lastNote
+          in
+            Tuple (msgOn : (tiedNotes <> tstate.currentBar.midiMessages)) Nothing
+        _ ->
+          Tuple (msgOn : tstate.currentBar.midiMessages) Nothing
+  else
+    case tstate.lastNoteTied of
+      Just lastNote ->
+        let
+          combinedAbcNote = abcNote { duration = abcNote.duration + lastNote.duration }
+        in
+          if abcNote.tied then
+            -- save the combined note in lastNoteTied
+            Tuple tstate.currentBar.midiMessages (Just combinedAbcNote)
+          else
+            -- emit the note and set lastNoteTied to Nothing
+            let
+              notes = emitNoteOnOff tempoModifier tstate combinedAbcNote
+            in
+              Tuple (notes <> tstate.currentBar.midiMessages) Nothing
+      _ ->
+        if abcNote.tied then
+          -- set lastNoteTied
+          Tuple tstate.currentBar.midiMessages (Just abcNote)
+        else
+          let
+             notes = emitNoteOnOff tempoModifier tstate abcNote
+          in
+            -- write out the note to the current MIDI bar
+            Tuple (notes <> tstate.currentBar.midiMessages) Nothing
+
+-- | emit a standard note which is represented by a NoteOn Message
+-- | followed by a NoteOff for the same pitch with the required delay
+emitNoteOnOff :: Rational -> TState -> AbcNote -> List Midi.Message
+emitNoteOnOff tempoModifier tstate abcNote =
+  let
+    pitch =
+      toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
+    ticks =
+      noteTicks (abcNote.duration * tempoModifier)
+    in
+      (midiNoteOff ticks pitch) : (midiNoteOn 0 pitch) : Nil
+
+-- | emit just a NoteOn message (this is restricted to chords)
+emitNoteOn :: TState -> AbcNote -> Midi.Message
+emitNoteOn tstate abcNote =
+  let
+    pitch =
+      toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
+  in
+    midiNoteOn 0 pitch
 
 -- | add a bunch of notes to the state
 -- | chordal means that the notes form a chord and thus do not need
