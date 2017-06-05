@@ -69,6 +69,9 @@ transformationSuite =
     test "tuplet" do
       assertMidi "| (3CDE |\r\n"
         (Midi.Track (standardTempo <> noteC (rational 2 3) <> noteD (rational 2 3) <> noteE (rational 2 3)))
+    test "tuplet with rest" do
+      assertMidi "| (3zDE |\r\n"
+        (Midi.Track (standardTempo <> rest (rational 2 3) <> noteD (rational 2 3) <> noteE (rational 2 3)))
     test "broken rhythm >" do
       assertMidi "| C>D |\r\n"
         (Midi.Track (standardTempo <> noteC (rational 3 2) <> noteD (rational 1 2)))

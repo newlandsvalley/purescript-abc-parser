@@ -6,6 +6,7 @@ module Data.Abc.Octave
 
 import Prelude ((+), map, negate)
 import Data.List (List)
+import Data.Either (Either(..))
 import Data.Abc
 
 -- import Test.Unit.Assert as Assert
@@ -59,7 +60,7 @@ moveOctave i m =
             BrokenRhythmPair (moveNoteBy i n1) b (moveNoteBy i n2)
 
         Tuplet ts ns ->
-            Tuplet ts (moveNoteList i ns)
+            Tuplet ts (moveRestOrNoteList i ns)
 
         GraceNote b ns ->
             GraceNote b (moveNoteList i ns)
@@ -85,6 +86,17 @@ moveNoteList :: Int -> List AbcNote -> List AbcNote
 moveNoteList i =
     map (moveNoteBy i)
 
+-- | tuples may now contain either rests or notes
+moveRestOrNoteList :: Int -> List RestOrNote -> List RestOrNote
+moveRestOrNoteList i =
+  let
+    f :: RestOrNote -> RestOrNote
+    f rn =
+      case rn of
+        Left r -> Left r
+        Right n -> Right (moveNoteBy i n)
+  in
+    map f 
 
 moveChord :: Int -> AbcChord -> AbcChord
 moveChord i c =

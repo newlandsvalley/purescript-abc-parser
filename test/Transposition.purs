@@ -340,15 +340,13 @@ bFlat =
 
 
 cPhrase =
-    "K: CMajor\x0D\n| AB (3cde [fg] |\x0D\n"
-
+    "K: CMajor\x0D\n| AB (3zde [fg] |\x0D\n"
 
 dPhrase =
-    "K: DMajor\x0D\n| Bc (3def [ga] |\x0D\n"
-
+    "K: DMajor\x0D\n| Bc (3zef [ga] |\x0D\n"
 
 fPhrase =
-    "K: FMajor\x0D\n| de (3fga [bc'] |\x0D\n"
+    "K: FMajor\x0D\n| de (3zga [bc'] |\x0D\n"
 
 
 gmPhrase =

@@ -5,8 +5,10 @@ module Data.Abc ( AbcTune
 , MusicLine
 , Header(..)
 , Music(..)
+, AbcRest
 , AbcNote
 , AbcChord
+, RestOrNote
 , Bar
 , Thickness(..)
 , Repeat(..)
@@ -26,11 +28,12 @@ module Data.Abc ( AbcTune
 , middlecOctave
 ) where
 
--- import Data.BooleanAlgebra (class BooleanAlgebra)
+
 import Data.List (List)
 import Data.Maybe (Maybe)
 import Data.Rational (Rational)
 import Data.Tuple (Tuple)
+import Data.Either (Either)
 import Data.Newtype (class Newtype)
 import Prelude (class Show, class Eq, class Ord, (<>), show)
 import Data.Generic (class Generic)
@@ -57,6 +60,10 @@ data BodyPart
 -- | A line of musical score up to eol.
 type MusicLine =
     List Music
+
+-- | A Rest.
+type AbcRest =
+  { duration :: NoteDuration }
 
 -- | A Note.
 type AbcNote =
@@ -88,13 +95,17 @@ instance showAnnotationPlacement :: Show AnnotationPlacement where
    show RightOfNextSymbol = ">"
    show Discretional = "@"
 
+-- | either a Rest or a Note.
+type RestOrNote
+  = Either AbcRest AbcNote
+
 -- | The 'score' part of Music.
 data Music
     = Barline Bar
     | Note AbcNote
     | BrokenRhythmPair AbcNote Broken AbcNote
-    | Rest NoteDuration
-    | Tuplet TupletSignature (List AbcNote)
+    | Rest AbcRest
+    | Tuplet TupletSignature (List RestOrNote)
     | Decoration String
     | Slur Char
     | GraceNote Boolean (List AbcNote)

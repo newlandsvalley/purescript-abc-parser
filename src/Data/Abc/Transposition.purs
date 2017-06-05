@@ -21,6 +21,7 @@ import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Newtype (unwrap)
 import Data.Foldable (oneOf)
+import Data.Bifunctor (lmap)
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Notation (DiatonicScale, accidentalImplicitInKey, diatonicScale
@@ -248,7 +249,7 @@ transposeMusic state m =
 
     Tuplet ts ns ->
       let
-        result = transposeNoteList state ns
+        result = transposeRestOrNoteList state ns
       in
         Tuple ( Tuplet ts (fst result)) (snd result)
 
@@ -364,6 +365,35 @@ transposeNoteList state ns =
       Tuple (reverse $ fst res) (snd res)
 
 
+transposeRestOrNoteList :: TranspositionState -> List RestOrNote -> Tuple (List RestOrNote) TranspositionState
+transposeRestOrNoteList state ns =
+  let
+    f :: Tuple (List RestOrNote) TranspositionState -> RestOrNote -> Tuple (List RestOrNote) TranspositionState
+    f acc rn =
+      let
+        -- ( ns, s0 ) = acc
+        n0 = fst acc
+        s0 = snd acc
+
+        -- a rest (in a tuplet) doesn't affect the state, but a note does
+        result =
+          case rn of
+            Left r ->
+              Tuple (Left r) s0
+            Right n ->
+              lmap Right (transposeNoteBy s0 n)
+        n1 = fst result
+        s1 = snd result
+      in
+        -- ( n1 :: ns, s1 )
+        Tuple (n1 : n0) s1
+  in
+    let
+      -- ( tns, news ) = List.foldl f ( [], state ) ns
+      res = foldl f (Tuple Nil state) ns
+    in
+      -- ( List.reverse tns, news )
+      Tuple (reverse $ fst res) (snd res)
 
 transposeChord :: TranspositionState -> AbcChord -> Tuple AbcChord TranspositionState
 transposeChord state c =

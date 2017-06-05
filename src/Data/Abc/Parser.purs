@@ -14,6 +14,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.Utils (length, startsWith, includes)
 import Data.String (toUpper, charAt, singleton, fromCharArray, toCharArray)
 import Data.Int (fromString, pow)
+import Data.Either (Either(..))
 import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
 import Data.Bifunctor (bimap)
@@ -297,16 +298,26 @@ maybeTie =
 
 rest :: Parser Music
 rest =
-    Rest
-        <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
-        <?> "rest"
+  Rest
+    <$> abcRest
+    <?> "rest"
 
+abcRest :: Parser AbcRest
+abcRest =
+  buildRest
+      <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
+      <?> "abcRest"
+
+-- | tuplets may now contain either a (Left) rest or a (Right) Note
+restOrNote :: Parser RestOrNote
+restOrNote =
+  (Left <$> abcRest) <|> (Right <$> abcNote)
 
 tuplet :: Parser Music
 tuplet =
     Tuplet
         <$> (char '(' *> tupletSignature)
-        <*> many1 abcNote
+        <*> many1 restOrNote
         <?> "tuplet"
 
 {- possible tuplet signatures
@@ -1086,6 +1097,10 @@ buildBrokenOperator s =
         LeftArrow (length s)
     else
         RightArrow (length s)
+
+buildRest :: Rational -> AbcRest
+buildRest r =
+  { duration : r }
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =

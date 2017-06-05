@@ -16,7 +16,7 @@ import Data.Ratio (Ratio(..))
 import Data.Tuple (Tuple(..))
 import Data.String (trim, toLower, singleton, length, take) as Str
 import Data.Foldable (foldr)
-import Data.Either (Either)
+import Data.Either (Either(..))
 import Data.Newtype (unwrap)
 
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
@@ -198,9 +198,22 @@ notes ns =
     in
         foldr f "" ns
 
-rest :: NoteDuration -> String
-rest n =
-    "z" <> (duration n)
+restsOrNotes :: List RestOrNote -> String
+restsOrNotes rns =
+  let
+    f :: RestOrNote -> String -> String
+    f rn acc =
+      case rn of
+        Left r ->
+          (abcRest r) <> acc
+        Right n ->
+          (abcNote n) <> acc
+  in
+    foldr f "" rns
+
+abcRest :: AbcRest -> String
+abcRest r =
+    "z" <> (duration r.duration)
 
 decorate :: String -> String
 decorate s =
@@ -239,10 +252,10 @@ music m =
             abcNote a1 <> (broken b) <> abcNote a2
 
         Rest r ->
-            rest r
+            abcRest r
 
-        Tuplet tup ns ->
-            tuplet tup <> notes ns
+        Tuplet tup rns ->
+            tuplet tup <> restsOrNotes rns
 
         Decoration s ->
             decorate s
@@ -391,6 +404,7 @@ continuation c =
 
 tuneBody :: TuneBody -> String
 tuneBody b =
+-- import Data.Either (Either(..))
     let
         f bp acc =
             (bodyPart bp) <> "\x0D\n" <> acc

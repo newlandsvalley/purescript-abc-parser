@@ -19,6 +19,7 @@
     "purescript-string-parsers": "^3.0.1",
     "purescript-stringutils": "^0.0.6",
     "purescript-integers": "^3.0.0",
+    "purescript-bifunctors": "^3.0.0",
     "purescript-debug": "^3.0.0",
     "purescript-maps": "^3.0.0",
     "purescript-midi": "https://github.com/newlandsvalley/purescript-midi.git"

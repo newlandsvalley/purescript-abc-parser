@@ -3,7 +3,8 @@ module Data.Abc.Midi (toMidi) where
 import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
+import Data.Abc (AbcTune, AbcNote, RestOrNote, Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
+   MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
@@ -12,6 +13,7 @@ import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, s
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
+import Data.Either (Either(..))
 import Data.Tuple (Tuple(..), fst, snd)
 import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
 
@@ -147,11 +149,11 @@ transformMusic m =
     Note abcNote ->
       updateState (addNoteToState false (rational 1 1)) abcNote
 
-    Rest duration ->
-      updateState addRestToState duration
+    Rest r ->
+      updateState addRestToState r.duration
 
-    Tuplet signature tnotes ->
-      updateState (addNotesToState false (rational signature.q signature.p)) tnotes
+    Tuplet signature restsOrNotes ->
+      updateState (addRestsOrNotesToState false (rational signature.q signature.p)) restsOrNotes
 
     Chord abcChord ->
       let
@@ -276,6 +278,16 @@ addNoteToState chordal tempoModifier tstate abcNote =
            , currentBarAccidentals = barAccidentals
            }
 
+-- | tuplets can now contain rests
+addRestOrNoteToState :: Boolean -> Rational -> TState-> RestOrNote -> TState
+addRestOrNoteToState chordal tempoModifier tstate restOrNote =
+  case restOrNote of
+    Left r ->
+      --  modifiy the rest duration by the tempo modifier
+      addRestToState tstate (r.duration * tempoModifier)
+    Right n ->
+      addNoteToState chordal tempoModifier tstate n
+
 
 {-}
 addNoteToState :: Boolean -> Rational -> TState-> AbcNote -> TState
@@ -397,6 +409,11 @@ emitNoteOn tstate abcNote =
 addNotesToState :: Boolean -> Rational -> TState-> List AbcNote -> TState
 addNotesToState chordal tempoModifier tstate abcNotes =
   foldl (addNoteToState chordal tempoModifier) tstate abcNotes
+
+-- | as above, but with (rests or notes) as now found within tuplets
+addRestsOrNotesToState :: Boolean -> Rational -> TState-> List RestOrNote -> TState
+addRestsOrNotesToState chordal tempoModifier tstate restsOrNotes =
+  foldl (addRestOrNoteToState chordal tempoModifier) tstate restsOrNotes
 
 -- possibly combine these next rwo routines
 
