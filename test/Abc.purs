@@ -192,11 +192,11 @@ noteSuite =
     test "complex tie" do
        assertRoundTrip "| fg-ga ab-bc|\x0D\n"
     test "triplet" do
-       assertRoundTrip "| (3efg) |\r\n"
+       assertRoundTrip "| (3efg |\r\n"
     test "spaced triplet" do
        assertCanonical "| (3 abc def |\x0D\n" "| (3abc def |\x0D\n"
     test "triplet with rest" do
-       assertRoundTrip "| (3zfg) |\r\n"
+       assertRoundTrip "| (3zfg |\r\n"
     test "grace note" do
        assertRoundTrip "| {d^f}GA |\x0D\n"
     test "double sharp" do
