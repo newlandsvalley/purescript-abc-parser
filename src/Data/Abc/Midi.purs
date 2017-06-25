@@ -11,7 +11,6 @@ import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidi
 import Data.Foldable (foldl)
 import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational)
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..), fst, snd)
@@ -536,7 +535,7 @@ finaliseMelody =
   do
     tpl <- get
     let
-      recording = snd tpl
+      Midi.Recording recording = snd tpl
       tstate = fst tpl
       currentBar = tstate.currentBar
       -- index the final bar and finalise the repear state
@@ -547,7 +546,7 @@ finaliseMelody =
                        , repeatState = repeatState }
       track = buildRepeatedMelody tstate'.rawTrack tstate'.repeatState.sections
       recording' :: Midi.Recording
-      recording' = Midi.Recording (unwrap recording) { tracks = singleton $ track }
+      recording' = Midi.Recording recording { tracks = singleton $ track }
       tpl' = Tuple tstate' recording'
     _ <- put tpl'
     pure recording'

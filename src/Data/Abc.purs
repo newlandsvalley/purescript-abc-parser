@@ -34,9 +34,12 @@ import Data.Maybe (Maybe)
 import Data.Rational (Rational)
 import Data.Tuple (Tuple)
 import Data.Either (Either)
-import Data.Newtype (class Newtype)
+import Data.String (toLower) as Str
 import Prelude (class Show, class Eq, class Ord, (<>), show)
-import Data.Generic (class Generic)
+import Data.Generic.Rep
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Ord (genericCompare)
+import Data.Generic.Rep.Show (genericShow)
 
 -- | A Tune.
 type AbcTune =
@@ -137,7 +140,7 @@ data Repeat
     | End
     | BeginAndEnd
 
-derive instance genericRepeat  :: Generic Repeat
+derive instance genericRepeat  :: Generic Repeat _
 instance showRepeat :: Show Repeat where
   show Begin = "|:"
   show End = ":|"
@@ -240,21 +243,24 @@ type ModifiedKeySignature =
 
 -- | A Key Accidental (A modification to a standard key for one pitch in the scale).
 -- |  (we're not allowed to derive instances on record types unless we use newtype)
-newtype KeyAccidental = KeyAccidental
+data KeyAccidental = KeyAccidental
     { pitchClass :: PitchClass
     , accidental :: Accidental
     }
 
-derive instance genericPitchClass  :: Generic PitchClass
-derive instance genericAccidental  :: Generic Accidental
+derive instance genericPitchClass  :: Generic PitchClass _
+derive instance genericAccidental  :: Generic Accidental _
 
--- derive instance genericKeyAccidental  :: Generic KeyAccidental
-derive instance newtypeKeyAccidental :: Newtype KeyAccidental _
-derive instance eqKeyAccidental :: Eq KeyAccidental
-derive instance ordKeyAccidental :: Ord KeyAccidental
+derive instance genericKeyAccidental :: Generic KeyAccidental _
+
+instance eqKeyAccidental :: Eq KeyAccidental where
+  eq = genericEq
+
+instance ordKeyAccidental :: Ord KeyAccidental where
+  compare = genericCompare
 
 instance showKeyAccidental :: Show KeyAccidental where
-  show (KeyAccidental ka) = show ka.pitchClass <> show ka.accidental
+  show (KeyAccidental ka) = show ka.accidental <> Str.toLower (show ka.pitchClass)
 
 -- | A set of accidentals within a key signature.
 type KeySet =

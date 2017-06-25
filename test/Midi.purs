@@ -5,7 +5,6 @@ import Control.Monad.Free (Free)
 import Data.List (List(..), head, (:))
 import Data.Either (Either(..))
 import Data.Maybe (fromMaybe)
-import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, rational, toNumber)
 import Data.Int (round)
 
@@ -22,9 +21,8 @@ assertMidi s midiTrack =
   case (parse s) of
     Right tune ->
       let
-        midiRecording :: Midi.Recording
-        midiRecording = toMidi tune
-        track0 = fromMaybe (Midi.Track Nil) (head (unwrap midiRecording).tracks)
+        Midi.Recording midiRecording = toMidi tune
+        track0 = fromMaybe (Midi.Track Nil) (head midiRecording.tracks)
       in
         Assert.equal midiTrack track0
 

@@ -32,7 +32,6 @@ import Data.Foldable (oneOf)
 import Data.List (List(..), (:), elem, elemIndex, foldr, filter, index, length, null, reverse, slice)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Newtype (unwrap)
 import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
 import Prelude (($), (<>), (+), (-), (*), (<), (==), (/=), (||), show, negate, map, mod)
@@ -280,17 +279,19 @@ inScale ka s =
   elem ka s
 
 -- | Is the key signature a sharp key or else a simple C Major key?
+
 isCOrSharpKey :: KeySignature -> Boolean
 isCOrSharpKey ksig =
   let
     kset =
       keySet ksig
     isFlat :: KeyAccidental -> Boolean
-    isFlat keyAccidental =
-      (unwrap keyAccidental).accidental == Flat
+    isFlat (KeyAccidental ka) =
+      ka.accidental == Flat
   in
     -- the list is empty anyway or contains only flat keys
     null $ filter isFlat kset
+
 
 -- | Return an accidental if it is implicitly there in the (modified) key signature
 -- | attached to the pitch class of the note. In ABC, notes generally inherit
@@ -321,8 +322,8 @@ modifyKeySet newKeyA ks =
         newKeyA : (filter (noMatchPC pitchClass) ks)
   where
     noMatchPC :: PitchClass -> KeyAccidental -> Boolean
-    noMatchPC pc nka =
-       pc /= (unwrap nka).pitchClass
+    noMatchPC pc (KeyAccidental ka) =
+       pc /= ka.pitchClass
 
 
 {-| The amount by which you increase or decrease the duration of a (possibly multiply) dotted note.
@@ -391,17 +392,17 @@ transposeKeySignatureBy i mks =
         flatScale
 
     -- now look up the transposed key at the new index
-    ka =
+    kar =
       fromMaybe (KeyAccidental { pitchClass: C, accidental: Natural }) $ index scale newIndex
-      -- fromMaybe (KeyAccidental { pitchClass: C, accidental: Natural }) $ lookupScale scale newIndex
-
     -- modify the key accidentals likewise
     accs =
       map (transposeKeyAccidentalBy i) mks.modifications
 
     -- build the most likely enharmonic equivalent - don't use bizarre keys
     newks =
-      equivalentEnharmonicKeySig  (unwrap ka).pitchClass (unwrap ka).accidental mks.keySignature.mode
+      case kar of
+        KeyAccidental ka ->
+          equivalentEnharmonicKeySig  ka.pitchClass ka.accidental mks.keySignature.mode
   in
     { keySignature: newks, modifications: accs }
 
@@ -508,18 +509,17 @@ equivalentEnharmonic k =
 
 
 sharpScaleEquivalent :: KeyAccidental -> KeyAccidental
-sharpScaleEquivalent ka =
-  case (unwrap ka).accidental of
+sharpScaleEquivalent (KeyAccidental ka) =
+  case ka.accidental of
     Flat ->
       let
-        -- JMW!!!
         index =
-          fromMaybe 0 $ elemIndex ka flatScale
+          fromMaybe 0 $ elemIndex (KeyAccidental ka) flatScale
       in
         lookUpScale sharpScale index
 
     _ ->
-      ka
+      (KeyAccidental ka)
 
 {- enharmonic equivalence of full key signatures - don't use bizarre minor flat keys when we have reasonable sharp ones
    and vice versa.  Check both Major and Monor key signatures.
@@ -713,19 +713,16 @@ normaliseModalKey ks =
 
     majorKeyAcc =
       lookUpScale scale majorKeyIndex
-
-    targetAccidental =
-      (unwrap majorKeyAcc).accidental
   in
     if (0 == distance) then
       ks
     else
-      { pitchClass: (unwrap majorKeyAcc).pitchClass
-      , accidental: targetAccidental
-      , mode: Major
-      }
-
-
+      case majorKeyAcc of
+        KeyAccidental mka ->
+          { pitchClass: mka.pitchClass
+          , accidental: mka.accidental
+          , mode: Major
+          }
 
 modalDistance :: Mode -> Int
 modalDistance mode =
@@ -759,15 +756,15 @@ modalDistance mode =
 
 {- return true if the key contains a sharp or flat accidental -}
 accidentalKey :: KeyAccidental -> Boolean
-accidentalKey ka =
-  (unwrap ka).accidental /= Natural
+accidentalKey (KeyAccidental ka) =
+  ka.accidental /= Natural
 
 {- return true if the key represents a flat major key -}
 isFlatMajorKey :: KeyAccidental -> Boolean
-isFlatMajorKey target =
-  case (unwrap target).accidental of
+isFlatMajorKey (KeyAccidental target) =
+  case target.accidental of
     Natural ->
-      ((unwrap target).pitchClass == F)
+      (target.pitchClass == F)
     a ->
       (a == Flat)
 
@@ -813,17 +810,17 @@ accidentalPattern ma =
    not finished
 -}
 transposeKeyAccidentalBy :: Int -> KeyAccidental -> KeyAccidental
-transposeKeyAccidentalBy i ka =
+transposeKeyAccidentalBy i (KeyAccidental ka) =
   let
     pattern =
-      show (unwrap ka).pitchClass
+      show ka.pitchClass
 
     idx =
       fromMaybe 0 $ lookup pattern chromaticScaleMap
 
     scaleModifier :: { modifier :: Int, scale :: ChromaticScale }
     scaleModifier =
-      case (unwrap ka).accidental of
+      case ka.accidental of
         Sharp ->
          { modifier: 1, scale: sharpScale }
 

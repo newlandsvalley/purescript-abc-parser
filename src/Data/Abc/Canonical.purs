@@ -17,7 +17,6 @@ import Data.Tuple (Tuple(..))
 import Data.String (trim, toLower, singleton, length, take) as Str
 import Data.Foldable (foldr)
 import Data.Either (Either(..))
-import Data.Newtype (unwrap)
 
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
 
@@ -131,13 +130,10 @@ key :: KeySignature -> String
 key k =
   show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
 
-keyAccidental :: KeyAccidental -> String
-keyAccidental nka =
-  show (unwrap nka).accidental <> Str.toLower (show (unwrap nka).pitchClass)
 
 keyAccidentals :: List KeyAccidental -> String
 keyAccidentals =
-    concatenate <<< map (\a -> " " <> keyAccidental a)
+    concatenate <<< map (\ka -> " " <> (show ka))
 
 octave :: Int -> String
 octave i =

@@ -10,12 +10,11 @@ module Data.Abc.Accidentals
         , fromKeySig
         ) where
 
-import Prelude ((==), (<<<), map)
+import Prelude ((==), map)
 import Data.Abc (PitchClass, Accidental(..), KeyAccidental(..), KeySet, KeySignature)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map as Map
 import Data.Tuple (Tuple(..))
-import Data.Newtype (unwrap)
 
 -- | A set of accidentals
 type Accidentals =
@@ -35,9 +34,11 @@ add pc acc accs =
 fromKeySet :: KeySet -> Accidentals
 fromKeySet ks =
   let
-    f ka =
-        Tuple ka.pitchClass ka.accidental
-    tuples = map (f <<< unwrap) ks
+    f kar =
+      case kar of
+        KeyAccidental ka ->
+          Tuple ka.pitchClass ka.accidental
+    tuples = map f ks
   in
     Map.fromFoldable tuples
 
@@ -49,16 +50,15 @@ lookup  =
 -- | lookup a KeyAccidental and see if it's a member of the Accidentals set
 -- |    (i.e. the value of the Accidental matches for the supplied pitch)
 member :: KeyAccidental -> Accidentals -> Boolean
-member nka accs =
+member (KeyAccidental ka) accs =
   let
-    ka =
-      unwrap nka
     macc =
-      lookup ka.pitchClass accs
+       lookup ka.pitchClass accs
   in
     (Just ka.accidental) == macc
 
--- | convert an implict Maybe Accidental (used in key signatures)
+
+-- | convert an implicit Maybe Accidental (used in key signatures)
 -- | to an explict accidental (used in scales) where the
 -- | explicit form uses Natural
 explicitAccidental :: Maybe Accidental -> Accidental

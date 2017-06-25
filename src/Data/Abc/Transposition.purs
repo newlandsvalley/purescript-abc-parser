@@ -19,7 +19,6 @@ import Data.List (List(..), (:), filter, foldl, reverse)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
-import Data.Newtype (unwrap)
 import Data.Foldable (oneOf)
 import Data.Bifunctor (lmap)
 import Data.Abc
@@ -111,20 +110,20 @@ transposeNote targetmks srcKey note =
 -- | transposition where the target mode is taken from the source tune's key signature
 -- | (it doesn't make any sense to transpose to a different mode)
 transposeTo :: KeyAccidental -> AbcTune -> AbcTune
-transposeTo targetKA t =
+transposeTo (KeyAccidental targetKA) t =
   let
     -- get the source key signature stuff
     mks = fromMaybe defaultKey $ getKeySig t
     srcAcc = mks.keySignature.accidental
     srcPc = mks.keySignature.pitchClass
     -- get the target key signature stuff, retaining the mode
-    targetAcc = (unwrap targetKA).accidental
-    targetPc = (unwrap targetKA).pitchClass
+    targetAcc = targetKA.accidental
+    targetPc = targetKA.pitchClass
     targetmks =
         { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }, modifications: Nil }
     -- work out the distance between them
     d = transpositionDistance
-           targetKA
+           (KeyAccidental targetKA)
            ( KeyAccidental { pitchClass: srcPc, accidental: srcAcc })
   in
     -- don't bother transposing if there's no distance between the keys
@@ -445,27 +444,27 @@ transposeNoteBy state note =
       pitchFromInt (state.targetmks.keySignature) noteIdx.notePosition
 
     -- ( pc, acc ) = sharpenFlatEnharmonic ka
-    safeKa = sharpenFlatEnharmonic ka
+    KeyAccidental safeKa = sharpenFlatEnharmonic ka
 
     --JMW
-    targetBarAcc = Accidentals.lookup (unwrap safeKa).pitchClass state.targetBarAccidentals
+    targetBarAcc = Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals
 
     targetAcc =
       -- is it present in the local target bar accidentals
-      if (Accidentals.member safeKa state.targetBarAccidentals) then
+      if (Accidentals.member (KeyAccidental safeKa) state.targetBarAccidentals) then
         Nothing
         -- is it present in the local target bar accidentals but with a different value
        -- else if (isJust (Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals)) then
       else if (isJust targetBarAcc) then
-        Just (unwrap safeKa).accidental
+        Just safeKa.accidental
           -- is it in the set of keys in the target diatonic scale
-      else if (inScale safeKa state.targetScale) then
+      else if (inScale (KeyAccidental safeKa) state.targetScale) then
         Nothing
       else
-        Just (unwrap safeKa).accidental
+        Just safeKa.accidental
 
     transposedNote =
-      note { pitchClass = (unwrap safeKa).pitchClass
+      note { pitchClass = safeKa.pitchClass
            , accidental = targetAcc
            , octave = note.octave + noteIdx.octaveIncrement }
 
@@ -477,7 +476,7 @@ transposeNoteBy state note =
     newTargetAccs =
       if (isJust targetAcc) then
         -- we use the explicit form of the target
-        addBarAccidental (unwrap safeKa).pitchClass (Just (unwrap safeKa).accidental) state.targetBarAccidentals
+        addBarAccidental safeKa.pitchClass (Just safeKa.accidental) state.targetBarAccidentals
       else
         state.targetBarAccidentals
 
@@ -567,7 +566,7 @@ sharpNoteNumbers =
   let
     f nn =
       let
-        ka = unwrap $ fst nn
+        KeyAccidental ka = fst nn
         pos = snd nn
       in
         ((ka.accidental == Sharp) && (ka.pitchClass /= E && ka.pitchClass /= B))
@@ -583,7 +582,7 @@ flatNoteNumbers =
   let
     f nn =
       let
-        ka = unwrap $ fst nn
+        KeyAccidental ka = fst nn
         pos = snd nn
       in
         ((ka.accidental == Flat) && (ka.pitchClass /= F && ka.pitchClass /= C))
