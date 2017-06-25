@@ -39,7 +39,6 @@ import Prelude (class Show, class Eq, class Ord, (<>), show)
 import Data.Generic.Rep
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Ord (genericCompare)
-import Data.Generic.Rep.Show (genericShow)
 
 -- | A Tune.
 type AbcTune =
