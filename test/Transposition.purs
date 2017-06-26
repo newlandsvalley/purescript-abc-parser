@@ -29,6 +29,7 @@ transpositionSuite = do
     keySuite
     noteSuite
     phraseSuite
+    tuneSuite
     keyChangeSuite
 
 keySuite :: forall t. Free (TestF t) Unit
@@ -154,6 +155,16 @@ phraseSuite = do
         (KeyAccidental { pitchClass : A, accidental : Natural })
         amPhrase1High
 
+-- | test that headers are ordered properly
+tuneSuite :: forall t. Free (TestF t) Unit
+tuneSuite = do
+  suite "tunes" do
+    test "Bm to Am" do
+      assertTranspositionMatches
+        tuneBm
+        -- aMinor
+        (KeyAccidental { pitchClass : A, accidental : Natural })
+        tuneAm
 
 keyChangeSuite :: forall t. Free (TestF t) Unit
 keyChangeSuite = do
@@ -435,3 +446,9 @@ keyChangeBmInline =
 
 keyChangeAmInline =
     "K: AMinor\x0D\n| A4 G4 A4 | c2e2 d2cB B2c2 | [K: EMinor] e4 d4 e4 | f2g2 a2gf f2g2 |\x0D\n"
+
+tuneBm =
+    "X: 1\r\nT: title\r\nM: 3/4\r\nK: BMinor\r\n| d e f |\r\n"
+
+tuneAm =
+    "X: 1\r\nT: title\r\nM: 3/4\r\nK: AMinor\r\n| c d e |\r\n"

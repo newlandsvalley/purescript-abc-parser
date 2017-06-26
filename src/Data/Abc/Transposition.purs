@@ -697,7 +697,9 @@ transpositionDistance target source =
 
 
 
-{- replace a Key header (if it exists) -}
+{- replace a Key header (if it exists)
+   and place last in the list of headers, retaining the order of the other headers
+-}
 replaceKeyHeader :: ModifiedKeySignature -> TuneHeaders -> TuneHeaders
 replaceKeyHeader newmks hs =
   let
@@ -712,4 +714,4 @@ replaceKeyHeader newmks hs =
     newhs =
       filter f hs
   in
-    reverse $ ( Key newmks ) : newhs
+    reverse $ ( Key newmks ) : (reverse newhs)
