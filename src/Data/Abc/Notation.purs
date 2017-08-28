@@ -20,6 +20,7 @@ module Data.Abc.Notation
         , accidentalImplicitInKey
         , dotFactor
         , toMidiPitch
+        , midiPitchOffset
         , transposeKeySignatureBy
         , normaliseModalKey
         ) where
