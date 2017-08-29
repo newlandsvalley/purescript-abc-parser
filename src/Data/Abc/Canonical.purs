@@ -11,7 +11,7 @@ import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
 import Data.List (List, length)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Rational (Rational, runRational)
+import Data.Rational (Rational, numerator, denominator)
 import Data.Ratio (Ratio(..))
 import Data.Tuple (Tuple(..))
 import Data.String (trim, toLower, singleton, length, take) as Str
@@ -90,7 +90,7 @@ rational (Rational (Ratio n d)) =
     show n <> "/" <> show d
 -}
 
-
+{- Rational 3.1.1
 showRatio :: Ratio Int -> String
 showRatio (Ratio n d) =
     (show n) <> "/" <> (show d)
@@ -102,10 +102,19 @@ ratlist rs =
             (showRatio (runRational r)) <> " " <> acc
     in
       Str.trim $ foldr f "" rs
-    {-
-        List.foldr f "" rs
-            |> trimRight
     -}
+
+showRatio :: Rational -> String
+showRatio r =
+  (show $ numerator r) <> "/" <> (show $ denominator r)
+
+ratlist :: List Rational -> String
+ratlist rs =
+    let
+        f r acc =
+          (showRatio r) <> " " <> acc
+    in
+      Str.trim $ foldr f "" rs
 
 meter :: Maybe MeterSignature -> String
 meter ms =
@@ -116,6 +125,7 @@ meter ms =
         Just (Tuple n d) ->
             show n <> "/" <> show d
 
+{- Rational 3.1.1
 duration :: Rational -> String
 duration r =
   duration' (runRational r)
@@ -125,11 +135,19 @@ duration' (Ratio 1 1 )  = ""
 duration' (Ratio 1 2 )  = "/"
 duration' (Ratio n 1 )  = show n
 duration' r = showRatio r
+-}
+
+duration :: Rational -> String
+duration r =
+  case (Tuple (numerator r) (denominator r)) of
+    Tuple 1 1 -> ""
+    Tuple 1 2 -> "/"
+    Tuple n 1 -> show n
+    Tuple _ _ -> showRatio r
 
 key :: KeySignature -> String
 key k =
   show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
-
 
 keyAccidentals :: List KeyAccidental -> String
 keyAccidentals =

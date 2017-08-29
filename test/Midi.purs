@@ -5,7 +5,7 @@ import Control.Monad.Free (Free)
 import Data.List (List(..), head, (:))
 import Data.Either (Either(..))
 import Data.Maybe (fromMaybe)
-import Data.Rational (Rational, fromInt, rational, toNumber)
+import Data.Rational (Rational, fromInt, toNumber, (%))
 import Data.Int (round)
 
 import Data.Abc.Parser (parse)
@@ -66,22 +66,22 @@ transformationSuite =
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
     test "tuplet" do
       assertMidi "| (3CDE |\r\n"
-        (Midi.Track (standardTempo <> noteC (rational 2 3) <> noteD (rational 2 3) <> noteE (rational 2 3)))
+        (Midi.Track (standardTempo <> noteC (2 % 3) <> noteD (2 % 3) <> noteE (2 % 3)))
     test "tuplet with rest" do
       assertMidi "| (3zDE |\r\n"
-        (Midi.Track (standardTempo <> rest (rational 2 3) <> noteD (rational 2 3) <> noteE (rational 2 3)))
+        (Midi.Track (standardTempo <> rest (2 % 3) <> noteD (2 % 3) <> noteE (2 % 3)))
     test "broken rhythm >" do
       assertMidi "| C>D |\r\n"
-        (Midi.Track (standardTempo <> noteC (rational 3 2) <> noteD (rational 1 2)))
+        (Midi.Track (standardTempo <> noteC (3 % 2) <> noteD (1 % 2)))
     test "broken rhythm <" do
       assertMidi "| C<D |\r\n"
-        (Midi.Track (standardTempo <> noteC (rational 1 2) <> noteD (rational 3 2)))
+        (Midi.Track (standardTempo <> noteC (1 % 2) <> noteD (3 % 2)))
     test "broken rhythm >>" do
       assertMidi "| C>>D |\r\n"
-        (Midi.Track (standardTempo <> noteC (rational 7 4) <> noteD (rational 1 4)))
+        (Midi.Track (standardTempo <> noteC (7 % 4) <> noteD (1 % 4)))
     test "broken rhythm <<" do
       assertMidi "| C<<D |\r\n"
-        (Midi.Track (standardTempo <> noteC (rational 1 4) <> noteD (rational 7 4)))
+        (Midi.Track (standardTempo <> noteC (1 % 4) <> noteD (7 % 4)))
     test "chord" do
       assertMidi "| [CEG] |\r\n"
         (Midi.Track (standardTempo <> chordC (fromInt 1)))
@@ -93,10 +93,10 @@ transformationSuite =
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> chordC (fromInt 1)))
     test "tempo header" do
       assertMidi "Q: 1/4=180\r\n| CDE |\r\n"
-        (Midi.Track (tempo (rational 2 3) <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+        (Midi.Track (tempo (2 % 3) <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
     test "unit note length header" do
       assertMidi "L: 1/16\r\n| CDE |\r\n"
-        (Midi.Track (tempo (rational 1 2) <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+        (Midi.Track (tempo (1 % 2) <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
     test "key signature header" do
       assertMidi "K: D\r\n| CDE |\r\n"
         (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
@@ -105,16 +105,16 @@ transformationSuite =
         (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
     test "change tempo" do
       assertMidi "| CD |\r\nQ: 1/4=180\r\n| E |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 2 3) <> noteE (fromInt 1)))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (2 % 3) <> noteE (fromInt 1)))
     test "change tempo inline " do
       assertMidi "| CD | [Q: 1/4=180] | E |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 2 3) <> noteE (fromInt 1)))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (2 % 3) <> noteE (fromInt 1)))
     test "change unit note length" do
       assertMidi "| CD |\r\nL: 1/16\r\n| E |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 1 2) <> noteE (fromInt 1)))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (1 % 2) <> noteE (fromInt 1)))
     test "change unit note length inline" do
       assertMidi "| CD | [L: 1/16] | E |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (rational 1 2) <> noteE (fromInt 1)))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (1 % 2) <> noteE (fromInt 1)))
     test "change key" do
       assertMidi "| CDE |\r\nK: D\r\n| C |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))

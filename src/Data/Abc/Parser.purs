@@ -18,7 +18,7 @@ import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
 import Data.Bifunctor (bimap)
 import Data.Rational (Rational, fromInt, (%))
-import Data.Rational (rational) as Rational
+-- import Data.Rational (rational) as Rational
 import Data.Tuple (Tuple(..))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
@@ -276,7 +276,7 @@ noteDur =
 -}
 anyRat :: Parser Rational
 anyRat =
-  Rational.rational <$> option 1 int <* char '/' <*> option 2 int
+  (%) <$> option 1 int <* char '/' <*> option 2 int
 
 {-| this matches //  or /// etc. -}
 manySlashes :: Parser Rational
@@ -851,7 +851,7 @@ unsupportedHeader =
 {- normal Rational e.g 3/4 -}
 rational :: Parser Rational
 rational =
-    Rational.rational <$> int <* char '/' <*> int
+  (%) <$> int <* char '/' <*> int
 
 
 -- rational with trailing optional spaces

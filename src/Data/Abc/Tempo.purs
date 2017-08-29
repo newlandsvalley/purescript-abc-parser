@@ -18,7 +18,7 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Int (round)
 import Data.List (List(..), (:), filter, reverse)
 import Data.Foldable (foldl)
-import Data.Rational (Rational, rational, fromInt, toNumber)
+import Data.Rational (Rational, (%), fromInt, toNumber)
 import Data.Abc
 import Data.Abc.Notation (getUnitNoteLength, getTempoSig, getHeader)
 
@@ -46,7 +46,7 @@ type AbcTempo =
 -- | The default Tempo - 1/4=120.
 defaultTempo :: TempoSignature
 defaultTempo =
-    { noteLengths: ( rational 1 4 : Nil)
+    { noteLengths: ( 1 % 4 : Nil)
     , bpm: 120
     , marking: Nothing
     }
@@ -54,9 +54,9 @@ defaultTempo =
 -- | default to 1/4=120
 defaultAbcTempo :: AbcTempo
 defaultAbcTempo =
-    { tempoNoteLength : rational 1 4
+    { tempoNoteLength : 1 % 4
     , bpm : 120
-    , unitNoteLength : rational 1 8
+    , unitNoteLength : 1 % 8
     }
 
 -- | Get the ABC tempo from the tune
@@ -64,7 +64,7 @@ getAbcTempo :: AbcTune -> AbcTempo
 getAbcTempo tune =
   let
     tempoSig = fromMaybe defaultTempo $ getTempoSig tune
-    unitNoteLength = fromMaybe (rational 1 8) $ getUnitNoteLength tune
+    unitNoteLength = fromMaybe (1 % 8) $ getUnitNoteLength tune
   in
     { tempoNoteLength : foldl (+) (fromInt 0) tempoSig.noteLengths
     , bpm : tempoSig.bpm

@@ -11,7 +11,7 @@ import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidi
 import Data.Foldable (foldl)
 import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Rational (Rational, fromInt, rational)
+import Data.Rational (Rational, fromInt, (%))
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..), fst, snd)
 import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
@@ -146,13 +146,13 @@ transformMusic :: Music -> State TransformationState Midi.Recording
 transformMusic m =
   case m of
     Note abcNote ->
-      updateState (addNoteToState false (rational 1 1)) abcNote
+      updateState (addNoteToState false (1 % 1)) abcNote
 
     Rest r ->
       updateState addRestToState r.duration
 
     Tuplet signature restsOrNotes ->
-      updateState (addRestsOrNotesToState false (rational signature.q signature.p)) restsOrNotes
+      updateState (addRestsOrNotesToState false (signature.q % signature.p)) restsOrNotes
 
     Chord abcChord ->
       let
@@ -171,7 +171,7 @@ transformMusic m =
       in
         do
           -- set the notes all to start at the same time
-          _ <- updateState (addNotesToState true (rational 1 1)) abcChord.notes
+          _ <- updateState (addNotesToState true (1 % 1)) abcChord.notes
           -- pace by adding a NoteOff for the first note
           _ <- updateState (addNoteOffToState abcChord.duration) first
           -- and terminate all the other notes with a NoteOff at 0 duration
@@ -504,9 +504,9 @@ midiTempoMsg abcTempo =
 brokenTempo :: Int -> Boolean -> Rational
 brokenTempo i isUp =
   if isUp then
-    (rational 1 1) + (dotFactor i)
+    (fromInt 1) + (dotFactor i)
   else
-    (rational 1 1) - (dotFactor i)
+    (fromInt 1) - (dotFactor i)
 
 -- | does the MIDI bar hold no notes (or any other MIDI messages)
 isBarEmpty :: MidiBar -> Boolean

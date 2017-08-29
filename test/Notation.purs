@@ -1,12 +1,12 @@
 module Test.Notation (notationSuite) where
 
-import Prelude
+import Prelude (Unit, discard, show, ($), (<>), (==))
 import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.List (List(..), intersect, length, null, (:))
-import Data.Rational (Rational, fromInt, rational)
+import Data.Maybe (Maybe(..))
+import Data.List (List(..), intersect, length, (:))
+import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), KeyAccidental(..), KeySet, Mode(..), AbcNote, AbcTune)
@@ -163,7 +163,7 @@ headerSuite =
    test "getMeter" do
     assertOkMeter manyHeaders (Tuple 4 4)
    test "getUnitNoteLen" do
-     assertOkNoteLen manyHeaders (rational 1 16)
+     assertOkNoteLen manyHeaders (1 % 16)
 
 
 scaleSuite :: forall t. Free (TestF t) Unit
