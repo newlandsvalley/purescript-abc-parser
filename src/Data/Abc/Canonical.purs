@@ -12,7 +12,6 @@ import Data.Abc
 import Data.List (List, length)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, numerator, denominator)
-import Data.Ratio (Ratio(..))
 import Data.Tuple (Tuple(..))
 import Data.String (trim, toLower, singleton, length, take) as Str
 import Data.Foldable (foldr)
