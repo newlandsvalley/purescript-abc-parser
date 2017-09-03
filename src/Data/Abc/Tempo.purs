@@ -51,7 +51,8 @@ defaultTempo =
     , marking: Nothing
     }
 
--- | default to 1/4=120
+-- | default to 1/4=120 with eighth notes as the default note length
+-- | this works out that an eighth notes lasts for 1/4 second
 defaultAbcTempo :: AbcTempo
 defaultAbcTempo =
     { tempoNoteLength : 1 % 4
@@ -74,13 +75,13 @@ getAbcTempo tune =
 {-
    midiTempo algorithm is:
 
-   t.bpm beats occupy 1 minute or 60 * 10^16 μsec
-   1 bpm beat occupies 60 * 10^16/t.bpm μsec
+   t.bpm beats occupy 1 minute or 60 * 10^6 μsec
+   1 bpm beat occupies 60 * 10^6/t.bpm μsec
 
    but we use a standard beat of 1 unit when writing a note, whereas the bpm measures a tempo note length of
    t.unitNoteLength/t.tempoNoteLength
    i.e.
-   1 whole note beat occupies 60 * 10^16/t.bpm * t.unl/t.tnl μsec
+   1 whole note beat occupies 60 * 10^6/t.bpm * t.unl/t.tnl μsec
 
 -}
 
@@ -129,6 +130,8 @@ setBpm bpm tune =
 -- MIDI support
 
 -- | A standard MIDI tick - we use 1/4 note = 480 ticks.
+-- | this is known as 'ticks per quarter note' or 'parts per quarter'
+-- | in MIDI literature,  480 tends to be standard.
 standardMidiTick :: MidiTick
 standardMidiTick =
   480

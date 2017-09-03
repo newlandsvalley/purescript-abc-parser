@@ -1,11 +1,12 @@
 module Test.Tempo (tempoSuite) where
 
 
-import Prelude (Unit, bind, discard)
+import Prelude (Unit, discard)
 import Control.Monad.Free (Free)
 
-import Data.Abc.Tempo (getBpm, setBpm)
+import Data.Abc.Tempo (getBpm, setBpm, midiTempo, defaultAbcTempo)
 import Test.Utils
+import Test.Unit.Assert as Assert
 
 import Test.Unit (TestF, suite, test)
 
@@ -37,6 +38,12 @@ tempoSuite = do
           onlyKeyHeader
           (setBpm 84)
           justTempoAndKeyHeader
+    -- | standard tempo is 1/4 = 120 (120 quarter notes/min)
+    -- | i.e. 2 quarter notes/sec (each quarter note takes 1/2 sec)
+    -- | but default ABC tempo uses eighth notes
+    -- | so these last for 1/4 sec = 250000 μsec
+    test "MIDI tempo for default ABC tempo" do
+      Assert.equal 250000 (midiTempo defaultAbcTempo)
 
 fullHeaderMed =
     "X: 1\x0D\nT: a title\x0D\nQ: 1/4=120\x0D\nM: 3/4\x0D\nK: CMajor\x0D\n| A,B, (3CDE [FG] |\x0D\n"
