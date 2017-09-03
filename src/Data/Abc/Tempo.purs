@@ -6,6 +6,7 @@ module Data.Abc.Tempo
         , defaultAbcTempo
         , getAbcTempo
         , midiTempo
+        , unitNotesPerSecond
         , getBpm
         , setBpm
         , standardMidiTick
@@ -95,6 +96,12 @@ midiTempo t =
       t.unitNoteLength / t.tempoNoteLength
   in
     round ((60.0 * 1000000.0 * (toNumber relativeNoteLength)) / (toNumber $ fromInt t.bpm))
+
+-- | calculate the number of unit notes per second given by an ABC tempo
+-- | this gives the simple indication of the tempo
+unitNotesPerSecond :: AbcTempo -> Rational
+unitNotesPerSecond t =
+  (t.bpm % 60) * (t.tempoNoteLength / t.unitNoteLength)
 
 -- | Get the tempo of the tune in beats per minute from the tunes header
 -- |    (if it exists) or the default of 120 if it does not.
