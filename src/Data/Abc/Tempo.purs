@@ -6,7 +6,7 @@ module Data.Abc.Tempo
         , defaultAbcTempo
         , getAbcTempo
         , midiTempo
-        , unitNotesPerSecond
+        , beatsPerSecond
         , getBpm
         , setBpm
         , standardMidiTick
@@ -29,6 +29,15 @@ import Data.Abc.Notation (getUnitNoteLength, getTempoSig, getHeader)
 type MidiTick =
     Int
 
+-- | a standard beat is a quarter note
+-- | in tempo signatures such as 1/4=120
+standardBeatLength :: Rational
+standardBeatLength = (1 % 4)
+
+-- | ditto for a standard beat per minute (BPM)
+standardBPM :: Int
+standardBPM = 120
+
 -- | The tempo when the tune is being played. This is usually represented
 -- | as (for example) 1/4 = 120 - i.e. 120 querter notes per minute.
 -- | this is a consolidation of both the Tempo and the Unit Note length
@@ -47,17 +56,17 @@ type AbcTempo =
 -- | The default Tempo - 1/4=120.
 defaultTempo :: TempoSignature
 defaultTempo =
-    { noteLengths: ( 1 % 4 : Nil)
-    , bpm: 120
+    { noteLengths: ( standardBeatLength : Nil)
+    , bpm: standardBPM
     , marking: Nothing
     }
 
 -- | default to 1/4=120 with eighth notes as the default note length
--- | this works out that an eighth notes lasts for 1/4 second
+-- | this works out that an eighth notes last for 1/4 second
 defaultAbcTempo :: AbcTempo
 defaultAbcTempo =
-    { tempoNoteLength : 1 % 4
-    , bpm : 120
+    { tempoNoteLength : standardBeatLength
+    , bpm : standardBPM
     , unitNoteLength : 1 % 8
     }
 
@@ -97,11 +106,12 @@ midiTempo t =
   in
     round ((60.0 * 1000000.0 * (toNumber relativeNoteLength)) / (toNumber $ fromInt t.bpm))
 
--- | calculate the number of unit notes per second given by an ABC tempo
--- | this gives the simple indication of the tempo
-unitNotesPerSecond :: AbcTempo -> Rational
-unitNotesPerSecond t =
-  (t.bpm % 60) * (t.tempoNoteLength / t.unitNoteLength)
+-- | calculate the number of beats per second given by an ABC tempo
+-- | to give a simple indication of the tempo of the overall melody
+-- | note that this is independent of the unit note length
+beatsPerSecond :: AbcTempo -> Rational
+beatsPerSecond t =
+  (t.bpm % 60) * (t.tempoNoteLength / standardBeatLength)
 
 -- | Get the tempo of the tune in beats per minute from the tunes header
 -- |    (if it exists) or the default of 120 if it does not.
@@ -143,7 +153,6 @@ standardMidiTick :: MidiTick
 standardMidiTick =
   480
 
--- | Calculate a MIDI note duration from the note length.
 -- | Assume a standard unit note length of 1/4 and a standard number of ticks per unit (1/4) note of 480.
 noteTicks :: Rational -> MidiTick
 noteTicks n =

@@ -4,7 +4,7 @@ module Test.Tempo (tempoSuite) where
 import Prelude (Unit, discard, ($))
 import Control.Monad.Free (Free)
 
-import Data.Abc.Tempo (getBpm, setBpm, midiTempo, defaultAbcTempo, unitNotesPerSecond)
+import Data.Abc.Tempo (getBpm, setBpm, midiTempo, defaultAbcTempo, beatsPerSecond)
 import Test.Utils
 import Test.Unit.Assert as Assert
 import Data.Rational (fromInt, (%))
@@ -45,12 +45,13 @@ tempoSuite = do
     -- | so these last for 1/4 sec = 250000 μsec
     test "MIDI tempo for default ABC tempo" do
       Assert.equal 250000 (midiTempo defaultAbcTempo)
-    test "default unps" do
-      Assert.equal (fromInt 4) (unitNotesPerSecond defaultAbcTempo)
-    test "unps faster bpm" do
-      Assert.equal (fromInt 6) (unitNotesPerSecond $ defaultAbcTempo {bpm = 180} )
-    test "unps shorter notelen" do
-      Assert.equal (fromInt 8) (unitNotesPerSecond $ defaultAbcTempo {unitNoteLength = 1 % 16} )
+    test "default bps" do
+      Assert.equal (fromInt 2) (beatsPerSecond defaultAbcTempo)
+    test "faster bps" do
+      Assert.equal (fromInt 3) (beatsPerSecond $ defaultAbcTempo {bpm = 180} )
+    -- | bps should be unaffected by unit note length
+    test "bps shorter notelen" do
+      Assert.equal (fromInt 2) (beatsPerSecond $ defaultAbcTempo {unitNoteLength = 1 % 16} )
 
 
 fullHeaderMed =
