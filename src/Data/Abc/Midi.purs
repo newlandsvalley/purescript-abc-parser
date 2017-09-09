@@ -168,12 +168,15 @@ transformMusic m =
                    head abcChord.notes
         others = fromMaybe Nil $
                    tail abcChord.notes
+        -- we'll pace the chord from the duration of the first note it contains,
+        -- modified by the overall chord duration
+        duration = abcChord.duration * first.duration
       in
         do
           -- set the notes all to start at the same time
           _ <- updateState (addNotesToState true (1 % 1)) abcChord.notes
-          -- pace by adding a NoteOff for the first note
-          _ <- updateState (addNoteOffToState abcChord.duration) first
+          -- pace by adding a NoteOff for the overall duration
+          _ <- updateState (addNoteOffToState duration) first
           -- and terminate all the other notes with a NoteOff at 0 duration
           updateState (addNoteOffsToState (fromInt 0)) others
 

@@ -88,6 +88,12 @@ transformationSuite =
     test "long chord" do
       assertMidi "| [CEG]2 |\r\n"
         (Midi.Track (standardTempo <> chordC (fromInt 2)))
+    test "equivalent long chord" do
+      assertMidi "| [C2E2G2] |\r\n"
+        (Midi.Track (standardTempo <> chordC (fromInt 2)))
+    test "doubly fractional chord" do
+      assertMidi "| [C/E/G/]1/3 |\r\n"
+        (Midi.Track (standardTempo <> chordC (1 % 6)))
     test "tie into chord" do  -- we don't support ties into chords - it's ambiguous
       assertMidi "| C-[CEG] |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> chordC (fromInt 1)))
