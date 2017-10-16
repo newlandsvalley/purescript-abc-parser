@@ -22,7 +22,7 @@
     "purescript-bifunctors": "^3.0.0",
     "purescript-debug": "^3.0.0",
     "purescript-maps": "^3.0.0",
-    "purescript-midi": "https://github.com/newlandsvalley/purescript-midi.git"
+    "purescript-midi": "https://github.com/newlandsvalley/purescript-midi.git#1.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
