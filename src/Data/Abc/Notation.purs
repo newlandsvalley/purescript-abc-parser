@@ -1,9 +1,12 @@
 module Data.Abc.Notation
-        ( MidiPitch
-        , NoteTime
+        ( NoteTime
         , DiatonicScale
         , HeaderMap
         , notesInChromaticScale
+        , pitchNumbers
+        , pitchNumber
+        , diatonicScale
+        , inScale
         , keySet
         , modifiedKeySet
         , getKeySet
@@ -14,43 +17,32 @@ module Data.Abc.Notation
         , getTempoSig
         , getTitle
         , getUnitNoteLength
-        , diatonicScale
-        , inScale
         , isCOrSharpKey
-        , accidentalImplicitInKey
         , dotFactor
-        , toMidiPitch
-        , midiPitchOffset
         , transposeKeySignatureBy
         , normaliseModalKey
         ) where
 
 
 import Data.Abc
-import Data.Abc.Accidentals as Accidentals
-import Data.Abc.Canonical as Canonical
-import Data.Foldable (oneOf)
+
 import Data.List (List(..), (:), elem, elemIndex, foldr, filter, index, length, null, reverse, slice)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
-import Prelude (($), (<>), (+), (-), (*), (<), (==), (/=), (||), show, negate, map, mod)
+import Prelude (map, mod, negate, show, ($), (+), (-), (/=), (<), (<>), (==), (||))
 
 -- | A diatonic scale presented as a list of notes in the scale.
 type DiatonicScale =
-    List KeyAccidental
+    List Pitch
 
 -- | A chromatic (12-note) scale -}
 type ChromaticScale =
-    List KeyAccidental
+    List Pitch
 
 type Intervals =
     List Int
-
--- | The pitch of a note expressed as a MIDI interval.
-type MidiPitch =
-    Int
 
 -- | The time taken when a note is played before the next note.
 type NoteTime =
@@ -63,10 +55,95 @@ type HeaderMap =
 
 -- EXPORTED FUNCTIONS
 
--- | Number of notes in a chromatic scale (i.e. 12)
+-- | the number of notes in a chromatic scale (12)
 notesInChromaticScale :: Int
 notesInChromaticScale =
   12
+
+-- | a relationship between a Pitch and a note number
+-- | i.e. C is 0, C Sharp is 1 B is 11 etc.
+pitchNumbers :: List ( Tuple Pitch Int )
+pitchNumbers =
+  ( Tuple (Pitch { pitchClass: C, accidental: Flat }) 11
+  : Tuple (Pitch { pitchClass: C, accidental: Natural }) 0
+  : Tuple (Pitch { pitchClass: C, accidental: Implicit }) 0
+  : Tuple (Pitch { pitchClass: C, accidental: Sharp }) 1
+  : Tuple (Pitch { pitchClass: C, accidental: DoubleSharp }) 2
+  : Tuple (Pitch { pitchClass: D, accidental: DoubleFlat }) 0
+  : Tuple (Pitch { pitchClass: D, accidental: Flat }) 1
+  : Tuple (Pitch { pitchClass: D, accidental: Natural }) 2
+  : Tuple (Pitch { pitchClass: D, accidental: Implicit }) 2
+  : Tuple (Pitch { pitchClass: D, accidental: Sharp }) 3
+  : Tuple (Pitch { pitchClass: D, accidental: DoubleSharp }) 4
+  : Tuple (Pitch { pitchClass: E, accidental: DoubleFlat }) 2
+  : Tuple (Pitch { pitchClass: E, accidental: Flat }) 3
+  : Tuple (Pitch { pitchClass: E, accidental: Natural }) 4
+  : Tuple (Pitch { pitchClass: E, accidental: Implicit }) 4
+  : Tuple (Pitch { pitchClass: E, accidental: Sharp }) 5
+  : Tuple (Pitch { pitchClass: E, accidental: DoubleSharp }) 6
+  : Tuple (Pitch { pitchClass: F, accidental: Flat }) 4
+  : Tuple (Pitch { pitchClass: F, accidental: Natural }) 5
+  : Tuple (Pitch { pitchClass: F, accidental: Implicit }) 5
+  : Tuple (Pitch { pitchClass: F, accidental: Sharp }) 6
+  : Tuple (Pitch { pitchClass: F, accidental: DoubleSharp }) 7
+  : Tuple (Pitch { pitchClass: G, accidental: DoubleFlat }) 5
+  : Tuple (Pitch { pitchClass: G, accidental: Flat }) 6
+  : Tuple (Pitch { pitchClass: G, accidental: Natural }) 7
+  : Tuple (Pitch { pitchClass: G, accidental: Implicit }) 7
+  : Tuple (Pitch { pitchClass: G, accidental: Sharp }) 8
+  : Tuple (Pitch { pitchClass: G, accidental: DoubleSharp }) 9
+  : Tuple (Pitch { pitchClass: A, accidental: DoubleFlat }) 7
+  : Tuple (Pitch { pitchClass: A, accidental: Flat }) 8
+  : Tuple (Pitch { pitchClass: A, accidental: Natural }) 9
+  : Tuple (Pitch { pitchClass: A, accidental: Implicit }) 9
+  : Tuple (Pitch { pitchClass: A, accidental: Sharp }) 10
+  : Tuple (Pitch { pitchClass: A, accidental: DoubleSharp }) 11
+  : Tuple (Pitch { pitchClass: B, accidental: DoubleFlat }) 9
+  : Tuple (Pitch { pitchClass: B, accidental: Flat }) 10
+  : Tuple (Pitch { pitchClass: B, accidental: Natural }) 11
+  : Tuple (Pitch { pitchClass: B, accidental: Implicit }) 11
+  : Tuple (Pitch { pitchClass: B, accidental: Sharp }) 0
+  : Tuple (Pitch { pitchClass: B, accidental: DoubleSharp }) 1
+  : Nil
+  )
+
+-- | the pitch number is the position of the pitch in the chromatic scale
+-- | starting at C Natural = 0 (i.e. C is 0, C Sharp is 1 B is 11 etc.)
+pitchNumber :: Pitch -> Int
+pitchNumber (Pitch p) =
+  let
+    target =
+      case p.accidental of
+        Implicit ->
+          Pitch { pitchClass : p.pitchClass, accidental : Natural }
+        _ ->
+          Pitch p
+  in
+    fromMaybe 0 $ lookup target chromaticScaleMap
+
+-- | The set of keys (pitch classes and accidental) that comprise a diatonic scale
+-- | in the given key signature.
+diatonicScale :: KeySignature -> DiatonicScale
+diatonicScale ks =
+  let
+    target =
+      Pitch {pitchClass: ks.pitchClass, accidental: ks.accidental}
+  in
+    case ks.mode of
+      Major ->
+        majorScale target
+
+      Ionian ->
+        majorScale target
+
+      m ->
+        modalScale target ks.mode
+
+
+-- | Is the pitch in the diatonic scale?
+inScale :: Pitch -> DiatonicScale -> Boolean
+inScale p s =
+  elem p s
 
 -- | The set of keys (pitch classes with accidental) that comprise the key signature.
 keySet :: KeySignature -> KeySet
@@ -97,10 +174,10 @@ getKeySet t =
       Nothing ->
         Nil
 
--- | Is the KeyAccidental is in the KeySet?
-inKeySet :: KeyAccidental -> KeySet -> Boolean
-inKeySet ka ks =
-  elem ka ks
+-- | Is the pitch is in the KeySet?
+inKeySet :: Pitch -> KeySet -> Boolean
+inKeySet p ks =
+  elem p ks
 
 -- | A map (Header code => Header) for the first instance of each Header
 getHeaderMap :: AbcTune -> HeaderMap
@@ -254,77 +331,35 @@ getHeader :: Char -> AbcTune -> Maybe Header
 getHeader code t =
   lookup code (getHeaderMap t)
 
-
--- | The set of keys (pitch classes and accidental) that comprise a diatonic scale
--- | in the given key signature.
-diatonicScale :: KeySignature -> DiatonicScale
-diatonicScale ks =
-  let
-    target =
-      KeyAccidental {pitchClass: ks.pitchClass, accidental: ks.accidental}
-  in
-    case ks.mode of
-      Major ->
-        majorScale target
-
-      Ionian ->
-        majorScale target
-
-      m ->
-        modalScale target ks.mode
-
-
--- | Is the KeyAccidental in the diatonic scale?
-inScale :: KeyAccidental -> DiatonicScale -> Boolean
-inScale ka s =
-  elem ka s
-
 -- | Is the key signature a sharp key or else a simple C Major key?
-
 isCOrSharpKey :: KeySignature -> Boolean
 isCOrSharpKey ksig =
   let
     kset =
       keySet ksig
-    isFlat :: KeyAccidental -> Boolean
-    isFlat (KeyAccidental ka) =
-      ka.accidental == Flat
+    isFlat :: Pitch -> Boolean
+    isFlat (Pitch p) =
+      p.accidental == Flat
   in
     -- the list is empty anyway or contains only flat keys
     null $ filter isFlat kset
-
-
--- | Return an accidental if it is implicitly there in the (modified) key signature
--- | attached to the pitch class of the note. In ABC, notes generally inherit
--- | their (sharp, flat or natural) accidental nature from the key signature.
-accidentalImplicitInKey :: PitchClass -> ModifiedKeySignature -> Maybe Accidental
-accidentalImplicitInKey pc mks =
-  let
-    keyset =
-      modifiedKeySet mks
-
-    accidentals =
-      Accidentals.fromKeySet keyset
-  in
-    lookup pc accidentals
-
 
 -- | modify a key set by adding new accidental
 -- | This is ussed in order to start with a simple key signature
 -- | and end up with an extended set of keys by taking into account
 -- | the modifications which add specific sharos or flats
-modifyKeySet :: KeyAccidental -> KeySet -> KeySet
-modifyKeySet newKeyA ks =
-  case newKeyA of
+modifyKeySet :: Pitch -> KeySet -> KeySet
+modifyKeySet newP ks =
+  case newP of
     -- ignore naturals in incomimg key for key signatures
-    KeyAccidental { pitchClass: _, accidental: Natural}  ->
+    Pitch { pitchClass: _, accidental: Natural}  ->
       ks
-    KeyAccidental { pitchClass: pitchClass, accidental: _ }  ->
-        newKeyA : (filter (noMatchPC pitchClass) ks)
+    Pitch { pitchClass: pitchClass, accidental: _ }  ->
+      newP: (filter (noMatchPC pitchClass) ks)
   where
-    noMatchPC :: PitchClass -> KeyAccidental -> Boolean
-    noMatchPC pc (KeyAccidental ka) =
-       pc /= ka.pitchClass
+    noMatchPC :: PitchClass -> Pitch -> Boolean
+    noMatchPC pc (Pitch p) =
+       pc /= p.pitchClass
 
 
 {-| The amount by which you increase or decrease the duration of a (possibly multiply) dotted note.
@@ -352,24 +387,10 @@ dotFactor i =
     _ ->
       0 % 1
 
-
-{-| Convert an ABC note pitch to a MIDI pitch.
-
-*  AbcNote - the note in question
-*  ModifiedKeySignature - the key signature (possibly modified by extra accidentals)
-*  Accidentals - any notes in this bar which have previously been set explicitly to an accidental which are thus inherited by this note
-*  MidiPitch - the resulting pitch of the MIDI note
-
--}
-toMidiPitch :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> MidiPitch
-toMidiPitch n mks barAccidentals =
-  (n.octave * notesInChromaticScale) + midiPitchOffset n mks barAccidentals
-
 -- temporary
-lookupScale :: ChromaticScale -> Int -> Maybe KeyAccidental
+lookupScale :: ChromaticScale -> Int -> Maybe Pitch
 lookupScale scale idx =
   index scale idx
-
 
 -- | Transpose a key signature by a given distance.
 transposeKeySignatureBy :: Int -> ModifiedKeySignature -> ModifiedKeySignature
@@ -377,10 +398,10 @@ transposeKeySignatureBy i mks =
   let
     -- turn the key sig to a string pattern and look up its index
     pattern =
-      (show mks.keySignature.pitchClass) <> (Canonical.keySignatureAccidental mks.keySignature.accidental)
+      Pitch { pitchClass : mks.keySignature.pitchClass, accidental : mks.keySignature.accidental }
 
     idx =
-      fromMaybe 0 $ lookup pattern chromaticScaleMap
+      pitchNumber pattern
 
     newIndex =
       (notesInChromaticScale + idx + i) `mod` notesInChromaticScale
@@ -394,7 +415,7 @@ transposeKeySignatureBy i mks =
 
     -- now look up the transposed key at the new index
     kar =
-      fromMaybe (KeyAccidental { pitchClass: C, accidental: Natural }) $ index scale newIndex
+      fromMaybe (Pitch { pitchClass: C, accidental: Natural }) $ index scale newIndex
     -- modify the key accidentals likewise
     accs =
       map (transposeKeyAccidentalBy i) mks.modifications
@@ -402,46 +423,51 @@ transposeKeySignatureBy i mks =
     -- build the most likely enharmonic equivalent - don't use bizarre keys
     newks =
       case kar of
-        KeyAccidental ka ->
-          equivalentEnharmonicKeySig  ka.pitchClass ka.accidental mks.keySignature.mode
+        Pitch p ->
+          equivalentEnharmonicKeySig  p.pitchClass p.accidental mks.keySignature.mode
   in
     { keySignature: newks, modifications: accs }
 
 
 -- implementation
+
+-- | lookup for providing offsets from C in a chromatic scale
+chromaticScaleMap :: Map Pitch Int
+chromaticScaleMap =
+  fromFoldable pitchNumbers
+
 {- works from C major up to B major but not beyond
     (F# major requires F->E#, C# major also requires C->B#)
    "C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"
 -}
 sharpScale :: ChromaticScale
 sharpScale =
-      KeyAccidental { pitchClass: C, accidental: Natural }
-    : KeyAccidental { pitchClass: C, accidental: Sharp }
-    : KeyAccidental { pitchClass: D, accidental: Natural }
-    : KeyAccidental { pitchClass: D, accidental: Sharp }
-    : KeyAccidental { pitchClass: E, accidental: Natural }
-    : KeyAccidental { pitchClass: F, accidental: Natural }
-    : KeyAccidental { pitchClass: F, accidental: Sharp }
-    : KeyAccidental { pitchClass: G, accidental: Natural }
-    : KeyAccidental { pitchClass: G, accidental: Sharp }
-    : KeyAccidental { pitchClass: A, accidental: Natural }
-    : KeyAccidental { pitchClass: A, accidental: Sharp }
-    : KeyAccidental { pitchClass: B, accidental: Natural }
+      Pitch { pitchClass: C, accidental: Natural }
+    : Pitch { pitchClass: C, accidental: Sharp }
+    : Pitch { pitchClass: D, accidental: Natural }
+    : Pitch { pitchClass: D, accidental: Sharp }
+    : Pitch { pitchClass: E, accidental: Natural }
+    : Pitch { pitchClass: F, accidental: Natural }
+    : Pitch { pitchClass: F, accidental: Sharp }
+    : Pitch { pitchClass: G, accidental: Natural }
+    : Pitch { pitchClass: G, accidental: Sharp }
+    : Pitch { pitchClass: A, accidental: Natural }
+    : Pitch { pitchClass: A, accidental: Sharp }
+    : Pitch { pitchClass: B, accidental: Natural }
     : Nil
 
 -- "B#", "C#", "D", "D#", "E", "E#", "F#", "G", "G#", "A", "A#", "B"
-
 extremeSharpScale :: ChromaticScale
 extremeSharpScale =
   let
     f pc =
       case pc of
 
-        KeyAccidental { pitchClass: F, accidental: Natural } ->
-          KeyAccidental { pitchClass: E, accidental: Sharp }
+        Pitch { pitchClass: F, accidental: Natural } ->
+          Pitch { pitchClass: E, accidental: Sharp }
 
-        KeyAccidental { pitchClass: C, accidental: Natural } ->
-          KeyAccidental { pitchClass: B, accidental: Sharp }
+        Pitch { pitchClass: C, accidental: Natural } ->
+          Pitch { pitchClass: B, accidental: Sharp }
 
         _ ->
           pc
@@ -455,18 +481,18 @@ import Data.Newtype (unwrap)
 -}
 flatScale :: ChromaticScale
 flatScale =
-    ( KeyAccidental { pitchClass: C, accidental: Natural }
-    : KeyAccidental { pitchClass: D, accidental: Flat }
-    : KeyAccidental { pitchClass: D, accidental: Natural }
-    : KeyAccidental { pitchClass: E, accidental: Flat }
-    : KeyAccidental { pitchClass: E, accidental: Natural }
-    : KeyAccidental { pitchClass: F, accidental: Natural }
-    : KeyAccidental { pitchClass: G, accidental: Flat }
-    : KeyAccidental { pitchClass: G, accidental: Natural }
-    : KeyAccidental { pitchClass: A, accidental: Flat }
-    : KeyAccidental { pitchClass: A, accidental: Natural }
-    : KeyAccidental { pitchClass: B, accidental: Flat }
-    : KeyAccidental { pitchClass: B, accidental: Natural }
+    ( Pitch { pitchClass: C, accidental: Natural }
+    : Pitch { pitchClass: D, accidental: Flat }
+    : Pitch { pitchClass: D, accidental: Natural }
+    : Pitch { pitchClass: E, accidental: Flat }
+    : Pitch { pitchClass: E, accidental: Natural }
+    : Pitch { pitchClass: F, accidental: Natural }
+    : Pitch { pitchClass: G, accidental: Flat }
+    : Pitch { pitchClass: G, accidental: Natural }
+    : Pitch { pitchClass: A, accidental: Flat }
+    : Pitch { pitchClass: A, accidental: Natural }
+    : Pitch { pitchClass: B, accidental: Flat }
+    : Pitch { pitchClass: B, accidental: Natural }
     : Nil
     )
 
@@ -476,11 +502,11 @@ extremeFlatScale =
   let
     f pc =
       case pc of
-        KeyAccidental { pitchClass: E, accidental: Natural } ->
-          KeyAccidental { pitchClass: F, accidental: Flat }
+        Pitch { pitchClass: E, accidental: Natural } ->
+          Pitch { pitchClass: F, accidental: Flat }
 
-        KeyAccidental { pitchClass: B, accidental: Natural } ->
-          KeyAccidental { pitchClass: C, accidental: Flat }
+        Pitch { pitchClass: B, accidental: Natural } ->
+          Pitch { pitchClass: C, accidental: Flat }
 
         _ ->
           pc
@@ -490,37 +516,37 @@ extremeFlatScale =
 
 
 {- enharmonic equivalence of key classes - don't use bizarre sharp keys when we have reasonable flat ones -}
-equivalentEnharmonic :: KeyAccidental -> KeyAccidental
+equivalentEnharmonic :: Pitch -> Pitch
 equivalentEnharmonic k =
   case k of
-    KeyAccidental { pitchClass: A, accidental: Sharp } ->
-      KeyAccidental { pitchClass: B, accidental: Flat }
+    Pitch { pitchClass: A, accidental: Sharp } ->
+      Pitch { pitchClass: B, accidental: Flat }
 
-    KeyAccidental { pitchClass: C, accidental: Sharp } ->
-      KeyAccidental { pitchClass: D, accidental: Flat }
+    Pitch { pitchClass: C, accidental: Sharp } ->
+      Pitch { pitchClass: D, accidental: Flat }
 
-    KeyAccidental { pitchClass: D, accidental: Sharp } ->
-      KeyAccidental { pitchClass: E, accidental: Flat }
+    Pitch { pitchClass: D, accidental: Sharp } ->
+      Pitch { pitchClass: E, accidental: Flat }
 
-    KeyAccidental { pitchClass: G, accidental: Sharp } ->
-      KeyAccidental { pitchClass: A, accidental: Flat }
+    Pitch { pitchClass: G, accidental: Sharp } ->
+      Pitch { pitchClass: A, accidental: Flat }
 
     _ ->
       k
 
 
-sharpScaleEquivalent :: KeyAccidental -> KeyAccidental
-sharpScaleEquivalent (KeyAccidental ka) =
-  case ka.accidental of
+sharpScaleEquivalent :: Pitch -> Pitch
+sharpScaleEquivalent (Pitch p) =
+  case p.accidental of
     Flat ->
       let
         index =
-          fromMaybe 0 $ elemIndex (KeyAccidental ka) flatScale
+          fromMaybe 0 $ elemIndex (Pitch p) flatScale
       in
         lookUpScale sharpScale index
 
     _ ->
-      (KeyAccidental ka)
+      (Pitch p)
 
 {- enharmonic equivalence of full key signatures - don't use bizarre minor flat keys when we have reasonable sharp ones
    and vice versa.  Check both Major and Monor key signatures.
@@ -528,27 +554,27 @@ sharpScaleEquivalent (KeyAccidental ka) =
 equivalentEnharmonicKeySig :: PitchClass -> Accidental -> Mode -> KeySignature
 equivalentEnharmonicKeySig pc a m =
   let
-    pattern = Tuple (KeyAccidental { pitchClass: pc, accidental: a }) m
+    pattern = Tuple (Pitch { pitchClass: pc, accidental: a }) m
   in
     case pattern of
       -- major key signatures
-      Tuple (KeyAccidental { pitchClass: A, accidental: Sharp }) Major ->
+      Tuple (Pitch { pitchClass: A, accidental: Sharp }) Major ->
         { pitchClass: B, accidental: Flat, mode: Major }
 
-      Tuple (KeyAccidental { pitchClass: D, accidental: Sharp}) Major  ->
+      Tuple (Pitch { pitchClass: D, accidental: Sharp}) Major  ->
         { pitchClass: E, accidental: Flat, mode: Major }
 
-      Tuple (KeyAccidental { pitchClass: G, accidental: Sharp }) Major   ->
+      Tuple (Pitch { pitchClass: G, accidental: Sharp }) Major   ->
         { pitchClass: A, accidental: Flat, mode: Major }
 
       -- minor key signatures
-      Tuple (KeyAccidental { pitchClass: G, accidental: Flat}) Minor   ->
+      Tuple (Pitch { pitchClass: G, accidental: Flat}) Minor   ->
         { pitchClass: F, accidental: Sharp, mode: Minor }
 
-      Tuple (KeyAccidental { pitchClass: D, accidental: Flat})  Minor  ->
+      Tuple (Pitch { pitchClass: D, accidental: Flat})  Minor  ->
         { pitchClass: C, accidental: Sharp, mode: Minor }
 
-      Tuple (KeyAccidental { pitchClass: A, accidental: Flat}) Minor ->
+      Tuple (Pitch { pitchClass: A, accidental: Flat}) Minor ->
         { pitchClass: G, accidental: Sharp, mode: Minor }
 
       _ ->
@@ -563,33 +589,11 @@ majorIntervalOffsets :: Intervals
 majorIntervalOffsets =
   (0: 2: 4: 5: 7: 9: 11: Nil)
 
--- | lookup for providing offsets from C in a chromatic scale
-chromaticScaleMap :: Map String Int
-chromaticScaleMap =
-    fromFoldable
-        [ Tuple "C" 0
-        , Tuple  "C#" 1
-        , Tuple  "Db" 1
-        , Tuple  "D" 2
-        , Tuple  "D#" 3
-        , Tuple  "Eb" 3
-        , Tuple  "E" 4
-        , Tuple  "F" 5
-        , Tuple  "F#" 6
-        , Tuple  "Gb" 6
-        , Tuple  "G" 7
-        , Tuple  "G#" 8
-        , Tuple  "Ab" 8
-        , Tuple  "A" 9
-        , Tuple  "A#" 10
-        , Tuple  "Bb" 10
-        , Tuple  "B" 11
-        ]
 
 -- rotate the chromatic scale, starting from the supplied target character
 
 --- JMW!!!
-rotateFrom :: KeyAccidental -> ChromaticScale -> ChromaticScale
+rotateFrom :: Pitch -> ChromaticScale -> ChromaticScale
 rotateFrom target scale =
   let
     idx =
@@ -613,7 +617,7 @@ rotateLeftBy idx ls =
    modulate the index to be in the range 0 <= index < notesInChromaticScale
    where a negative value rotates left from the maximum value in the scale
 -}
-lookUpScale :: ChromaticScale -> Int -> KeyAccidental
+lookUpScale :: ChromaticScale -> Int -> Pitch
 lookUpScale s i =
   let
     modi =
@@ -625,20 +629,20 @@ lookUpScale s i =
       else
         modi
   in
-    fromMaybe (KeyAccidental { pitchClass: C, accidental: Natural }) $ index s idx
+    fromMaybe (Pitch { pitchClass: C, accidental: Natural }) $ index s idx
 
 -- provide the Major scale for the pitch class
-majorScale :: KeyAccidental -> DiatonicScale
+majorScale :: Pitch -> DiatonicScale
 majorScale target =
   let
     chromaticScale =
-      if (target == KeyAccidental { pitchClass: G, accidental: Flat }
-          || target == KeyAccidental { pitchClass: C, accidental: Flat }) then
+      if (target ==Pitch { pitchClass: G, accidental: Flat }
+          || target == Pitch { pitchClass: C, accidental: Flat }) then
             extremeFlatScale
       else if (isFlatMajorKey target) then
         flatScale
-      else if (target == KeyAccidental { pitchClass: F, accidental: Sharp }
-               || target == KeyAccidental { pitchClass: C, accidental: Sharp }) then
+      else if (target == Pitch { pitchClass: F, accidental: Sharp }
+               || target == Pitch { pitchClass: C, accidental: Sharp }) then
         extremeSharpScale
       else
         sharpScale
@@ -649,8 +653,7 @@ majorScale target =
     map f majorIntervalOffsets
 
 -- provide a Modal scale for the pitch class
--- JMW!!!
-modalScale :: KeyAccidental -> Mode -> DiatonicScale
+modalScale :: Pitch -> Mode -> DiatonicScale
 modalScale target mode =
   let
     distance =
@@ -676,9 +679,8 @@ modalScale target mode =
     majorScale (equivalentEnharmonic majorKey)
 
 
-{-| normalise a modal key signature to that of the equivalent major key
-  Maybe, once this is completed and tested, implement modalScale in terms of this
--}
+-- | normalise a modal key signature to that of the equivalent major key
+-- | Maybe, once this is completed and tested, implement modalScale in terms of this
 normaliseModalKey :: KeySignature -> KeySignature
 normaliseModalKey ks =
   let
@@ -704,7 +706,7 @@ normaliseModalKey ks =
             _ ->
               sharpScale
     keyAccidental =
-      KeyAccidental { pitchClass:  ks.pitchClass, accidental: sourceAccidental }
+      Pitch { pitchClass:  ks.pitchClass, accidental: sourceAccidental }
 
     idx =
       fromMaybe 0 $ elemIndex keyAccidental scale
@@ -719,7 +721,7 @@ normaliseModalKey ks =
       ks
     else
       case majorKeyAcc of
-        KeyAccidental mka ->
+        Pitch mka ->
           { pitchClass: mka.pitchClass
           , accidental: mka.accidental
           , mode: Major
@@ -754,74 +756,36 @@ modalDistance mode =
       0
 
 
-
 {- return true if the key contains a sharp or flat accidental -}
-accidentalKey :: KeyAccidental -> Boolean
-accidentalKey (KeyAccidental ka) =
-  ka.accidental /= Natural
+accidentalKey :: Pitch -> Boolean
+accidentalKey (Pitch p) =
+  p.accidental /= Natural
 
 {- return true if the key represents a flat major key -}
-isFlatMajorKey :: KeyAccidental -> Boolean
-isFlatMajorKey (KeyAccidental target) =
+isFlatMajorKey :: Pitch -> Boolean
+isFlatMajorKey (Pitch target) =
   case target.accidental of
     Natural ->
       (target.pitchClass == F)
     a ->
       (a == Flat)
 
-{- convert an AbcNote (pich class and accidental) to a pitch offset in a chromatic scale -}
-midiPitchOffset :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> Int
-midiPitchOffset n mks barAccidentals =
-  let
-    inBarAccidental =
-      Accidentals.lookup n.pitchClass barAccidentals
-
-    inKeyAccidental =
-      accidentalImplicitInKey n.pitchClass mks
-
-    -- look first for an explicit note accidental, then for an explicit for the same note that occurred earlier in the bar and
-    -- finally look for an implicit accidental attached to this key signature
-    maybeAccidental =
-      oneOf ( n.accidental:  inBarAccidental: inKeyAccidental: Nil )
-
-    accidental =
-      accidentalPattern maybeAccidental
-
-    pattern =
-      (show n.pitchClass) <> accidental
-  in
-    fromMaybe 0 (lookup pattern chromaticScaleMap)
-
-{- turn an optional accidental into a string pattern for use in lookups -}{- turn an optional accidental into a string pattern for use in lookups -}
-accidentalPattern :: Maybe Accidental -> String
-accidentalPattern ma =
-  let
-    f a =
-      case a of
-        Sharp ->
-          "#"
-        Flat ->
-          "b"
-        _ ->
-          ""
-  in
-    fromMaybe "" $ map Canonical.keySignatureAccidental ma
 
 {- transpose a key accidental  (a key signature modifier)
    not finished
 -}
-transposeKeyAccidentalBy :: Int -> KeyAccidental -> KeyAccidental
-transposeKeyAccidentalBy i (KeyAccidental ka) =
+transposeKeyAccidentalBy :: Int -> Pitch -> Pitch
+transposeKeyAccidentalBy i (Pitch p) =
   let
     pattern =
-      show ka.pitchClass
+      show p.pitchClass
 
     idx =
-      fromMaybe 0 $ lookup pattern chromaticScaleMap
+      fromMaybe 0 $ lookup (Pitch p) chromaticScaleMap
 
     scaleModifier :: { modifier :: Int, scale :: ChromaticScale }
     scaleModifier =
-      case ka.accidental of
+      case p.accidental of
         Sharp ->
          { modifier: 1, scale: sharpScale }
 
@@ -834,8 +798,8 @@ transposeKeyAccidentalBy i (KeyAccidental ka) =
         DoubleFlat ->
          { modifier: -2, scale: flatScale }
 
-        Natural ->
+        _ ->   -- Natural, Implicit
          { modifier: 0, scale: sharpScale }
   in
-    fromMaybe (KeyAccidental { pitchClass: C, accidental: Natural }) $
+    fromMaybe (Pitch { pitchClass: C, accidental: Natural }) $
        index scaleModifier.scale (idx + scaleModifier.modifier + i)

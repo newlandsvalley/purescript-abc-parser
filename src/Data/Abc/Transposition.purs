@@ -5,10 +5,10 @@ module Data.Abc.Transposition
         , transposeTo
         ) where
 
-{- A parse tree score contains implicit accidentals.  Very often, the source text will not mark them but assume that they
-   are implicit in the key signature.  They also may appear 'locally' - i.e. earlier in the bar and thus inherited.
-   In order for the transposition process to work, all accidentals must be made explicit during transposition and then
-   made implicit when written out to text if they are defined earlier in the bar or are defined in the key signature.
+{- A parse tree score contains pitches with accidentals of type Implicit in cases where no accidental is explitly marked
+   (sharp, flat, natural etc.).  Such pitches inherit their accidental nature firstly from any preceding note of the same pitch
+   in the same bar which has an explicit marking and secondly from the key signature.  During transposition we must firstly
+   make such accidentals explicit, transpose them and finally return to their implicit nature.
 
    This means we have to thread state through the transposition and hence use folds rather than maps
 -}
@@ -17,14 +17,14 @@ import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=), map, mod
 import Data.Either (Either(..))
 import Data.List (List(..), (:), filter, foldl, reverse)
 import Data.Map (Map, fromFoldable, lookup)
-import Data.Maybe (Maybe(..), fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Foldable (oneOf)
 import Data.Bifunctor (lmap)
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.Notation (DiatonicScale, accidentalImplicitInKey, diatonicScale
-                       , getKeySig, inScale
+import Data.Abc.Notation (DiatonicScale, diatonicScale
+                       , getKeySig, inScale, pitchNumbers, pitchNumber
                        , isCOrSharpKey, modifiedKeySet, notesInChromaticScale
                        , transposeKeySignatureBy)
 
@@ -73,8 +73,8 @@ keyDistance targetmks srcmks =
       Left "incompatible modes"
     else
       Right (transpositionDistance
-              ( KeyAccidental { pitchClass: target.pitchClass, accidental: targetAcc })
-              ( KeyAccidental { pitchClass: src.pitchClass, accidental: srcAcc })
+              ( Pitch { pitchClass: target.pitchClass, accidental: targetAcc })
+              ( Pitch { pitchClass: src.pitchClass, accidental: srcAcc })
             )
 
 -- | Transpose a note from its source key to its target.
@@ -109,22 +109,22 @@ transposeNote targetmks srcKey note =
 
 -- | transposition where the target mode is taken from the source tune's key signature
 -- | (it doesn't make any sense to transpose to a different mode)
-transposeTo :: KeyAccidental -> AbcTune -> AbcTune
-transposeTo (KeyAccidental targetKA) t =
+transposeTo :: Pitch -> AbcTune -> AbcTune
+transposeTo (Pitch targetP) t =
   let
     -- get the source key signature stuff
     mks = fromMaybe defaultKey $ getKeySig t
     srcAcc = mks.keySignature.accidental
     srcPc = mks.keySignature.pitchClass
     -- get the target key signature stuff, retaining the mode
-    targetAcc = targetKA.accidental
-    targetPc = targetKA.pitchClass
+    targetAcc = targetP.accidental
+    targetPc = targetP.pitchClass
     targetmks =
         { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }, modifications: Nil }
     -- work out the distance between them
     d = transpositionDistance
-           (KeyAccidental targetKA)
-           ( KeyAccidental { pitchClass: srcPc, accidental: srcAcc })
+           (Pitch targetP)
+           (Pitch { pitchClass: srcPc, accidental: srcAcc })
   in
     -- don't bother transposing if there's no distance between the keys
     if (d == 0) then
@@ -154,9 +154,8 @@ transposeTune state t =
   in
     { headers: newHeaders, body: (transposeTuneBody state t.body) }
 
-{- transpose the tune body.  We need to thread state through the tune in case there's an inline
-   information header which changes key part way through the tune
--}
+-- | transpose the tune body.  We need to thread state through the tune in case there's an inline
+-- | information header which changes key part way through the tune
 transposeTuneBody :: TranspositionState -> TuneBody -> TuneBody
 transposeTuneBody state body =
   let
@@ -418,21 +417,23 @@ transposeNoteBy state note =
   let
     -- make any implicit accidental explicit in the source note to be transposed if it's not marked as an accidental
     inSourceKeyAccidental =
-      accidentalImplicitInKey note.pitchClass (state.sourcemks)
+      Accidentals.implicitInKeySet note.pitchClass (modifiedKeySet state.sourcemks)
 
     inSourceBarAccidental =
       lookup note.pitchClass state.sourceBarAccidentals
 
     -- we must do the lookup of the source accidental in this order - local bar overrides key
-    implicitSourceAccidental =
+    maybeSourceAccidental =
       oneOf ( inSourceBarAccidental : inSourceKeyAccidental : Nil)
 
+    implicitSourceAccidental = fromMaybe Implicit maybeSourceAccidental
+
     explicitSourceNote =
-      if (isJust note.accidental) then
-        note
-      else
-        -- { note | accidental = implicitSourceAccidental }
-        note { accidental = implicitSourceAccidental }
+      case note.accidental of
+        Implicit ->
+          note { accidental = implicitSourceAccidental }
+        _ ->
+          note
 
     srcNum =
       noteNumber explicitSourceNote
@@ -444,24 +445,24 @@ transposeNoteBy state note =
       pitchFromInt (state.targetmks.keySignature) noteIdx.notePosition
 
     -- ( pc, acc ) = sharpenFlatEnharmonic ka
-    KeyAccidental safeKa = sharpenFlatEnharmonic ka
+    Pitch safeKa = sharpenFlatEnharmonic ka
 
     --JMW
     targetBarAcc = Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals
 
     targetAcc =
       -- is it present in the local target bar accidentals
-      if (Accidentals.member (KeyAccidental safeKa) state.targetBarAccidentals) then
-        Nothing
+      if (Accidentals.member (Pitch safeKa) state.targetBarAccidentals) then
+        Implicit
         -- is it present in the local target bar accidentals but with a different value
        -- else if (isJust (Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals)) then
       else if (isJust targetBarAcc) then
-        Just safeKa.accidental
+        safeKa.accidental
           -- is it in the set of keys in the target diatonic scale
-      else if (inScale (KeyAccidental safeKa) state.targetScale) then
-        Nothing
+      else if (inScale (Pitch safeKa) state.targetScale) then
+        Implicit
       else
-        Just safeKa.accidental
+        safeKa.accidental
 
     transposedNote =
       note { pitchClass = safeKa.pitchClass
@@ -474,11 +475,12 @@ transposeNoteBy state note =
 
     -- if the target, after all this, has an explicit accidental, we need to save it in the target bar accidental state
     newTargetAccs =
-      if (isJust targetAcc) then
-        -- we use the explicit form of the target
-        addBarAccidental safeKa.pitchClass (Just safeKa.accidental) state.targetBarAccidentals
-      else
-        state.targetBarAccidentals
+      case targetAcc of
+        Implicit ->
+          state.targetBarAccidentals
+        _ ->
+          -- we use the explicit form of the target
+          addBarAccidental safeKa.pitchClass (safeKa.accidental) state.targetBarAccidentals
 
     -- update the state with both the source an target bar accidentals
     newState =
@@ -488,114 +490,64 @@ transposeNoteBy state note =
     Tuple transposedNote newState
 
 
-{-| enharmonic equivalence for flattened accidentals
-   We'll (for the moment) use the convention that most flat accidentals
-   are presented in sharpened form
--}
-sharpenFlatEnharmonic :: KeyAccidental -> KeyAccidental
+-- | enharmonic equivalence for flattened accidentals
+-- | We'll (for the moment) use the convention that most flat accidentals
+-- | are presented in sharpened form
+sharpenFlatEnharmonic :: Pitch -> Pitch
 sharpenFlatEnharmonic ka =
   case ka of
-    KeyAccidental { pitchClass: G, accidental: Flat } ->
-      KeyAccidental { pitchClass: F, accidental: Sharp }
+    Pitch { pitchClass: G, accidental: Flat } ->
+      Pitch { pitchClass: F, accidental: Sharp }
 
-    KeyAccidental { pitchClass: D, accidental: Flat } ->
-      KeyAccidental { pitchClass: C, accidental: Sharp }
+    Pitch { pitchClass: D, accidental: Flat } ->
+      Pitch { pitchClass: C, accidental: Sharp }
 
     _ ->
       ka
 
-{- we need to take note of any accidentals so far in the bar because these may influence
-   later notes in that bar.  If the note uses an accidental, add it to the accidental set.
--}
-addBarAccidental :: PitchClass -> Maybe Accidental -> Accidentals.Accidentals -> Accidentals.Accidentals
-addBarAccidental pc ma accs =
-  case ma of
-    Just acc ->
-      Accidentals.add pc acc accs
-
-    _ ->
+-- | we need to take note of any accidentals so far in the bar because these may influence
+-- | later notes in that bar.  If the note uses an explicit accidental, add it to the accidental set.
+addBarAccidental :: PitchClass -> Accidental -> Accidentals.Accidentals -> Accidentals.Accidentals
+addBarAccidental pc acc accs =
+  case acc of
+    Implicit ->
       accs
+    x ->
+      Accidentals.add pc x accs
 
-{- create a list of pairs which should match every possible
-   note pitch  (pitch class and accidental) with its offset into
-   its 12-note chromatic scale
--}
-noteNumbers :: List ( Tuple KeyAccidental Int )
-noteNumbers =
-  ( Tuple (KeyAccidental { pitchClass: C, accidental: Flat }) 11
-  : Tuple (KeyAccidental { pitchClass: C, accidental: Natural }) 0
-  : Tuple (KeyAccidental { pitchClass: C, accidental: Sharp }) 1
-  : Tuple (KeyAccidental { pitchClass: C, accidental: DoubleSharp }) 2
-  : Tuple (KeyAccidental { pitchClass: D, accidental: DoubleFlat }) 0
-  : Tuple (KeyAccidental { pitchClass: D, accidental: Flat }) 1
-  : Tuple (KeyAccidental { pitchClass: D, accidental: Natural }) 2
-  : Tuple (KeyAccidental { pitchClass: D, accidental: Sharp }) 3
-  : Tuple (KeyAccidental { pitchClass: D, accidental: DoubleSharp }) 4
-  : Tuple (KeyAccidental { pitchClass: E, accidental: DoubleFlat }) 2
-  : Tuple (KeyAccidental { pitchClass: E, accidental: Flat }) 3
-  : Tuple (KeyAccidental { pitchClass: E, accidental: Natural }) 4
-  : Tuple (KeyAccidental { pitchClass: E, accidental: Sharp }) 5
-  : Tuple (KeyAccidental { pitchClass: E, accidental: DoubleSharp }) 6
-  : Tuple (KeyAccidental { pitchClass: F, accidental: Flat }) 4
-  : Tuple (KeyAccidental { pitchClass: F, accidental: Natural }) 5
-  : Tuple (KeyAccidental { pitchClass: F, accidental: Sharp }) 6
-  : Tuple (KeyAccidental { pitchClass: F, accidental: DoubleSharp }) 7
-  : Tuple (KeyAccidental { pitchClass: G, accidental: DoubleFlat }) 5
-  : Tuple (KeyAccidental { pitchClass: G, accidental: Flat }) 6
-  : Tuple (KeyAccidental { pitchClass: G, accidental: Natural }) 7
-  : Tuple (KeyAccidental { pitchClass: G, accidental: Sharp }) 8
-  : Tuple (KeyAccidental { pitchClass: G, accidental: DoubleSharp }) 9
-  : Tuple (KeyAccidental { pitchClass: A, accidental: DoubleFlat }) 7
-  : Tuple (KeyAccidental { pitchClass: A, accidental: Flat }) 8
-  : Tuple (KeyAccidental { pitchClass: A, accidental: Natural }) 9
-  : Tuple (KeyAccidental { pitchClass: A, accidental: Sharp }) 10
-  : Tuple (KeyAccidental { pitchClass: A, accidental: DoubleSharp }) 11
-  : Tuple (KeyAccidental { pitchClass: B, accidental: DoubleFlat }) 9
-  : Tuple (KeyAccidental { pitchClass: B, accidental: Flat }) 10
-  : Tuple (KeyAccidental { pitchClass: B, accidental: Natural }) 11
-  : Tuple (KeyAccidental { pitchClass: B, accidental: Sharp }) 0
-  : Tuple (KeyAccidental { pitchClass: B, accidental: DoubleSharp }) 1
-  : Nil
-  )
-
-{- note pairs for the black and white notes of a piano,
-   designating black notes with the Sharp accidental
--}
-sharpNoteNumbers :: List ( Tuple KeyAccidental Int )
+-- | note pairs for the black and white notes of a piano,
+-- | designating black notes with the Sharp accidental
+sharpNoteNumbers :: List ( Tuple Pitch Int )
 sharpNoteNumbers =
   let
     f nn =
       let
-        KeyAccidental ka = fst nn
+        Pitch p = fst nn
         pos = snd nn
       in
-        ((ka.accidental == Sharp) && (ka.pitchClass /= E && ka.pitchClass /= B))
-            || (ka.accidental == Natural)
+        ((p.accidental == Sharp) && (p.pitchClass /= E && p.pitchClass /= B))
+            || (p.accidental == Natural)
   in
-    filter f noteNumbers
+    filter f pitchNumbers
 
-{- note pairs for the black and white notes of a piano,
-   designating black notes with the Flat accidental
--}
-flatNoteNumbers :: List ( Tuple KeyAccidental Int )
+-- | note pairs for the black and white notes of a piano,
+-- | designating black notes with the Flat accidental
+flatNoteNumbers :: List ( Tuple Pitch  Int )
 flatNoteNumbers =
   let
     f nn =
       let
-        KeyAccidental ka = fst nn
+        Pitch p = fst nn
         pos = snd nn
       in
-        ((ka.accidental == Flat) && (ka.pitchClass /= F && ka.pitchClass /= C))
-          || (ka.accidental == Natural)
+        ((p.accidental == Flat) && (p.pitchClass /= F && p.pitchClass /= C))
+          || (p.accidental == Natural)
   in
-    filter f noteNumbers
+    filter f pitchNumbers
 
-
-
-{- given a key signature and an integer (0 <= n < notesInChromaticScale)
-   return the pitch of the note within that signature
--}
-pitchFromInt :: KeySignature -> Int -> KeyAccidental
+-- | given a key signature and an integer (0 <= n < notesInChromaticScale)
+-- | return the pitch of the note within that signature
+pitchFromInt :: KeySignature -> Int -> Pitch
 pitchFromInt ks i =
   let
     dict =
@@ -604,15 +556,12 @@ pitchFromInt ks i =
       else
         flatNotedNumbers
   in
-    fromMaybe (KeyAccidental { pitchClass: C, accidental: Natural }) $ lookup i dict
+    fromMaybe (Pitch  { pitchClass: C, accidental: Natural }) $ lookup i dict
 
-
-
-{- the inverted lookup for sharp chromatic scales.  This dictionaary
-   allows you to enter a number (0 <= n < notesInChromaticScale) and return
-   a (pitchClass, Accidental) pair which is the note's pitch
--}
-sharpNotedNumbers :: Map Int KeyAccidental
+-- | the inverted lookup for sharp chromatic scales.  This dictionaary
+-- | allows you to enter a number (0 <= n < notesInChromaticScale) and return
+-- | a (pitchClass, Accidental) pair which is the note's pitch
+sharpNotedNumbers :: Map Int Pitch
 sharpNotedNumbers =
   let
     invert (Tuple a b) =
@@ -620,13 +569,10 @@ sharpNotedNumbers =
   in
     fromFoldable $ map invert sharpNoteNumbers
 
-
-
-{- the inverted lookup for flat chromatic scales.  This dictionaary
-   allows you to enter a number (0 <= n < notesInChromaticScale) and return
-   a (pitchClass, Accidental) pair which is the note's pitch
--}
-flatNotedNumbers :: Map Int KeyAccidental
+-- | the inverted lookup for flat chromatic scales.  This dictionaary
+-- | allows you to enter a number (0 <= n < notesInChromaticScale) and return
+-- | a (pitchClass, Accidental) pair which is the note's pitch
+flatNotedNumbers :: Map Int Pitch
 flatNotedNumbers =
   let
     invert (Tuple a b) =
@@ -634,39 +580,14 @@ flatNotedNumbers =
   in
     fromFoldable $ map invert flatNoteNumbers
 
-
-{- a dictionary of comparable note -> note number -}
-chromaticScaleDict :: Map KeyAccidental Int
-chromaticScaleDict =
-  fromFoldable noteNumbers
-
-
-lookupChromatic :: Map KeyAccidental Int -> KeyAccidental -> Int
-lookupChromatic dict target =
-  fromMaybe 0 $ lookup target dict
-
-
-
-{- look up the pitch and return a number in the range 0 <= n < notesInChromaticScale  (0 is C Natural) -}
-
-
-pitchNumber :: KeyAccidental -> Int
-pitchNumber ka =
-  lookupChromatic chromaticScaleDict ka
-
-
-{- look up the note and return the number of its pitch in the range 0 <= n < notesInChromaticScale (0 is C Natural) -}
+-- | look up the note and return the number of its pitch in the range 0 <= n < notesInChromaticScale (0 is C Natural) -}
 noteNumber :: AbcNote -> Int
 noteNumber n =
-  let
-    acc = Accidentals.explicitAccidental n.accidental
-  in
-    pitchNumber ( KeyAccidental { pitchClass: n.pitchClass, accidental: acc })
+  pitchNumber ( Pitch  { pitchClass: n.pitchClass, accidental: n.accidental })
 
-{- inspect the current note index and the amount it is to be incremented by.
-   produce a new note index in the range (0 <= n < notesInChromaticScale)
-   and associate with this a number (-1,0,1) which indicates an increment to the octave
--}
+-- | inspect the current note index and the amount it is to be incremented by.
+-- | produce a new note index in the range (0 <= n < notesInChromaticScale)
+-- | and associate with this a number (-1,0,1) which indicates an increment to the octave
 noteIndex :: Int -> Int -> NoteIndex
 noteIndex from increment =
   let
@@ -680,10 +601,8 @@ noteIndex from increment =
     else
       { notePosition: to, octaveIncrement: 0 }
 
-
-
-{- work out the minimum transposition distance (target - source) or (source - target) measured in semitones -}
-transpositionDistance :: KeyAccidental -> KeyAccidental -> Int
+-- | work out the minimum transposition distance (target - source) or (source - target) measured in semitones
+transpositionDistance ::Pitch  -> Pitch  -> Int
 transpositionDistance target source =
   let
     distance =
@@ -695,11 +614,8 @@ transpositionDistance target source =
     else
       distance
 
-
-
-{- replace a Key header (if it exists)
-   and place last in the list of headers, retaining the order of the other headers
--}
+-- | replace a Key header (if it exists)
+-- | and place last in the list of headers, retaining the order of the other headers
 replaceKeyHeader :: ModifiedKeySignature -> TuneHeaders -> TuneHeaders
 replaceKeyHeader newmks hs =
   let
@@ -710,7 +626,6 @@ replaceKeyHeader newmks hs =
 
         _ ->
           true
-
     newhs =
       filter f hs
   in

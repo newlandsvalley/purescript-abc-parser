@@ -1,22 +1,69 @@
-module Data.Abc.Midi (toMidi) where
+module Data.Abc.Midi
+  ( MidiPitch
+  , toMidi
+  , toMidiPitch
+  , midiPitchOffset) where
 
 import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, RestOrNote, Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
+import Data.Abc (AbcTune, AbcNote, RestOrNote, Pitch(..), Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
    MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
-import Data.Abc.Notation (dotFactor, toMidiPitch, getKeySig)
+import Data.Abc.Notation (pitchNumber, dotFactor, modifiedKeySet, notesInChromaticScale, getKeySig)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
-import Data.Foldable (foldl)
+import Data.Abc.Canonical as Canonical
 import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, singleton)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Either (Either(..))
 import Data.Tuple (Tuple(..), fst, snd)
+import Data.Foldable (foldl, oneOf)
 import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
 
--- import Debug.Trace (trace, traceShow)
+-- | The pitch of a note expressed as a MIDI interval.
+type MidiPitch =
+    Int
+
+-- | Convert an ABC note pitch to a MIDI pitch.
+-- |
+-- | AbcNote - the note in question
+-- | ModifiedKeySignature - the key signature (possibly modified by extra accidentals)
+-- | Accidentals - any notes in this bar which have previously been set explicitly to an accidental which are thus inherited by this note
+-- | MidiPitch - the resulting pitch of the MIDI note
+toMidiPitch :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> MidiPitch
+toMidiPitch n mks barAccidentals =
+  (n.octave * notesInChromaticScale) + midiPitchOffset n mks barAccidentals
+
+-- | convert an AbcNote (pich class and accidental) to a pitch offset in a chromatic scale
+midiPitchOffset :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> Int
+midiPitchOffset n mks barAccidentals =
+  let
+    inBarAccidental =
+      Accidentals.lookup n.pitchClass barAccidentals
+
+    inKeyAccidental =
+      -- accidentalImplicitInKey n.pitchClass mks
+      Accidentals.implicitInKeySet n.pitchClass (modifiedKeySet mks)
+
+    -- look first for an explicit note accidental, then for an explicit for the same note that occurred earlier in the bar and
+    -- finally look for an implicit accidental attached to this key signature
+    accidental =
+      case n.accidental of
+        Implicit ->
+          fromMaybe Natural $ oneOf ( inBarAccidental: inKeyAccidental: Nil )
+        _ ->  -- explict
+          n.accidental
+
+    -- the lookup pattern just uses sharps or flats (if there) or the empty String if not
+    accidentalPattern =
+      Canonical.keySignatureAccidental accidental
+
+    pattern =
+      Pitch { pitchClass : n.pitchClass, accidental : accidental }
+  in
+    pitchNumber pattern
+
 
 -- | Transform ABC into a MIDI recording.
 toMidi :: AbcTune -> Midi.Recording
@@ -158,7 +205,7 @@ transformMusic m =
       let
         arbitraryNote =
           { pitchClass : C
-          , accidental : Nothing
+          , accidental : Implicit
           , octave : 0
           , duration : (fromInt 0)
           , tied : false
@@ -483,11 +530,10 @@ addTempoToState tstate tempoSig =
 addNoteToBarAccidentals :: AbcNote -> Accidentals.Accidentals -> Accidentals.Accidentals
 addNoteToBarAccidentals abcNote accs =
   case abcNote.accidental of
-    Just acc  ->
-      Accidentals.add abcNote.pitchClass acc accs
-    _ ->
+    Implicit ->
       accs
-
+    acc ->
+      Accidentals.add abcNote.pitchClass acc accs
 -- | a MIDI NoteOn message
 midiNoteOn :: Int -> Int -> Midi.Message
 midiNoteOn ticks pitch =
@@ -612,6 +658,7 @@ buildRepeatedMelody mbs sections =
     Midi.Track Nil
   else
     Midi.Track $ foldl (repeatedSection mbs) Nil sections
+
 
 -- temp Debug
 {-

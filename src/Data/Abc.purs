@@ -15,7 +15,7 @@ module Data.Abc ( AbcTune
 , NoteDuration
 , KeySignature
 , ModifiedKeySignature
-, KeyAccidental(..)
+, Pitch(..)
 , KeySet
 , MeterSignature(..)
 , TempoSignature
@@ -70,7 +70,7 @@ type AbcRest =
 -- | A Note.
 type AbcNote =
     { pitchClass :: PitchClass
-    , accidental :: Maybe Accidental
+    , accidental :: Accidental
     , octave :: Int
     , duration :: NoteDuration
     , tied ::  Boolean  -- to the next note
@@ -189,6 +189,7 @@ data Accidental
     | DoubleSharp
     | DoubleFlat
     | Natural
+    | Implicit       -- accidental determoined by context of the note
 
 -- import Debug exposing (..)
 {- as shown in the body of the tune but not in headers -}
@@ -198,6 +199,7 @@ instance showAccidental :: Show Accidental where
     show DoubleSharp = "^^"
     show DoubleFlat = "__"
     show Natural = "="
+    show Implicit = ""
 
 
 derive instance eqAccidental :: Eq Accidental
@@ -237,12 +239,12 @@ type KeySignature =
 -- |    (for example as found in Klezmer).
 type ModifiedKeySignature =
   { keySignature :: KeySignature
-  , modifications ::  List KeyAccidental
+  , modifications ::  List Pitch
   }
 
--- | A Key Accidental (A modification to a standard key for one pitch in the scale).
+-- | A Key Accidental is represented by a Pitch (A modification to a standard key for one pitch in the scale).
 -- |  (we're not allowed to derive instances on record types unless we use newtype)
-data KeyAccidental = KeyAccidental
+data Pitch = Pitch
     { pitchClass :: PitchClass
     , accidental :: Accidental
     }
@@ -250,20 +252,20 @@ data KeyAccidental = KeyAccidental
 derive instance genericPitchClass  :: Generic PitchClass _
 derive instance genericAccidental  :: Generic Accidental _
 
-derive instance genericKeyAccidental :: Generic KeyAccidental _
+derive instance genericPitch :: Generic Pitch _
 
-instance eqKeyAccidental :: Eq KeyAccidental where
+instance eqPitch :: Eq Pitch where
   eq = genericEq
 
-instance ordKeyAccidental :: Ord KeyAccidental where
+instance ordPitch :: Ord Pitch where
   compare = genericCompare
 
-instance showKeyAccidental :: Show KeyAccidental where
-  show (KeyAccidental ka) = show ka.accidental <> Str.toLower (show ka.pitchClass)
+instance showPitch :: Show Pitch where
+  show (Pitch p) = show p.accidental <> Str.toLower (show p.pitchClass)
 
 -- | A set of accidentals within a key signature.
 type KeySet =
-    List KeyAccidental
+    List Pitch
 
 -- | A Meter Signature - e.g. 3/4.
 type MeterSignature = Tuple Int Int

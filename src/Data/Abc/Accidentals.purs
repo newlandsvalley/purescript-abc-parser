@@ -5,14 +5,13 @@ module Data.Abc.Accidentals
         , fromKeySet
         , lookup
         , member
-        , explicitAccidental
-        , implicitAccidental
         , fromKeySig
+        , implicitInKeySet
         ) where
 
 import Prelude ((==), map)
-import Data.Abc (PitchClass, Accidental(..), KeyAccidental(..), KeySet, KeySignature)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Abc (PitchClass, Accidental, Pitch(..), KeySet, KeySignature)
+import Data.Maybe (Maybe(..))
 import Data.Map as Map
 import Data.Tuple (Tuple(..))
 
@@ -36,8 +35,8 @@ fromKeySet ks =
   let
     f kar =
       case kar of
-        KeyAccidental ka ->
-          Tuple ka.pitchClass ka.accidental
+        Pitch p ->
+          Tuple p.pitchClass p.accidental
     tuples = map f ks
   in
     Map.fromFoldable tuples
@@ -47,38 +46,27 @@ lookup :: PitchClass -> Accidentals -> Maybe Accidental
 lookup  =
   Map.lookup
 
--- | lookup a KeyAccidental and see if it's a member of the Accidentals set
--- |    (i.e. the value of the Accidental matches for the supplied pitch)
-member :: KeyAccidental -> Accidentals -> Boolean
-member (KeyAccidental ka) accs =
+-- | lookup a KeyAccidental (represented as a Pitch) and see if it's a member of
+-- | the Accidentals set  (i.e. the value of the Accidental matches for the supplied pitch)
+member :: Pitch -> Accidentals -> Boolean
+member (Pitch p) accs =
   let
     macc =
-       lookup ka.pitchClass accs
+       lookup p.pitchClass accs
   in
-    (Just ka.accidental) == macc
+    (Just p.accidental) == macc
 
-
--- | convert an implicit Maybe Accidental (used in key signatures)
--- | to an explict accidental (used in scales) where the
--- | explicit form uses Natural
-explicitAccidental :: Maybe Accidental -> Accidental
-explicitAccidental macc =
-   fromMaybe Natural macc
-
--- | convert an explict accidental (used in scales)
--- | to an implicit one  (Maybe Accidental - used in key signatures)
--- | where the implicit form uses Nothing in place of Natural
-implicitAccidental :: Accidental -> Maybe Accidental
-implicitAccidental acc =
-  case acc of
-    Natural ->
-      Nothing
-    x ->
-      Just x
-
--- | extract the KeyAccidental from a KeySignature
-fromKeySig :: KeySignature -> KeyAccidental
+-- | extract the KeyAccidental Pitch from a KeySignature
+fromKeySig :: KeySignature -> Pitch
 fromKeySig ks =
-  KeyAccidental { pitchClass : ks.pitchClass
+  Pitch { pitchClass : ks.pitchClass
                 , accidental : ks.accidental
                 }
+
+-- | Return an accidental if it is implicitly there in the supplied KeySet
+-- | (which is obtained from a key signature)
+-- | attached to the pitch class of the note. In ABC, notes generally inherit
+-- | their (sharp, flat or natural) accidental nature from the key signature.
+implicitInKeySet :: PitchClass -> KeySet -> Maybe Accidental
+implicitInKeySet pc keyset =
+  lookup pc (fromKeySet keyset)

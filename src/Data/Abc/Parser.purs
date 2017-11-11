@@ -953,12 +953,12 @@ keyName =
 
 keySignature :: Parser KeySignature
 keySignature =
-    buildKeySignature <$> keyName <*> option Natural sharpOrFlat <* whiteSpace <*> optionMaybe mode
+  buildKeySignature <$> keyName <*> option Natural sharpOrFlat <* whiteSpace <*> optionMaybe mode
 
 {- a key accidental as an amendment to a key signature - as in e.g. K:D Phr ^f -}
-keyAccidental :: Parser KeyAccidental
+keyAccidental :: Parser Pitch
 keyAccidental =
-    buildKeyAccidental <$> accidental <*> pitch
+  buildPitch <$> accidental <*> pitch
 
 {- a complete list of key accidentals which may be empty
    each is separated by a single space
@@ -1103,26 +1103,26 @@ buildRest r =
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =
-    let
-        l =
-            fromMaybe (1 % 1) ml
-
-        -- a = buildAccidental macc
-        p =
-            lookupPitch (toUpper pitchStr)
-
-        spn =
-            scientificPitchNotation pitchStr octave
-
-        tied =
-            case mt of
-                Just _ ->
-                    true
-
-                _ ->
-                    false
-    in
-        { pitchClass : p, accidental : macc, octave : spn, duration : l, tied : tied }
+  let
+    l =
+      fromMaybe (1 % 1) ml
+    -- a = buildAccidental macc
+    pc =
+      lookupPitch (toUpper pitchStr)
+    spn =
+      scientificPitchNotation pitchStr octave
+    tied =
+      case mt of
+        Just _ ->
+          true
+        _ ->
+          false
+    acc =
+      case macc of
+        Nothing -> Implicit
+        Just a -> a
+  in
+    { pitchClass : pc, accidental : acc, octave : spn, duration : l, tied : tied }
 
 
 buildAccidental :: String -> Accidental
@@ -1143,9 +1143,9 @@ buildAccidental s =
         _ ->
             Natural
 
-buildKeyAccidental :: Accidental -> String -> KeyAccidental
-buildKeyAccidental a pitchStr =
-    KeyAccidental { pitchClass : lookupPitch pitchStr, accidental : a }
+buildPitch :: Accidental -> String -> Pitch
+buildPitch a pitchStr =
+    Pitch { pitchClass : lookupPitch pitchStr, accidental : a }
 
 buildChord :: List AbcNote -> Maybe Rational -> AbcChord
 buildChord ns ml =
@@ -1283,9 +1283,9 @@ buildKeySignature pStr ma mm =
     { pitchClass : lookupPitch pStr, accidental : ma, mode : fromMaybe Major mm }
 
 {- build a complete key designation (key signature plus modifying accidentals) -}
-buildKey :: String -> KeySignature -> List KeyAccidental -> Header
-buildKey code ks kas =
-    Key { keySignature: ks, modifications: kas }
+buildKey :: String -> KeySignature -> List Pitch -> Header
+buildKey code ks pitches =
+    Key { keySignature: ks, modifications: pitches }
 
 -- lookups
 
@@ -1404,7 +1404,7 @@ parseKeySignature s =
     case runParser1 keySignature s of
         Right ks ->
           let
-             emptyList = Nil :: List KeyAccidental
+             emptyList = Nil :: List Pitch
           in
              Right { keySignature: ks, modifications: emptyList }
 

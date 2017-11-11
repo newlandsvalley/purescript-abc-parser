@@ -1,25 +1,22 @@
 module Test.Transposition (transpositionSuite) where
 
-import Test.Utils
 import Test.Unit.Assert as Assert
 import Data.Abc.Parser (parse)
 import Data.Abc.Canonical (abcNote, fromTune)
 import Data.Abc.Transposition
-import Data.Abc (AbcTune, AbcNote, Accidental(..), KeyAccidental(..), PitchClass(..), Mode(..), ModifiedKeySignature)
+import Data.Abc (AbcNote, Accidental(..), Pitch(..), PitchClass(..), Mode(..), ModifiedKeySignature)
 import Control.Monad.Free (Free)
 import Data.Either (Either(..))
 import Data.List (List(..))
-import Data.Maybe (Maybe(..))
-import Data.Bifunctor (lmap)
 import Data.Rational (fromInt)
-import Prelude (Unit, (>>=), ($), bind, discard, map, negate, show)
+import Prelude (Unit, ($), discard, map, negate)
 import Test.Unit (Test, TestF, failure, suite, test)
 
-assertTranspositionMatches :: forall e. String -> KeyAccidental -> String -> Test e
-assertTranspositionMatches s targetka target =
+assertTranspositionMatches :: forall e. String -> Pitch -> String -> Test e
+assertTranspositionMatches s targetp target =
   case parse s of
     Right tune ->
-      Assert.equal target $ fromTune (transposeTo targetka tune)
+      Assert.equal target $ fromTune (transposeTo targetp tune)
     Left _ ->
       failure "unexpected parse error"
 
@@ -92,67 +89,67 @@ phraseSuite = do
       assertTranspositionMatches
         cPhrase
         -- dMajor
-        (KeyAccidental { pitchClass : D, accidental : Natural })
+        (Pitch  { pitchClass : D, accidental : Natural })
         dPhrase
     test "D phrase to C phrase" do
       assertTranspositionMatches
         dPhrase
         -- cMajor
-        (KeyAccidental { pitchClass : C, accidental : Natural })
+        (Pitch { pitchClass : C, accidental : Natural })
         cPhrase
     test "C phrase to F phrase" do
       assertTranspositionMatches
         cPhrase
         -- fMajor
-        (KeyAccidental { pitchClass : F, accidental : Natural })
+        (Pitch  { pitchClass : F, accidental : Natural })
         fPhrase
     test "Gm phrase to Dm phrase" do
       assertTranspositionMatches
         gmPhrase
         -- dMinor
-        (KeyAccidental { pitchClass : D, accidental : Natural })
+        (Pitch  { pitchClass : D, accidental : Natural })
         dmPhrase
     test "Gm phrase with in-bar accidental" do
       assertTranspositionMatches
         gmPhraseLocal
         -- dMinor
-        (KeyAccidental { pitchClass : D, accidental : Natural })
+        (Pitch  { pitchClass : D, accidental : Natural })
         dmPhrase
     test "Dm phrase to Gm phrase" do
       assertTranspositionMatches
         dmPhrase
         -- gMinor
-        (KeyAccidental { pitchClass : G, accidental : Natural })
+        (Pitch  { pitchClass : G, accidental : Natural })
         gmPhraseLocal
     test "Bm phrase to Em phrase" do
       assertTranspositionMatches
         bmPhrase
         -- eMinor
-        (KeyAccidental { pitchClass : E, accidental : Natural })
+        (Pitch  { pitchClass : E, accidental : Natural })
         emPhrase
     test "Am phrase to Fm phrase" do
       assertTranspositionMatches
         amPhrase
         -- fMinor
-        (KeyAccidental { pitchClass : F, accidental : Natural })
+        (Pitch  { pitchClass : F, accidental : Natural })
         fmPhrase
     test "Am phrase to F#m phrase" do
       assertTranspositionMatches
         amPhrase0
         -- fSharpMinor
-        (KeyAccidental { pitchClass : F, accidental : Sharp })
+        (Pitch  { pitchClass : F, accidental : Sharp })
         fsharpmPhrase0
     test "identity transposition" do
       assertTranspositionMatches
         dmPhrase
         -- dMinor
-        (KeyAccidental { pitchClass : D, accidental : Natural })
+        (Pitch  { pitchClass : D, accidental : Natural })
         dmPhrase
     test "Cm phrase to Am phrase" do
       assertTranspositionMatches
         cmPhrase1
         -- aMinor
-        (KeyAccidental { pitchClass : A, accidental : Natural })
+        (Pitch  { pitchClass : A, accidental : Natural })
         amPhrase1High
 
 -- | test that headers are ordered properly
@@ -163,7 +160,7 @@ tuneSuite = do
       assertTranspositionMatches
         tuneBm
         -- aMinor
-        (KeyAccidental { pitchClass : A, accidental : Natural })
+        (Pitch  { pitchClass : A, accidental : Natural })
         tuneAm
 
 keyChangeSuite :: forall t. Free (TestF t) Unit
@@ -173,43 +170,43 @@ keyChangeSuite = do
       assertTranspositionMatches
         keyChangeBm
         -- aMinor
-        (KeyAccidental { pitchClass : A, accidental : Natural })
+        (Pitch  { pitchClass : A, accidental : Natural })
         keyChangeAm
     test "key change Am to Bm" do
       assertTranspositionMatches
         keyChangeAm
         -- bMinor
-        (KeyAccidental { pitchClass : B, accidental : Natural })
+        (Pitch  { pitchClass : B, accidental : Natural })
         keyChangeBm
     test "key change Bm to Em" do
       assertTranspositionMatches
         keyChangeBm
         -- eMinor
-        (KeyAccidental { pitchClass : E, accidental : Natural })
+        (Pitch  { pitchClass : E, accidental : Natural })
         keyChangeEmHigh
     test "key change Em to Bm" do
       assertTranspositionMatches
         keyChangeEm
         -- bMinor
-        (KeyAccidental { pitchClass : B, accidental : Natural })
+        (Pitch  { pitchClass : B, accidental : Natural })
         keyChangeBm
     test "key change Bm to C#m" do
       assertTranspositionMatches
         keyChangeBm
         -- cSharpMinor
-        (KeyAccidental { pitchClass : C, accidental : Sharp })
+        (Pitch { pitchClass : C, accidental : Sharp })
         keyChangeCSharpmHigh
     test "key change C#m to Bm" do
       assertTranspositionMatches
         keyChangeCSharpm
         -- bMinor
-        (KeyAccidental { pitchClass : B, accidental : Natural })
+        (Pitch  { pitchClass : B, accidental : Natural })
         keyChangeBm
     test "key change Bm to Am inline" do
       assertTranspositionMatches
         keyChangeBmInline
         -- aMinor
-        (KeyAccidental { pitchClass : A, accidental : Natural })
+        (Pitch  { pitchClass : A, accidental : Natural })
         keyChangeAmInline
 
 
@@ -221,56 +218,56 @@ buildKeySig pc acc mode =
 
 cs :: AbcNote
 cs =
-  { pitchClass: C, accidental: Just Sharp, octave: 5, duration: fromInt 1, tied: false }
+  { pitchClass: C, accidental: Sharp, octave: 5, duration: fromInt 1, tied: false }
 
 
 ds :: AbcNote
 ds =
-  { pitchClass: D, accidental: Just Sharp, octave: 5, duration: fromInt 1, tied: false }
+  { pitchClass: D, accidental: Sharp, octave: 5, duration: fromInt 1, tied: false }
 
 
 eb :: AbcNote
 eb =
-  { pitchClass: E, accidental: Just Flat, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: E, accidental: Flat, octave: 4, duration: fromInt 1, tied: false }
 
 
 enat :: AbcNote
 enat =
-  { pitchClass: E, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: E, accidental: Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
 b ::AbcNote
 b =
-  { pitchClass: B, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: B, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
 
 
 bnat :: AbcNote
 bnat =
-  { pitchClass: B, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: B, accidental: Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
 f :: AbcNote
 f =
-  { pitchClass: F, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: F, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
 
 
 fnat :: AbcNote
 fnat =
-  { pitchClass: F, accidental: Just Natural, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: F, accidental: Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
 g :: AbcNote
 g =
-  { pitchClass: G, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: G, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
 
 
 gs :: AbcNote
 gs =
-  { pitchClass: G, accidental: Just Sharp, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: G, accidental: Sharp, octave: 4, duration: fromInt 1, tied: false }
 
 a :: AbcNote
 a =
-  { pitchClass: A, accidental: Nothing, octave: 4, duration: fromInt 1, tied: false }
+  { pitchClass: A, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
 
 
 fMajor :: ModifiedKeySignature

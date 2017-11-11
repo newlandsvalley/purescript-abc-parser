@@ -148,7 +148,7 @@ key :: KeySignature -> String
 key k =
   show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
 
-keyAccidentals :: List KeyAccidental -> String
+keyAccidentals :: List Pitch -> String
 keyAccidentals =
     concatenate <<< map (\ka -> " " <> (show ka))
 
@@ -177,23 +177,19 @@ pitch octaveNumber p =
 -- | Pretty-print a note.
 abcNote :: AbcNote -> String
 abcNote a =
-    let
-        acc =
-            fromMaybe "" $ map show a.accidental
-
-        tie =
-            case a.tied of
-                true ->
-                    "-"
-
-                _ ->
-                    ""
-    in
-        acc
-            <> pitch a.octave a.pitchClass
-            <> octave a.octave
-            <> duration a.duration
-            <> tie
+  let
+    tie =
+      case a.tied of
+        true ->
+          "-"
+        _ ->
+          ""
+  in
+    show a.accidental
+      <> pitch a.octave a.pitchClass
+      <> octave a.octave
+      <> duration a.duration
+      <> tie
 
 -- | Pretty-print a chord.
 abcChord :: AbcChord -> String
