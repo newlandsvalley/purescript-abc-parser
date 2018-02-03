@@ -64,7 +64,6 @@ midiPitchOffset n mks barAccidentals =
   in
     pitchNumber pattern
 
-
 -- | Transform ABC into a MIDI recording.
 toMidi :: AbcTune -> Midi.Recording
 toMidi tune =

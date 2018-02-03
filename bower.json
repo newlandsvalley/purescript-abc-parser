@@ -1,11 +1,20 @@
 {
   "name": "purescript-abc-parser",
+  "description": "parser for ABC notation",
+  "keywords": [
+    "purescript"
+  ],
+  "license": "MIT",
   "ignore": [
     "**/.*",
     "node_modules",
     "bower_components",
     "output"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/newlandsvalley/purescript-abc-parser.git"
+  },
   "dependencies": {
     "purescript-rationals": "^4.0.0",
     "purescript-tuples": "^4.1.0",
@@ -17,7 +26,7 @@
     "purescript-bifunctors": "^3.0.0",
     "purescript-debug": "^3.0.0",
     "purescript-maps": "^3.5.0",
-    "purescript-midi": "https://github.com/newlandsvalley/purescript-midi.git#1.1.0"
+    "newlandsvalley/purescript-midi": "^1.2.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^3.0.0",
