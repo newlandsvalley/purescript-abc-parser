@@ -1,6 +1,6 @@
 module Data.Abc.Notation
         ( NoteTime
-        , DiatonicScale
+        -- , DiatonicScale
         , HeaderMap
         , notesInChromaticScale
         , pitchNumbers
