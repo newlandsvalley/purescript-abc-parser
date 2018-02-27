@@ -1,3 +1,4 @@
+-- | Transposition of an ABC note or tune to a new key. 
 module Data.Abc.Transposition
         ( defaultKey
         , keyDistance

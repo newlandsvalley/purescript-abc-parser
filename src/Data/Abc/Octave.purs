@@ -1,3 +1,4 @@
+-- | Conversion to a new octave.
 module Data.Abc.Octave
         ( move
         , up
@@ -96,7 +97,7 @@ moveRestOrNoteList i =
         Left r -> Left r
         Right n -> Right (moveNoteBy i n)
   in
-    map f 
+    map f
 
 moveChord :: Int -> AbcChord -> AbcChord
 moveChord i c =

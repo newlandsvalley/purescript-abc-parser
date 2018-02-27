@@ -1,3 +1,4 @@
+-- | A canonical representation of an ABC tune as a string.
 module Data.Abc.Canonical
         ( fromTune
         , fromEither

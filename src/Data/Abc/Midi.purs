@@ -1,3 +1,4 @@
+-- | Conversion of an ABC tune to MIDI. 
 module Data.Abc.Midi
   ( MidiPitch
   , toMidi

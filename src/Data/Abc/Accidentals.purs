@@ -1,3 +1,7 @@
+-- | Accidentals are a set of mappings from a PitchClass to an Accidental
+-- | They are useful, for example, when interpreting a bar of music where
+-- | the accidental nature of a note may depend on the existence of a previous
+-- | note of the same pitch within the bar.
 module Data.Abc.Accidentals
         ( Accidentals
         , empty

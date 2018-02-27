@@ -1,3 +1,4 @@
+-- | An ABC Parser.
 module Data.Abc.Parser
         ( PositionedParseError(..)
         , parse

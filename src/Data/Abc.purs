@@ -1,3 +1,4 @@
+-- | ABC data types
 module Data.Abc ( AbcTune
 , TuneHeaders
 , TuneBody

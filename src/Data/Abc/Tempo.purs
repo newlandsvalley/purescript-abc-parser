@@ -1,3 +1,4 @@
+-- | Conversion functions for Tempo.
 module Data.Abc.Tempo
         (
           MidiTick
