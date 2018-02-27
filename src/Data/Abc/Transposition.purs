@@ -23,10 +23,9 @@ import Data.Foldable (oneOf)
 import Data.Bifunctor (lmap)
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.Notation (DiatonicScale, diatonicScale
-                       , getKeySig, inScale, pitchNumbers, pitchNumber
-                       , isCOrSharpKey, modifiedKeySet, notesInChromaticScale
-                       , transposeKeySignatureBy)
+import Data.Abc.Metadata (getKeySig)
+import Data.Abc.KeySignature (diatonicScale, isCOrSharpKey, modifiedKeySet
+    ,notesInChromaticScale, pitchNumbers, pitchNumber, inKeySet, transposeKeySignatureBy)
 
 type TranspositionState =
     { keyDistance :: Int  -- semitone distance between keys - may be positive or negative
@@ -34,7 +33,7 @@ type TranspositionState =
     , sourceBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune source
     , targetmks :: ModifiedKeySignature   -- target key signature
     , targetKeySet :: KeySet -- the set of accidental keys in the target key signature
-    , targetScale :: DiatonicScale -- diatonic scale in the target key
+    , targetScale :: KeySet -- diatonic scale in the target key
     , targetBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune target
     }
 
@@ -459,7 +458,7 @@ transposeNoteBy state note =
       else if (isJust targetBarAcc) then
         safeKa.accidental
           -- is it in the set of keys in the target diatonic scale
-      else if (inScale (Pitch safeKa) state.targetScale) then
+      else if (inKeySet (Pitch safeKa) state.targetScale) then
         Implicit
       else
         safeKa.accidental

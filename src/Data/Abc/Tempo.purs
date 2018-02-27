@@ -21,7 +21,7 @@ import Data.List (List(..), (:), filter, reverse)
 import Data.Foldable (foldl)
 import Data.Rational (Rational, (%), fromInt, toNumber)
 import Data.Abc
-import Data.Abc.Notation (getUnitNoteLength, getTempoSig, getHeader)
+import Data.Abc.Metadata (getUnitNoteLength, getTempoSig, getHeader)
 
 -- Exposed API
 

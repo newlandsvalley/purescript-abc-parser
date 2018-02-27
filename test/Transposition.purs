@@ -81,6 +81,10 @@ noteSuite = do
       Assert.equal
         (map abcNote (Right a))
         (map abcNote (transposeNote cMajor dMajor b))
+    test "C in BMin to EMin" do
+      Assert.equal
+        (map abcNote (Right f))
+        (map abcNote (transposeNote eMinor bMinor c))
 
 phraseSuite :: forall t. Free (TestF t) Unit
 phraseSuite = do
@@ -236,9 +240,14 @@ enat =
   { pitchClass: E, accidental: Natural, octave: 4, duration: fromInt 1, tied: false }
 
 
-b ::AbcNote
+b :: AbcNote
 b =
   { pitchClass: B, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
+
+c :: AbcNote
+c =
+  { pitchClass: C, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
+
 
 
 bnat :: AbcNote

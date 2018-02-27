@@ -1,130 +1,27 @@
-module Test.Notation (notationSuite) where
+module Test.KeySignature (keySignatureSuite) where
 
-import Prelude (Unit, discard, show, ($), (<>), (==))
+import Prelude (Unit, discard, negate, show, ($), (<>), (==))
 import Control.Monad.Free (Free)
+import Data.Maybe (fromMaybe)
+import Data.List (List(..), head, length, sort, (:))
+import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), Pitch(..), KeySet, Mode(..))
+import Data.Abc.KeySignature
 
-import Data.Either (Either(..))
-import Data.Maybe (Maybe(..))
-import Data.List (List(..), intersect, length, (:))
-import Data.Rational (Rational, fromInt, (%))
-import Data.Tuple (Tuple(..))
-import Data.Abc.Parser (parse)
-import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), Pitch(..), KeySet, Mode(..), AbcNote, AbcTune)
-import Data.Abc.Notation
-import Data.Abc.Accidentals as Accidentals
-
-import Test.Unit (Test, TestF, suite, test, success, failure)
+import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
-assertOkTitle :: forall e. String -> String -> Test e
-assertOkTitle source target =
-  case parse source of
-    Right tune ->
-      let
-        mtitle =
-          getTitle tune
-      in
-        case mtitle of
-          Just title ->
-            Assert.equal target title
-
-          _ ->
-            failure "no title"
-
-    _ ->
-      failure "parse error"
-
-assertOkKeySig :: forall e. String -> ModifiedKeySignature -> Test e
-assertOkKeySig source target =
-  case parse source of
-    Right tune ->
-      let
-        mkeySig =
-          getKeySig tune
-      in
-        case mkeySig of
-          Just keySig ->
-            Assert.equal target.keySignature.pitchClass keySig.keySignature.pitchClass
-
-          _ ->
-            failure "no key signature"
-    _ ->
-      failure "parse error"
-
-assertOkMeter :: forall e. String -> (Tuple Int Int) -> Test e
-assertOkMeter source target =
-  case parse source of
-    Right tune ->
-      let
-        meter =
-          getMeter tune
-      in
-        case meter of
-          Just m  ->
-            Assert.equal target m
-
-          _ ->
-            failure "no meter"
-    _ ->
-      failure "parse error"
-
-assertOkNoteLen :: forall e. String -> Rational -> Test e
-assertOkNoteLen source target =
-  case parse source of
-    Right tune ->
-      let
-        len =
-          getUnitNoteLength tune
-      in
-        case len of
-          Just rat  ->
-            Assert.equal target rat
-
-          _ ->
-            failure "no unit note length"
-    _ ->
-      failure "parse error"
-
-assertNoHeader :: forall e h. String -> (AbcTune -> Maybe h) -> Test e
-assertNoHeader source getf =
-  case parse source of
-    Right tune ->
-      let
-        mtitle =
-          getf tune
-      in
-        case mtitle of
-          Just title ->
-            failure "no title expected"
-          _ ->
-            success
-
-    _ ->
-      failure "parse error"
-
-assertHeaderCount :: forall e. Int -> String ->  Test e
-assertHeaderCount expectedCount source =
-  case parse source of
-    Right tune ->
-      Assert.equal expectedCount (length tune.headers)
-
-    _ ->
-      failure "parse error"
 
 assertEquivalentKeys :: forall e. KeySet -> KeySet -> Test e
 assertEquivalentKeys actual expected =
-  let
-    intersection = intersect actual expected
-  in
-    {- debug
-    if null expected then
-      failure $ "debug: " <> (show actual)
-    -}
-    if (length intersection == length expected) then
-      success
-    else
-      failure $ "non-equivalent keys: "
-         <> (show actual) <> " not equal to: " <> (show expected)
+  if (length actual == length expected) then
+    let
+      as = sort actual
+      es = sort expected
+    in
+      Assert.equal es as
+  else
+    failure $ "non-equivalent key lengths: "
+       <> (show actual) <> " not equal to: " <> (show expected)
 
 {- It's such a pain to provide Eq, Show on what you'd like to be a somple record
    so for testing purposes just collapse tp a string
@@ -135,45 +32,15 @@ showKeySig :: KeySignature -> String
 showKeySig ks =
   show ks.pitchClass <> show ks.accidental <> show ks.mode
 
-notationSuite :: forall t. Free (TestF t) Unit
-notationSuite = do
-   lookupSuite
-   headerSuite
+keySignatureSuite :: forall t. Free (TestF t) Unit
+keySignatureSuite = do
    majorModeSuite
    minorModeSuite
    klezmerModeSuite
    otherModeSuite
-   modalKeySigNormalisationSuite
    keySuite
-
-headerSuite :: forall t. Free (TestF t) Unit
-headerSuite =
-  suite "headers" do
-   test "getTitle" do
-     assertOkTitle titledTune "Gamal Reinlender"
-   test "no title" do
-     assertNoHeader keyedTune getTitle
-   test "doubly titled tune" do
-     assertOkTitle doublyTitledTune "Nancy Dawson"
-   test "OK key header" do
-     assertOkKeySig keyedTune fMajorM
-   test "no key header" do
-     assertNoHeader titledTune getKeySig
-   test "multiple headers" do
-     assertHeaderCount 8 manyHeaders
-   test "getMeter" do
-    assertOkMeter manyHeaders (Tuple 4 4)
-   test "getUnitNoteLen" do
-     assertOkNoteLen manyHeaders (1 % 16)
-
-
-scaleSuite :: forall t. Free (TestF t) Unit
-scaleSuite =
-  suite "scales" do
-    test "G Major" do
-      assertEquivalentKeys
-        (diatonicScale { pitchClass: G, accidental: Natural, mode: Major })
-        (Nil)
+   transposeSignatureSuite
+   scaleSuite
 
 majorModeSuite :: forall t. Free (TestF t) Unit
 majorModeSuite =
@@ -287,8 +154,7 @@ klezmerModeSuite =
   suite "klezmer modes" do
     test "D Phrygian with sharpened f" do
       assertEquivalentKeys
-        (modifiedKeySet  { keySignature: { pitchClass: D, accidental: Natural, mode: Phrygian },
-             modifications: ( Pitch  { pitchClass: F, accidental: Sharp } : Nil ) })
+        (modifiedKeySet dPhrygianSharpenedF)
           ( Pitch  { pitchClass: B, accidental: Flat }
           : Pitch  { pitchClass: E, accidental: Flat }
           : Pitch  { pitchClass: F, accidental: Sharp }
@@ -362,30 +228,6 @@ otherModeSuite =
         (keySet { pitchClass: C, accidental: Natural, mode: Ionian })
         (Nil)
 
-modalKeySigNormalisationSuite :: forall t. Free (TestF t) Unit
-modalKeySigNormalisationSuite =
-  suite "modal key sgnature normalisation" do
-    test "D Mix" do
-      Assert.equal
-        ( showKeySig { pitchClass: G, accidental: Natural, mode: Major })
-        ( showKeySig $ normaliseModalKey { pitchClass: D, accidental: Natural, mode: Mixolydian })
-    test "Bb Dor" do
-      Assert.equal
-        ( showKeySig { pitchClass: A, accidental: Flat, mode: Major })
-        ( showKeySig $ normaliseModalKey { pitchClass: B, accidental: Flat, mode: Dorian })
-    test "A Phr" do
-      Assert.equal
-        ( showKeySig { pitchClass: F, accidental: Natural, mode: Major })
-        ( showKeySig $ normaliseModalKey { pitchClass: A, accidental: Natural, mode: Phrygian })
-    test "Ab Lyd" do
-      Assert.equal
-        ( showKeySig { pitchClass: E, accidental: Flat, mode: Major })
-        ( showKeySig $ normaliseModalKey { pitchClass: A, accidental: Flat, mode: Lydian })
-    test "G# Loc" do
-      Assert.equal
-        ( showKeySig { pitchClass: A, accidental: Natural, mode: Major })
-        ( showKeySig $ normaliseModalKey { pitchClass: G, accidental: Sharp, mode: Locrian })
-
 
 keySuite :: forall t. Free (TestF t) Unit
 keySuite =
@@ -399,40 +241,128 @@ keySuite =
     test "Gm is not a sharp key" do
       Assert.assertFalse "is a sharp key" (isCOrSharpKey gMinor)
 
--- | really belongs in an Accidentals test suite
-lookupSuite :: forall t. Free (TestF t) Unit
-lookupSuite =
-  suite "lookups" do
-    test "f in G Major" do
-      Assert.equal
-          (Just Sharp)
-          (Accidentals.implicitInKeySet F
-             (modifiedKeySet { keySignature: gMajor, modifications: Nil }))
+transposeSignatureSuite :: forall t. Free (TestF t) Unit
+transposeSignatureSuite =
+  suite "transpose key signatures" do
+    test "G major down 1 tone" do
+      let
+        newks = transposeKeySignatureBy (-2) gMajorM
+      Assert.equal F newks.keySignature.pitchClass
+      Assert.equal Natural newks.keySignature.accidental
+      Assert.equal Major newks.keySignature.mode
+    test "F major up 1 tone" do
+      let
+        newks = transposeKeySignatureBy 2 fMajorM
+      Assert.equal G newks.keySignature.pitchClass
+      Assert.equal Natural newks.keySignature.accidental
+      Assert.equal Major newks.keySignature.mode
+    test "C# major down 8 semitones" do
+      let
+        newks = transposeKeySignatureBy (-8) $ cSharpM Major
+      Assert.equal F newks.keySignature.pitchClass
+      Assert.equal Natural newks.keySignature.accidental
+      Assert.equal Major newks.keySignature.mode
+    test "C# minor down 8 semitones" do
+      let
+        newks = transposeKeySignatureBy (-8) $ cSharpM Minor
+      Assert.equal F newks.keySignature.pitchClass
+      Assert.equal Natural newks.keySignature.accidental
+      Assert.equal Minor newks.keySignature.mode
+    test "F major up 8 semitones" do
+      let
+        newks = transposeKeySignatureBy 8 fMajorM
+      Assert.equal C newks.keySignature.pitchClass
+      Assert.equal Sharp newks.keySignature.accidental
+      Assert.equal Major newks.keySignature.mode
+    test "D phrygian sharpened F up 1 tone" do
+      let
+        newks = transposeKeySignatureBy 2 dPhrygianSharpenedF
+        modification = fromMaybe (Pitch { pitchClass : C, accidental : Natural })
+            $ head newks.modifications
+      Assert.equal E newks.keySignature.pitchClass
+      Assert.equal Natural newks.keySignature.accidental
+      Assert.equal Phrygian newks.keySignature.mode
+      Assert.equal (Pitch { pitchClass : G, accidental : Sharp }) modification
+    test "E phrygian sharpened G down 1 tone" do
+      let
+        newks = transposeKeySignatureBy (-2) ePhrygianSharpenedG
+        modification = fromMaybe (Pitch { pitchClass : C, accidental : Natural })
+            $ head newks.modifications
+      Assert.equal D newks.keySignature.pitchClass
+      Assert.equal Natural newks.keySignature.accidental
+      Assert.equal Phrygian newks.keySignature.mode
+      Assert.equal (Pitch { pitchClass : F, accidental : Sharp }) modification
 
-    test "f in G Major" do
-      Assert.equal
-        (Nothing)
-        (Accidentals.implicitInKeySet F
-           (modifiedKeySet { keySignature: cMajor, modifications: Nil }))
+scaleSuite :: forall t. Free (TestF t) Unit
+scaleSuite =
+  suite "scales" do
+    test "C Major" do
+      assertEquivalentKeys
+        (diatonicScale { pitchClass: C, accidental: Natural, mode: Major })
+        (Pitch  { pitchClass: C, accidental: Natural}
+        : Pitch  { pitchClass: D, accidental: Natural}
+        : Pitch  { pitchClass: E, accidental: Natural}
+        : Pitch  { pitchClass: F, accidental: Natural}
+        : Pitch  { pitchClass: G, accidental: Natural}
+        : Pitch  { pitchClass: A, accidental: Natural}
+        : Pitch  { pitchClass: B, accidental: Natural}
+        : Nil)
+    test "G Major" do
+      assertEquivalentKeys
+        (diatonicScale { pitchClass: G, accidental: Natural, mode: Major })
+        (Pitch  { pitchClass: C, accidental: Natural}
+        : Pitch  { pitchClass: D, accidental: Natural}
+        : Pitch  { pitchClass: E, accidental: Natural}
+        : Pitch  { pitchClass: F, accidental: Sharp}
+        : Pitch  { pitchClass: G, accidental: Natural}
+        : Pitch  { pitchClass: A, accidental: Natural}
+        : Pitch  { pitchClass: B, accidental: Natural}
+        : Nil)
+    test "E Minor" do
+      assertEquivalentKeys
+        (diatonicScale { pitchClass: E, accidental: Natural, mode: Minor })
+        (Pitch  { pitchClass: C, accidental: Natural}
+        : Pitch  { pitchClass: D, accidental: Natural}
+        : Pitch  { pitchClass: E, accidental: Natural}
+        : Pitch  { pitchClass: F, accidental: Sharp}
+        : Pitch  { pitchClass: G, accidental: Natural}
+        : Pitch  { pitchClass: A, accidental: Natural}
+        : Pitch  { pitchClass: B, accidental: Natural}
+        : Nil)
+    test "B Minor" do
+      assertEquivalentKeys
+        (diatonicScale { pitchClass: B, accidental: Natural, mode: Minor })
+        (Pitch  { pitchClass: C, accidental: Sharp}
+        : Pitch  { pitchClass: D, accidental: Natural}
+        : Pitch  { pitchClass: E, accidental: Natural}
+        : Pitch  { pitchClass: F, accidental: Sharp}
+        : Pitch  { pitchClass: G, accidental: Natural}
+        : Pitch  { pitchClass: A, accidental: Natural}
+        : Pitch  { pitchClass: B, accidental: Natural}
+        : Nil)
+    test "F# Major" do
+      assertEquivalentKeys
+        (diatonicScale { pitchClass: F, accidental: Sharp, mode: Major })
+        (Pitch  { pitchClass: C, accidental: Sharp}
+        : Pitch  { pitchClass: D, accidental: Sharp}
+        : Pitch  { pitchClass: E, accidental: Sharp}
+        : Pitch  { pitchClass: F, accidental: Sharp}
+        : Pitch  { pitchClass: G, accidental: Sharp}
+        : Pitch  { pitchClass: A, accidental: Sharp}
+        : Pitch  { pitchClass: B, accidental: Natural}
+        : Nil)
+    test "Gb Major" do
+      assertEquivalentKeys
+        (diatonicScale { pitchClass: G, accidental: Flat, mode: Major })
+        ( Pitch  { pitchClass: C, accidental: Flat }
+        : Pitch  { pitchClass: D, accidental: Flat }
+        : Pitch  { pitchClass: E, accidental: Flat }
+        : Pitch  { pitchClass: F, accidental: Natural }
+        : Pitch  { pitchClass: G, accidental: Flat }
+        : Pitch  { pitchClass: A, accidental: Flat }
+        : Pitch  { pitchClass: B, accidental: Flat }
+        : Nil )
 
-
--- headers in sample ABC tunes
-keyedTune =
-    "K: FMajor\x0D\n| ABC |\x0D\n"
-
-titledTune =
-    "T: Gamal Reinlender\x0D\n| ABC |\x0D\n"
-
-doublyTitledTune =
-    "T: Nancy Dawson\x0D\nT: Piss Upon the Grass\x0D\n| ABC |\x0D\n"
-
-manyHeaders =
-    "X: 1\r\nT: Skänklåt efter Brittas Hans\r\nR: Skänklåt\r\nZ: Brian O'Connor, 11/7/2016\r\nL: 1/16\r\nO: Bjorsa\r\nM: 4/4\r\nK:Gmaj\r\n| ABC |\r\n"
-
--- notes
-fNatural :: AbcNote
-fNatural =
-    { pitchClass: F, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
 
 -- key signatures
 gMajor :: KeySignature
@@ -440,15 +370,29 @@ gMajor =
     { pitchClass: G, accidental: Natural, mode: Major }
 
 
+gMajorM :: ModifiedKeySignature
+gMajorM =
+    { keySignature : gMajor, modifications : Nil }
+
 gMinor :: KeySignature
 gMinor =
     { pitchClass: G, accidental: Natural, mode: Minor }
 
+gMinorM :: ModifiedKeySignature
+gMinorM =
+    { keySignature : gMinor, modifications : Nil }
 
 cMajor :: KeySignature
 cMajor =
     { pitchClass: C, accidental: Natural, mode: Major }
 
+cSharp :: Mode -> KeySignature
+cSharp mode =
+    { pitchClass: C, accidental: Sharp, mode: mode }
+
+cSharpM :: Mode -> ModifiedKeySignature
+cSharpM mode =
+    { keySignature : cSharp mode, modifications : Nil }
 
 dMajor :: KeySignature
 dMajor =
@@ -462,3 +406,13 @@ fMajor =
 fMajorM :: ModifiedKeySignature
 fMajorM =
     { keySignature: fMajor, modifications: Nil }
+
+dPhrygianSharpenedF :: ModifiedKeySignature
+dPhrygianSharpenedF =
+  { keySignature: { pitchClass: D, accidental: Natural, mode: Phrygian },
+     modifications: ( Pitch  { pitchClass: F, accidental: Sharp } : Nil ) }
+
+ePhrygianSharpenedG :: ModifiedKeySignature
+ePhrygianSharpenedG =
+  { keySignature: { pitchClass: E, accidental: Natural, mode: Phrygian },
+     modifications: ( Pitch  { pitchClass: G, accidental: Sharp } : Nil ) }

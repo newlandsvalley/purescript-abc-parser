@@ -10,7 +10,8 @@ import Control.Monad.State (State, get, put, evalState)
 import Data.Abc (AbcTune, AbcNote, RestOrNote, Pitch(..), Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
    MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
-import Data.Abc.Notation (pitchNumber, dotFactor, modifiedKeySet, notesInChromaticScale, getKeySig)
+import Data.Abc.Metadata (dotFactor, getKeySig)
+import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
 import Data.Abc.Canonical as Canonical
 import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, singleton)

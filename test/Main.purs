@@ -9,9 +9,11 @@ import Test.Unit (suite)
 import Test.Unit.Main (runTest)
 import Test.Unit.Console (TESTOUTPUT)
 import Test.Abc (abcSuite)
-import Test.Notation (notationSuite)
+import Test.Metadata (metadataSuite)
 import Test.Octave (octaveSuite)
 import Test.Tempo (tempoSuite)
+import Test.Accidentals (accidentalsSuite)
+import Test.KeySignature (keySignatureSuite)
 import Test.Transposition (transpositionSuite)
 import Test.Midi (midiSuite)
 
@@ -26,8 +28,10 @@ main :: forall t.
 main = runTest do
   suite "parser" do
     abcSuite
-    notationSuite
+    metadataSuite
     octaveSuite
     tempoSuite
+    accidentalsSuite
+    keySignatureSuite
     transpositionSuite
     midiSuite

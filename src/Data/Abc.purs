@@ -30,11 +30,12 @@ module Data.Abc ( AbcTune
 
 
 import Data.List (List)
-import Data.Maybe (Maybe)
+import Data.Maybe (Maybe(..))
 import Data.Rational (Rational)
 import Data.Tuple (Tuple)
 import Data.Either (Either)
 import Data.String (toLower) as Str
+import Data.Enum
 import Prelude (class Show, class Eq, class Ord, (<>), show)
 import Data.Generic.Rep
 import Data.Generic.Rep.Eq (genericEq)
@@ -227,6 +228,24 @@ instance showPitchClass :: Show PitchClass where
 derive instance eqPitchCLass :: Eq PitchClass
 derive instance ordPitchCLass :: Ord PitchClass
 
+instance enumPitchClass :: Enum PitchClass where
+  succ C = Just D
+  succ D = Just E
+  succ E = Just F
+  succ F = Just G
+  succ G = Just A
+  succ A = Just B
+  succ B = Just C
+
+
+  pred C = Just B
+  pred D = Just C
+  pred E = Just D
+  pred F = Just E
+  pred G = Just F
+  pred A = Just G
+  pred B = Just A
+
 -- | A Key Signature.
 type KeySignature =
     { pitchClass :: PitchClass
@@ -263,7 +282,7 @@ instance ordPitch :: Ord Pitch where
 instance showPitch :: Show Pitch where
   show (Pitch p) = show p.accidental <> Str.toLower (show p.pitchClass)
 
--- | A set of accidentals within a key signature.
+-- | A set of pitches within a key signature or scale
 type KeySet =
     List Pitch
 
