@@ -1,3 +1,9 @@
+-- | Handle any repeated sections when interpreting an ABC tune
+-- | Repeats are optional and can take the form:
+-- |    |: ABC :|
+-- |    |: ABC :: DEF :|
+-- |    |: ABC |1 de :|2 fg |
+-- | the very first repeat start marker is optional and often absent
 module Data.Abc.Midi.RepeatSections
         ( Section(..)
         , Sections
@@ -14,14 +20,6 @@ import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.Tuple (Tuple(..))
 import Prelude (class Eq, class Show, (==), (&&), not)
-
--- | Handle any repeated sections of a tune
--- | Repeats are optional and can take the form:
--- |    |: ABC :|
--- |    |: ABC :: DEF :|
--- |    |: ABC |1 de :|2 fg |
--- | the very first repeat start marker is optional and often absent
-
 
 -- | a section of the tune (possibly repeated)
 newtype Section = Section
@@ -87,20 +85,20 @@ finalBar iteration repeat barNumber r =
     else
       repeatState
 
--- | default sections i.e. no repeats yet
+-- default sections i.e. no repeats yet
 defaultSections :: RepeatState
 defaultSections =
   { current : nullSection, sections : Nil }
 
--- | accumulate the last section and start a new section  -}
+-- accumulate the last section and start a new section  -}
 startSection :: Int -> RepeatState -> RepeatState
 startSection pos r =
   -- a start implies an end of the last section
   endAndStartSection pos false true r
 
--- | end the section.  If there is a first repeat, keep it open, else accumulate it
--- | pos : the bar number marking the end of section
--- | isRepeatEnd : True if invoked with a known Repeat End marker in the bar line
+-- end the section.  If there is a first repeat, keep it open, else accumulate it
+-- pos : the bar number marking the end of section
+-- isRepeatEnd : True if invoked with a known Repeat End marker in the bar line
 endSection :: Int -> Boolean -> RepeatState -> RepeatState
 endSection pos isRepeatEnd r =
   if (hasFirstEnding r.current) then
@@ -111,7 +109,7 @@ endSection pos isRepeatEnd r =
   else
      endAndStartSection pos isRepeatEnd false r
 
--- | end the current section, accumulate it and start a new section
+-- end the current section, accumulate it and start a new section
 endAndStartSection :: Int -> Boolean -> Boolean -> RepeatState -> RepeatState
 endAndStartSection endPos isRepeatEnd isRepeatStart r =
   let
@@ -131,7 +129,7 @@ endAndStartSection endPos isRepeatEnd isRepeatStart r =
   in
     accumulateSection endPos isRepeatStart endState
 
--- | accumulate the current section into the full score and re-initialise it
+-- accumulate the current section into the full score and re-initialise it
 accumulateSection :: Int -> Boolean -> RepeatState -> RepeatState
 accumulateSection pos isRepeatStart r =
   let
@@ -142,27 +140,27 @@ accumulateSection pos isRepeatStart r =
     else
       r { current = newCurrent }
 
---  | return true if the section is devoid of any useful content
+-- return true if the section is devoid of any useful content
 isNullSection :: Section -> Boolean
 isNullSection s =
   s == nullSection
 
--- | return true if the first (variant) ending is set
+-- return true if the first (variant) ending is set
 hasFirstEnding :: Section -> Boolean
 hasFirstEnding s =
   isJust (unwrap s).firstEnding
 
--- | set the isRepeated status of a section
+-- set the isRepeated status of a section
 setRepeated :: Section -> Section
 setRepeated s =
   Section (unwrap s) { isRepeated = true }
 
--- | set the end pisition of a section
+-- set the end pisition of a section
 setEndPos :: Int -> Section -> Section
 setEndPos pos s =
   Section (unwrap s) { end = Just pos }
 
--- | set the first repeat of a section
+-- set the first repeat of a section
 firstRepeat :: Int -> Section -> Section
 firstRepeat pos s =
   Section (unwrap s) { firstEnding = Just pos }
@@ -172,7 +170,7 @@ secondRepeat :: Int -> Section -> Section
 secondRepeat pos s =
   Section (unwrap s) { secondEnding = Just pos }
 
--- | start a new section
+-- start a new section
 newSection :: Int -> Boolean -> Section
 newSection pos isRepeated = Section
   { start : Just pos
@@ -182,7 +180,7 @@ newSection pos isRepeated = Section
   , isRepeated : isRepeated
   }
 
--- | a 'null' section
+-- a 'null' section
 nullSection :: Section
 nullSection =
   newSection 0 false
