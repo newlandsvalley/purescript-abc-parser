@@ -7,13 +7,14 @@ module Data.Abc.KeySignature
    , keySet
    , modifiedKeySet
    , isCOrSharpKey
+   , normaliseModalKey
    , inKeySet
    , transposeKeySignatureBy
    , pitchNumbers
    , pitchNumber
    ) where
 
-import Data.Abc (Mode(..), PitchClass(..), Accidental(..), Pitch(..), KeySignature, ModifiedKeySignature, KeySet)
+import Data.Abc (Accidental(..), KeySet, KeySignature, Mode(..), ModifiedKeySignature, Pitch(..), PitchClass(..))
 import Data.Array (index, elemIndex, head, drop, take, filter, toUnfoldable)
 import Data.Enum (succ, pred)
 import Data.List (List(..), (:), null, foldr)
@@ -171,8 +172,8 @@ modifiedKeySet ksm =
   in
     if (null ksm.modifications) then
       kSet
-  else
-    foldr modifyKeySet kSet ksm.modifications
+    else
+      foldr modifyKeySet kSet ksm.modifications
 
 -- | Is the key signature a sharp key or else a simple C Major key?
 isCOrSharpKey :: KeySignature -> Boolean
@@ -186,6 +187,28 @@ isCOrSharpKey ksig =
   in
     -- the list is empty anyway or contains only flat keys
     null $ L.filter isFlat kset
+
+-- | normalise a modal key signature to its equivalent major key signature
+normaliseModalKey :: KeySignature -> KeySignature
+normaliseModalKey ks =
+  let
+    -- convert key sig to a piano key
+    pianoKeySignature = buildPianoKey
+      (Pitch { pitchClass : ks.pitchClass,
+              accidental : ks.accidental
+            }
+      )
+    -- retrieve the tonic of what is now a major scale
+    Tuple tonic allKeys = pianoKeyScale pianoKeySignature ks.mode
+    -- retain the flat context of the original key (if there is one)
+    isFlatCtx = ks.accidental == Flat
+    -- translate to a pitch in the new Major key
+    (Pitch newKeyPitch) = pianoKeyToPitch isFlatCtx tonic
+  in
+    { pitchClass : newKeyPitch.pitchClass
+    , accidental : newKeyPitch.accidental
+    , mode : Major
+    }
 
 -- | Is the pitch is in the KeySet?
 inKeySet :: Pitch -> KeySet -> Boolean

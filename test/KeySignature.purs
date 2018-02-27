@@ -227,6 +227,24 @@ otherModeSuite =
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Ionian })
         (Nil)
+    test "D mixolydian equivalent" do
+      let
+        newks = normaliseModalKey (mix D)
+      Assert.equal G newks.pitchClass
+      Assert.equal Natural newks.accidental
+      Assert.equal Major newks.mode
+    test "C mixolydian equivalent" do
+      let
+        newks = normaliseModalKey (mix C)
+      Assert.equal F newks.pitchClass
+      Assert.equal Natural newks.accidental
+      Assert.equal Major newks.mode
+    test "E dorian equivalent" do
+      let
+        newks = normaliseModalKey (dor E)
+      Assert.equal D newks.pitchClass
+      Assert.equal Natural newks.accidental
+      Assert.equal Major newks.mode
 
 
 keySuite :: forall t. Free (TestF t) Unit
@@ -398,7 +416,14 @@ dMajor :: KeySignature
 dMajor =
     { pitchClass: D, accidental: Natural, mode: Major }
 
+mix :: PitchClass -> KeySignature
+mix pc =
+  { pitchClass: pc, accidental: Natural, mode: Mixolydian }
 
+dor :: PitchClass -> KeySignature
+dor pc =
+  { pitchClass: pc, accidental: Natural, mode: Dorian }
+  
 fMajor :: KeySignature
 fMajor =
     { pitchClass: F, accidental: Natural, mode: Major }
