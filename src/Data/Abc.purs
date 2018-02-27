@@ -36,9 +36,9 @@ import Data.Rational (Rational)
 import Data.Tuple (Tuple)
 import Data.Either (Either)
 import Data.String (toLower) as Str
-import Data.Enum
+import Data.Enum (class Enum)
 import Prelude (class Show, class Eq, class Ord, (<>), show)
-import Data.Generic.Rep
+import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Ord (genericCompare)
 
