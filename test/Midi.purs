@@ -16,7 +16,7 @@ import Data.Abc.Tempo (standardMidiTick)
 import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
-assertMidi :: forall e. String -> Midi.Track -> Test e
+assertMidi :: String -> Midi.Track -> Test
 assertMidi s midiTrack =
   case (parse s) of
     Right tune ->
@@ -29,12 +29,12 @@ assertMidi s midiTrack =
     Left err ->
       failure ("parse failed: " <> (show err))
 
-midiSuite :: forall t. Free (TestF t) Unit
+midiSuite :: Free TestF Unit
 midiSuite = do
   transformationSuite
   repeatSuite
 
-transformationSuite :: forall t. Free (TestF t) Unit
+transformationSuite :: Free TestF Unit
 transformationSuite =
   suite "MIDI transformation" do
     test "notes" do
@@ -128,7 +128,7 @@ transformationSuite =
       assertMidi "| CDE | [K: D] | C |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
 
-repeatSuite :: forall t. Free (TestF t) Unit
+repeatSuite :: Free TestF Unit
 repeatSuite =
   suite "repeats" do
     test "simple repeat" do

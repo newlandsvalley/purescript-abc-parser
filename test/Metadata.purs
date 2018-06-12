@@ -16,7 +16,7 @@ import Data.Abc.Accidentals as Accidentals
 import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Assert as Assert
 
-assertOkTitle :: forall e. String -> String -> Test e
+assertOkTitle :: String -> String -> Test
 assertOkTitle source target =
   case parse source of
     Right tune ->
@@ -34,7 +34,7 @@ assertOkTitle source target =
     _ ->
       failure "parse error"
 
-assertOkKeySig :: forall e. String -> ModifiedKeySignature -> Test e
+assertOkKeySig :: String -> ModifiedKeySignature -> Test
 assertOkKeySig source target =
   case parse source of
     Right tune ->
@@ -51,7 +51,7 @@ assertOkKeySig source target =
     _ ->
       failure "parse error"
 
-assertOkMeter :: forall e. String -> (Tuple Int Int) -> Test e
+assertOkMeter :: String -> (Tuple Int Int) -> Test
 assertOkMeter source target =
   case parse source of
     Right tune ->
@@ -68,7 +68,7 @@ assertOkMeter source target =
     _ ->
       failure "parse error"
 
-assertOkNoteLen :: forall e. String -> Rational -> Test e
+assertOkNoteLen :: String -> Rational -> Test
 assertOkNoteLen source target =
   case parse source of
     Right tune ->
@@ -85,7 +85,7 @@ assertOkNoteLen source target =
     _ ->
       failure "parse error"
 
-assertNoHeader :: forall e h. String -> (AbcTune -> Maybe h) -> Test e
+assertNoHeader :: forall h. String -> (AbcTune -> Maybe h) -> Test
 assertNoHeader source getf =
   case parse source of
     Right tune ->
@@ -102,7 +102,7 @@ assertNoHeader source getf =
     _ ->
       failure "parse error"
 
-assertHeaderCount :: forall e. Int -> String ->  Test e
+assertHeaderCount :: Int -> String ->  Test
 assertHeaderCount expectedCount source =
   case parse source of
     Right tune ->
@@ -111,7 +111,7 @@ assertHeaderCount expectedCount source =
     _ ->
       failure "parse error"
 
-assertEquivalentKeys :: forall e. KeySet -> KeySet -> Test e
+assertEquivalentKeys :: KeySet -> KeySet -> Test
 assertEquivalentKeys actual expected =
   let
     intersection = intersect actual expected
@@ -135,11 +135,11 @@ showKeySig :: KeySignature -> String
 showKeySig ks =
   show ks.pitchClass <> show ks.accidental <> show ks.mode
 
-metadataSuite :: forall t. Free (TestF t) Unit
+metadataSuite :: Free TestF Unit
 metadataSuite = do
    headerSuite
 
-headerSuite :: forall t. Free (TestF t) Unit
+headerSuite :: Free TestF Unit
 headerSuite =
   suite "headers" do
    test "getTitle" do

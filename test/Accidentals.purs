@@ -10,7 +10,7 @@ import Data.Abc.Accidentals as Accidentals
 import Test.Unit (Test, TestF, suite, test)
 import Test.Unit.Assert as Assert
 
-accidentalsSuite :: forall t. Free (TestF t) Unit
+accidentalsSuite :: Free TestF Unit
 accidentalsSuite =
   suite "accidental lookups" do
     test "f in G Major" do

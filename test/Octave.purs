@@ -8,7 +8,7 @@ import Test.Utils
 
 import Test.Unit (TestF, suite, test)
 
-octaveSuite :: forall t. Free (TestF t) Unit
+octaveSuite :: Free TestF Unit
 octaveSuite = do
   suite "octave" do
     test "phrase 1 low to med" do

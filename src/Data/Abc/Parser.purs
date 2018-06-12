@@ -5,15 +5,19 @@ module Data.Abc.Parser
         , parseKeySignature
         ) where
 
-import Prelude (class Show, ($), (<$>), (<$), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip, show)
+import Prelude (class Show, ($), (<$>), (<$), (<<<), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip, show)
 import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.List (List(..), (:))
+import Data.List.NonEmpty as Nel
+import Data.NonEmpty ((:|))
 import Data.List (length, singleton) as List
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String.Utils (length, startsWith, includes)
-import Data.String (toUpper, charAt, singleton, fromCharArray, toCharArray)
+import Data.String.Utils (startsWith, includes)
+import Data.String.CodePoints (codePointFromChar, length)
+import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
+import Data.String (toUpper, singleton)
 import Data.Int (fromString, pow)
 import Data.Foldable (foldr, foldMap)
 import Data.Functor (map)
@@ -31,7 +35,7 @@ import Data.Abc
 {- transient data type just used for parsing the awkward Tempo syntax
   a list of time signatures expressed as rationals and a bpm expressed as an Int
 -}
-data TempoDesignation = TempoDesignation (List Rational) Int
+data TempoDesignation = TempoDesignation (Nel.NonEmptyList Rational) Int
 
 {- use for debug like this:
 
@@ -107,7 +111,7 @@ chord =
 abcChord :: Parser AbcChord
 abcChord =
     buildChord
-        <$> (between (char '[') (char ']') (many1 abcNote))
+        <$> (between (char '[') (char ']') (many1AsList abcNote))
         <*> optionMaybe noteDur
         <?> "ABC chord"
 
@@ -283,7 +287,7 @@ anyRat =
 manySlashes :: Parser Rational
 manySlashes =
     buildRationalFromSlashList
-      <$> ((:) <$> char '/' <*> many1 (char '/'))
+      <$> (Nel.cons <$> char '/' <*> many1 (char '/'))
 
 
 integralAsRational :: Parser Rational
@@ -317,7 +321,7 @@ tuplet :: Parser Music
 tuplet =
     Tuplet
         <$> (char '(' *> tupletSignature)
-        <*> many1 restOrNote
+        <*> many1AsList restOrNote
         <?> "tuplet"
 
 {- possible tuplet signatures
@@ -366,7 +370,7 @@ graceNote =
 
 grace :: Parser Music
 grace =
-    GraceNote <$> acciaccatura <*> (many1 abcNote)
+    GraceNote <$> acciaccatura <*> (many1AsList abcNote)
 
 {- acciaccaturas are indicated with an optional forward slash
    was
@@ -434,7 +438,7 @@ longDecoration =
 
 whiteSpace :: Parser String
 whiteSpace =
-  foldMap singleton <$>
+  foldMap (singleton <<< codePointFromChar ) <$>
      many
        (choice
          [ space
@@ -446,7 +450,7 @@ whiteSpace =
 spacer :: Parser Music
 spacer =
     Spacer
-        <$> (List.length <$> (many1 scoreSpace))
+        <$> (Nel.length <$> (many1 scoreSpace))
         <?> "space"
 
 
@@ -1170,12 +1174,12 @@ scientificPitchNotation pc oct =
         middlecOctave + 1 + oct
 
 {- used in counting slashes exponentially -}
-buildRationalFromSlashList :: forall a. List a -> Rational
+buildRationalFromSlashList :: forall a. Nel.NonEmptyList a -> Rational
 buildRationalFromSlashList xs =
   let
     f i = (1 % (pow 2 i))
   in
-    f $ List.length xs
+    f $ Nel.length xs
 
 {- build a tuplet signature {p,q,r) - p notes in the time taken for q
    in operation over the next r notes
@@ -1270,7 +1274,7 @@ buildTempoSignature3 :: Int ->  TempoSignature
 buildTempoSignature3 bpm  =
   let
     noteLengths =
-      List.singleton (1 % 4)
+      Nel.singleton (1 % 4)
   in
    { noteLengths : noteLengths
    , bpm : bpm
@@ -1379,6 +1383,14 @@ invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
 
+-- | JMS !!!
+-- | revert the signature of many1 so that it
+-- | produces a list rather than a nOnEmptyList
+-- | eventually we should alter the Abc data structure so that it used
+-- | NonEmpty lists wherever appropriate
+many1AsList :: forall a. Parser a -> Parser (List a)
+many1AsList p =
+  Nel.toList <$> many1 p
 
 -- | Run a parser for an input string, returning either a positioned error or a result.
 runParser1 :: forall a. Parser a -> String -> Either PositionedParseError a

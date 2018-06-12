@@ -11,7 +11,7 @@ import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
 
-assertEquivalentKeys :: forall e. KeySet -> KeySet -> Test e
+assertEquivalentKeys :: KeySet -> KeySet -> Test
 assertEquivalentKeys actual expected =
   if (length actual == length expected) then
     let
@@ -32,7 +32,7 @@ showKeySig :: KeySignature -> String
 showKeySig ks =
   show ks.pitchClass <> show ks.accidental <> show ks.mode
 
-keySignatureSuite :: forall t. Free (TestF t) Unit
+keySignatureSuite :: Free TestF Unit
 keySignatureSuite = do
    majorModeSuite
    minorModeSuite
@@ -42,7 +42,7 @@ keySignatureSuite = do
    transposeSignatureSuite
    scaleSuite
 
-majorModeSuite :: forall t. Free (TestF t) Unit
+majorModeSuite :: Free TestF Unit
 majorModeSuite =
   suite "major mode" do
     test "G Major" do
@@ -136,7 +136,7 @@ majorModeSuite =
         : Pitch  { pitchClass: C, accidental: Flat }
         : Nil )
 
-minorModeSuite :: forall t. Free (TestF t) Unit
+minorModeSuite :: Free TestF Unit
 minorModeSuite =
   suite "minor modes" do
     test "A Minor" do
@@ -149,7 +149,7 @@ minorModeSuite =
         ( Pitch  { pitchClass: B, accidental: Flat }
         : Pitch  { pitchClass: E, accidental: Flat } : Nil )
 
-klezmerModeSuite :: forall t. Free (TestF t) Unit
+klezmerModeSuite :: Free TestF Unit
 klezmerModeSuite =
   suite "klezmer modes" do
     test "D Phrygian with sharpened f" do
@@ -160,7 +160,7 @@ klezmerModeSuite =
           : Pitch  { pitchClass: F, accidental: Sharp }
           : Nil )
 
-otherModeSuite :: forall t. Free (TestF t) Unit
+otherModeSuite :: Free TestF Unit
 otherModeSuite =
   suite "other modes" do
     test "C Dorian" do
@@ -247,7 +247,7 @@ otherModeSuite =
       Assert.equal Major newks.mode
 
 
-keySuite :: forall t. Free (TestF t) Unit
+keySuite :: Free TestF Unit
 keySuite =
   suite "keys" do
     test "D is a sharp key" do
@@ -259,7 +259,7 @@ keySuite =
     test "Gm is not a sharp key" do
       Assert.assertFalse "is a sharp key" (isCOrSharpKey gMinor)
 
-transposeSignatureSuite :: forall t. Free (TestF t) Unit
+transposeSignatureSuite :: Free TestF Unit
 transposeSignatureSuite =
   suite "transpose key signatures" do
     test "G major down 1 tone" do
@@ -311,7 +311,7 @@ transposeSignatureSuite =
       Assert.equal Phrygian newks.keySignature.mode
       Assert.equal (Pitch { pitchClass : F, accidental : Sharp }) modification
 
-scaleSuite :: forall t. Free (TestF t) Unit
+scaleSuite :: Free TestF Unit
 scaleSuite =
   suite "scales" do
     test "C Major" do
@@ -423,7 +423,7 @@ mix pc =
 dor :: PitchClass -> KeySignature
 dor pc =
   { pitchClass: pc, accidental: Natural, mode: Dorian }
-  
+
 fMajor :: KeySignature
 fMajor =
     { pitchClass: F, accidental: Natural, mode: Major }

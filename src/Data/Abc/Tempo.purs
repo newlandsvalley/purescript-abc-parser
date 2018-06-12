@@ -19,6 +19,7 @@ import Prelude (($), (+), (/), (*))
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Int (round)
 import Data.List (List(..), (:), filter, reverse)
+import Data.List.NonEmpty (singleton)
 import Data.Foldable (foldl)
 import Data.Rational (Rational, (%), fromInt, toNumber)
 import Data.Abc
@@ -57,7 +58,7 @@ type AbcTempo =
 -- | The default Tempo - 1/4=120.
 defaultTempo :: TempoSignature
 defaultTempo =
-    { noteLengths: ( standardBeatLength : Nil)
+    { noteLengths: singleton standardBeatLength 
     , bpm: standardBPM
     , marking: Nothing
     }

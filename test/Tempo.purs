@@ -11,7 +11,7 @@ import Data.Rational (fromInt, (%))
 
 import Test.Unit (TestF, suite, test)
 
-tempoSuite :: forall t. Free (TestF t) Unit
+tempoSuite :: Free TestF Unit
 tempoSuite = do
   suite "tempo" do
     test "get the tempo from header" do

@@ -16,20 +16,20 @@
     "url": "git://github.com/newlandsvalley/purescript-abc-parser.git"
   },
   "dependencies": {
-    "purescript-rationals": "^4.0.0",
-    "purescript-tuples": "^4.1.0",
-    "purescript-maybe": "^3.0.0",
-    "purescript-strings": "^3.3.0",
-    "purescript-foldable-traversable": "^3.4.0",
-    "purescript-either": "^3.1.0",
-    "purescript-stringutils": "^0.0.7",
-    "purescript-bifunctors": "^3.0.0",
-    "purescript-debug": "^3.0.0",
-    "purescript-maps": "^3.5.0",
-    "purescript-midi": "^1.2.0"
+    "purescript-rationals": "https://github.com/newlandsvalley/purescript-rationals.git#compiler/0.12",
+    "purescript-tuples": "^5.0.0",
+    "purescript-maybe": "^4.0.0",
+    "purescript-strings": "^4.0.0",
+    "purescript-foldable-traversable": "^4.0.0",
+    "purescript-either": "^4.0.0",
+    "purescript-stringutils": "https://github.com/newlandsvalley/purescript-stringutils.git#compiler/0.12",
+    "purescript-bifunctors": "^4.0.0",
+    "purescript-debug": "^4.0.0",
+    "purescript-ordered-collections": "^1.0.0",
+    "purescript-midi": "https://github.com/newlandsvalley/purescript-midi.git#compiler/0.12"
   },
   "devDependencies": {
-    "purescript-psci-support": "^3.0.0",
-    "purescript-test-unit": "^13.0.0"
+    "purescript-psci-support": "^4.0.0",
+    "purescript-test-unit": "^14.0.0"
   }
 }

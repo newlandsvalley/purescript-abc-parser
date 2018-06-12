@@ -10,7 +10,7 @@ import Test.Unit (Test, failure)
 import Test.Unit.Assert as Assert
 
 {- assert the moved parsed input equals the target -}
-assertMoveMatches :: forall e. String -> (AbcTune -> AbcTune) -> String -> Test e
+assertMoveMatches :: String -> (AbcTune -> AbcTune) -> String -> Test
 assertMoveMatches s move target =
     let
         movedResult =
@@ -26,7 +26,7 @@ assertMoveMatches s move target =
 
 
 {- assert the value of some Int producing function on a parsed tune -}
-assertIntFuncMatches :: forall e .String -> (AbcTune -> Int) -> Int -> Test e
+assertIntFuncMatches :: String -> (AbcTune -> Int) -> Int -> Test 
 assertIntFuncMatches s f target =
     let
         result =

@@ -31,13 +31,15 @@ module Data.Abc ( AbcTune
 
 
 import Data.List (List)
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..))
 import Data.Rational (Rational)
 import Data.Tuple (Tuple)
 import Data.Either (Either)
 import Data.String (toLower) as Str
 import Data.Enum (class Enum)
-import Prelude (class Show, class Eq, class Ord, (<>), show)
+import Data.Ordering (Ordering(..))
+import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Ord (genericCompare)
@@ -278,7 +280,14 @@ instance eqPitch :: Eq Pitch where
   eq = genericEq
 
 instance ordPitch :: Ord Pitch where
-  compare = genericCompare
+  compare (Pitch r1) (Pitch r2) =
+    let
+      comp1 = compare r1.pitchClass r2.pitchClass
+    in case comp1 of
+      EQ ->
+        compare r1.accidental r2.accidental
+      _ ->
+        comp1
 
 instance showPitch :: Show Pitch where
   show (Pitch p) = show p.accidental <> Str.toLower (show p.pitchClass)
@@ -299,7 +308,7 @@ type MeterSignature = Tuple Int Int
 *  3/8=50 "Slowly".
 -}
 type TempoSignature =
-    { noteLengths :: List Rational
+    { noteLengths :: NonEmptyList Rational
     , bpm :: Int
     , marking :: Maybe String
     }

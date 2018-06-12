@@ -14,7 +14,9 @@ module Data.Abc.Midi.RepeatSections
         ) where
 
 import Data.Abc (Repeat(..))
-import Data.Generic (gEq, gShow, class Generic)
+import Data.Generic.Rep
+import Data.Generic.Rep.Eq (genericEq)
+import Data.Generic.Rep.Show (genericShow)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
@@ -31,9 +33,9 @@ newtype Section = Section
     }
 
 derive instance newtypeSection :: Newtype Section _
-derive instance genericSection :: Generic Section
-instance eqSection :: Eq Section where  eq = gEq
-instance showSection :: Show Section where show = gShow
+derive instance genericSection :: Generic Section _
+instance eqSection :: Eq Section where  eq = genericEq
+instance showSection :: Show Section where show = genericShow
 
 -- | a set of sections
 type Sections = List Section

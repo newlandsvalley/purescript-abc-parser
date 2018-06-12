@@ -12,7 +12,7 @@ import Data.Rational (fromInt)
 import Prelude (Unit, ($), discard, map, negate)
 import Test.Unit (Test, TestF, failure, suite, test)
 
-assertTranspositionMatches :: forall e. String -> Pitch -> String -> Test e
+assertTranspositionMatches :: String -> Pitch -> String -> Test
 assertTranspositionMatches s targetp target =
   case parse s of
     Right tune ->
@@ -20,7 +20,7 @@ assertTranspositionMatches s targetp target =
     Left _ ->
       failure "unexpected parse error"
 
-transpositionSuite :: forall t. Free (TestF t) Unit
+transpositionSuite :: Free TestF Unit
 transpositionSuite = do
   suite "transposition" do
     keySuite
@@ -29,7 +29,7 @@ transpositionSuite = do
     tuneSuite
     keyChangeSuite
 
-keySuite :: forall t. Free (TestF t) Unit
+keySuite :: Free TestF Unit
 keySuite = do
   suite "keys" do
     test "C to G#" do
@@ -54,7 +54,7 @@ keySuite = do
 -- | no derived instances are available for AbcNote because it's defined
 -- | as simply as possible as a record.  However we can 'show' an AbcNote
 -- | because it's there in Canonical.  So we compare the stringified versions.
-noteSuite :: forall t. Free (TestF t) Unit
+noteSuite :: Free TestF Unit
 noteSuite = do
   suite "notes" do
     test "F in FMaj to GMaj" do
@@ -86,7 +86,7 @@ noteSuite = do
         (map abcNote (Right f))
         (map abcNote (transposeNote eMinor bMinor c))
 
-phraseSuite :: forall t. Free (TestF t) Unit
+phraseSuite :: Free TestF Unit
 phraseSuite = do
   suite "phrases" do
     test "C phrase to D phrase" do
@@ -157,7 +157,7 @@ phraseSuite = do
         amPhrase1High
 
 -- | test that headers are ordered properly
-tuneSuite :: forall t. Free (TestF t) Unit
+tuneSuite :: Free TestF Unit
 tuneSuite = do
   suite "tunes" do
     test "Bm to Am" do
@@ -167,7 +167,7 @@ tuneSuite = do
         (Pitch  { pitchClass : A, accidental : Natural })
         tuneAm
 
-keyChangeSuite :: forall t. Free (TestF t) Unit
+keyChangeSuite :: Free TestF Unit
 keyChangeSuite = do
   suite "key changes" do
     test "key change Bm to Am" do

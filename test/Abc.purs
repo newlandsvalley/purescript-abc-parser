@@ -10,11 +10,11 @@ import Data.Abc.Canonical (fromTune)
 import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Assert as Assert
 
-assertRoundTrip :: forall e. String -> Test e
+assertRoundTrip :: String -> Test
 assertRoundTrip s =
   assertCanonical s s
 
-assertCanonical :: forall e. String -> String -> Test e
+assertCanonical :: String -> String -> Test
 assertCanonical s canonical =
     let
         parseResult =
@@ -27,7 +27,7 @@ assertCanonical s canonical =
             Left err ->
                 failure ("parse failed: " <> (show err))
 
-assertParses :: forall e. String -> Test e
+assertParses :: String -> Test
 assertParses s =
     let
         parseResult =
@@ -40,7 +40,7 @@ assertParses s =
             Left err ->
                 failure ("parse failed: " <> (show err))
 
-assertParseError :: forall e. String -> Test e
+assertParseError :: String -> Test
 assertParseError s =
     let
         parseResult =
@@ -53,7 +53,7 @@ assertParseError s =
            Left err ->
                 success
 
-assertKeySigParses :: forall e. String -> Test e
+assertKeySigParses :: String -> Test
 assertKeySigParses s =
     let
         parseResult =
@@ -66,7 +66,7 @@ assertKeySigParses s =
             Left err ->
                 failure ("parse failed: " <> (show err))
 
-abcSuite :: forall t. Free (TestF t) Unit
+abcSuite :: Free TestF Unit
 abcSuite = do
    headerSuite
    noteSuite
@@ -77,7 +77,7 @@ abcSuite = do
    badInputSuite
    keySigSuite
 
-headerSuite :: forall t. Free (TestF t) Unit
+headerSuite :: Free TestF Unit
 headerSuite =
   suite "headers" do
     test "area" do
@@ -164,7 +164,7 @@ headerSuite =
     test "bracket in header" do
       assertRoundTrip "r: this is a remark [part 1]\x0D\n| ABC |\x0D\n"
 
-noteSuite :: forall t. Free (TestF t) Unit
+noteSuite :: Free TestF Unit
 noteSuite =
   suite "note" do
     test "single duration" do
@@ -217,7 +217,7 @@ noteSuite =
        assertRoundTrip "| [cda]4 |\x0D\n"
 
 
-barSuite :: forall t. Free (TestF t) Unit
+barSuite :: Free TestF Unit
 barSuite =
   suite "bar lines" do
     test "repeat" do
@@ -255,7 +255,7 @@ barSuite =
     test "degenerate repeat 2" do
       assertCanonical  "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
 
-phrasingSuite :: forall t. Free (TestF t) Unit
+phrasingSuite :: Free TestF Unit
 phrasingSuite  =
   suite "phrasing" do
     test "slur" do
@@ -265,7 +265,7 @@ phrasingSuite  =
     test "annotation" do
       assertRoundTrip  "| \"<(\" \">)\" EG |\x0D\n"
 
-structureSuite :: forall t. Free (TestF t) Unit
+structureSuite :: Free TestF Unit
 structureSuite  =
   suite "structure" do
     test "ignore" do
@@ -300,7 +300,7 @@ structureSuite  =
 -- | the purescript version handles parsing differently from the elm version
 -- | when two different productions have the same initial lexeme.
 -- | The purescript parser requires you to use 'try' to resolve the parse
-ambiguitySuite :: forall t. Free (TestF t) Unit
+ambiguitySuite :: Free TestF Unit
 ambiguitySuite =
   suite "ambiguity" do
     test "ambiguous A" do
@@ -309,7 +309,7 @@ ambiguitySuite =
       assertRoundTrip "K: GMajor\r\na\r\n"
 
 
-badInputSuite :: forall t. Free (TestF t) Unit
+badInputSuite :: Free TestF Unit
 badInputSuite =
   suite "bad input" do
     test "bad chars 1" do
@@ -319,7 +319,7 @@ badInputSuite =
     test "bracket in inline header" do
       assertParseError "| ABC |\x0D\nr: this is a remark [part 1]\x0D\n"
 
-keySigSuite :: forall t. Free (TestF t) Unit
+keySigSuite :: Free TestF Unit
 keySigSuite =
   suite "key signature parser" do
     test "G" do

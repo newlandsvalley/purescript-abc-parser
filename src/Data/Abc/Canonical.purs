@@ -10,11 +10,13 @@ module Data.Abc.Canonical
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
-import Data.List (List, length)
+import Data.List (List)
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, numerator, denominator)
 import Data.Tuple (Tuple(..))
-import Data.String (trim, toLower, singleton, length, take) as Str
+import Data.String (trim, toLower, length, take) as Str
+import Data.String.CodePoints (codePointFromChar, singleton)
 import Data.Foldable (foldr)
 import Data.Either (Either(..))
 
@@ -72,43 +74,24 @@ tempo t =
     let
         text =
             fromMaybe "" (map (\s -> " " <> (enquote s)) t.marking)
-
-        eq =
+        {-
+                eq =
             if (length t.noteLengths == 0) then
                 ""
             else
                 "="
+        -}
     in
         ratlist t.noteLengths
-            <> eq
+            <> "="
             <> show t.bpm
             <> text
-
-{-  ps 0.10.7
-rational :: Rational -> String
-rational (Rational (Ratio n d)) =
-    show n <> "/" <> show d
--}
-
-{- Rational 3.1.1
-showRatio :: Ratio Int -> String
-showRatio (Ratio n d) =
-    (show n) <> "/" <> (show d)
-
-ratlist :: List Rational -> String
-ratlist rs =
-    let
-        f r acc =
-            (showRatio (runRational r)) <> " " <> acc
-    in
-      Str.trim $ foldr f "" rs
-    -}
 
 showRatio :: Rational -> String
 showRatio r =
   (show $ numerator r) <> "/" <> (show $ denominator r)
 
-ratlist :: List Rational -> String
+ratlist :: NonEmptyList Rational -> String
 ratlist rs =
     let
         f r acc =
@@ -274,7 +257,7 @@ music m =
             "{" <> notes ns <> "}"
 
         Slur c ->
-            Str.singleton c
+            singleton $ codePointFromChar c
 
         Annotation placement s ->
             show placement <> ":" <> s
