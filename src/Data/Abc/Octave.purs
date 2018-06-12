@@ -7,6 +7,7 @@ module Data.Abc.Octave
 
 import Prelude ((+), map, negate)
 import Data.List (List)
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Either (Either(..))
 import Data.Abc
 
@@ -83,12 +84,12 @@ moveMusicList i =
     map (moveOctave i)
 
 
-moveNoteList :: Int -> List AbcNote -> List AbcNote
+moveNoteList :: Int -> NonEmptyList AbcNote -> NonEmptyList AbcNote
 moveNoteList i =
     map (moveNoteBy i)
 
 -- | tuples may now contain either rests or notes
-moveRestOrNoteList :: Int -> List RestOrNote -> List RestOrNote
+moveRestOrNoteList :: Int -> NonEmptyList RestOrNote -> NonEmptyList RestOrNote
 moveRestOrNoteList i =
   let
     f :: RestOrNote -> RestOrNote

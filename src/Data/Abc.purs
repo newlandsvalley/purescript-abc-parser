@@ -82,7 +82,7 @@ type AbcNote =
 
 -- | A Chord.
 type AbcChord =
-    { notes :: List AbcNote
+    { notes :: NonEmptyList AbcNote
     , duration :: NoteDuration
     }
 
@@ -111,10 +111,10 @@ data Music
     | Note AbcNote
     | BrokenRhythmPair AbcNote Broken AbcNote
     | Rest AbcRest
-    | Tuplet TupletSignature (List RestOrNote)
+    | Tuplet TupletSignature (NonEmptyList RestOrNote)
     | Decoration String
     | Slur Char
-    | GraceNote Boolean (List AbcNote)
+    | GraceNote Boolean (NonEmptyList AbcNote)
       -- Music restricted to note sequences or chords
     | Annotation AnnotationPlacement String
     | ChordSymbol String

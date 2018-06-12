@@ -111,7 +111,7 @@ chord =
 abcChord :: Parser AbcChord
 abcChord =
     buildChord
-        <$> (between (char '[') (char ']') (many1AsList abcNote))
+        <$> (between (char '[') (char ']') (many1 abcNote))
         <*> optionMaybe noteDur
         <?> "ABC chord"
 
@@ -321,7 +321,7 @@ tuplet :: Parser Music
 tuplet =
     Tuplet
         <$> (char '(' *> tupletSignature)
-        <*> many1AsList restOrNote
+        <*> many1 restOrNote
         <?> "tuplet"
 
 {- possible tuplet signatures
@@ -370,7 +370,7 @@ graceNote =
 
 grace :: Parser Music
 grace =
-    GraceNote <$> acciaccatura <*> (many1AsList abcNote)
+    GraceNote <$> acciaccatura <*> (many1 abcNote)
 
 {- acciaccaturas are indicated with an optional forward slash
    was
@@ -1152,7 +1152,7 @@ buildPitch :: Accidental -> String -> Pitch
 buildPitch a pitchStr =
     Pitch { pitchClass : lookupPitch pitchStr, accidental : a }
 
-buildChord :: List AbcNote -> Maybe Rational -> AbcChord
+buildChord :: Nel.NonEmptyList AbcNote -> Maybe Rational -> AbcChord
 buildChord ns ml =
     let
         l =
@@ -1382,15 +1382,6 @@ invert :: Rational -> Rational
 invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
-
--- | JMS !!!
--- | revert the signature of many1 so that it
--- | produces a list rather than a nOnEmptyList
--- | eventually we should alter the Abc data structure so that it used
--- | NonEmpty lists wherever appropriate
-many1AsList :: forall a. Parser a -> Parser (List a)
-many1AsList p =
-  Nel.toList <$> many1 p
 
 -- | Run a parser for an input string, returning either a positioned error or a result.
 runParser1 :: forall a. Parser a -> String -> Either PositionedParseError a

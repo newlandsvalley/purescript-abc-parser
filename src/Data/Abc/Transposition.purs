@@ -1,4 +1,4 @@
--- | Transposition of an ABC note or tune to a new key. 
+-- | Transposition of an ABC note or tune to a new key.
 module Data.Abc.Transposition
         ( defaultKey
         , keyDistance
@@ -14,11 +14,13 @@ module Data.Abc.Transposition
    This means we have to thread state through the transposition and hence use folds rather than maps
 -}
 
-import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=), map, mod, negate)
+import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=), (<<<), map, mod, negate)
+import Partial.Unsafe (unsafePartial)
 import Data.Either (Either(..))
 import Data.List (List(..), (:), filter, foldl, reverse)
+import Data.List.NonEmpty (NonEmptyList, fromList, toList) as Nel
 import Data.Map (Map, fromFoldable, lookup)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (fromMaybe, isJust, fromJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Foldable (oneOf)
 import Data.Bifunctor (lmap)
@@ -337,9 +339,11 @@ transposeMusicList state ms =
       Tuple (reverse $ fst res) (snd res)
 
 
-transposeNoteList :: TranspositionState -> List AbcNote -> Tuple (List AbcNote) TranspositionState
-transposeNoteList state ns =
+transposeNoteList :: TranspositionState -> Nel.NonEmptyList AbcNote -> Tuple (Nel.NonEmptyList AbcNote) TranspositionState
+transposeNoteList state nonemptyns =
   let
+    ns =
+      Nel.toList nonemptyns
     f :: Tuple (List AbcNote) TranspositionState -> AbcNote -> Tuple (List AbcNote) TranspositionState
     f acc n =
       let
@@ -359,13 +363,15 @@ transposeNoteList state ns =
       -- ( tns, news ) = List.foldl f ( [], state ) ns
       res = foldl f (Tuple Nil state) ns
     in
-      -- ( List.reverse tns, news )
-      Tuple (reverse $ fst res) (snd res)
+      Tuple ((unsafeListToNel <<< reverse <<< fst) res) (snd res)
 
 
-transposeRestOrNoteList :: TranspositionState -> List RestOrNote -> Tuple (List RestOrNote) TranspositionState
-transposeRestOrNoteList state ns =
+
+transposeRestOrNoteList :: TranspositionState -> Nel.NonEmptyList RestOrNote -> Tuple (Nel.NonEmptyList RestOrNote) TranspositionState
+transposeRestOrNoteList state nonemptyns =
   let
+    ns =
+      Nel.toList nonemptyns
     f :: Tuple (List RestOrNote) TranspositionState -> RestOrNote -> Tuple (List RestOrNote) TranspositionState
     f acc rn =
       let
@@ -390,8 +396,16 @@ transposeRestOrNoteList state ns =
       -- ( tns, news ) = List.foldl f ( [], state ) ns
       res = foldl f (Tuple Nil state) ns
     in
-      -- ( List.reverse tns, news )
-      Tuple (reverse $ fst res) (snd res)
+      Tuple ((unsafeListToNel <<< reverse <<< fst) res) (snd res)
+
+-- an unsafe conversion from a List to a NonEmptyList
+-- use this when folding over NonEmptyLists and (for convenience)
+-- you want to use a normal List fold and convert at each end
+unsafeListToNel :: ∀ a. List a -> Nel.NonEmptyList a
+unsafeListToNel xs =
+  unsafePartial (go xs) where
+    go :: Partial => List a -> Nel.NonEmptyList a
+    go = fromJust <<< Nel.fromList
 
 transposeChord :: TranspositionState -> AbcChord -> Tuple AbcChord TranspositionState
 transposeChord state c =

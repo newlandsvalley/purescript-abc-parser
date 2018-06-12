@@ -71,21 +71,14 @@ tuplet { p: p, q: q, r: r } =
 
 tempo :: TempoSignature -> String
 tempo t =
-    let
-        text =
-            fromMaybe "" (map (\s -> " " <> (enquote s)) t.marking)
-        {-
-                eq =
-            if (length t.noteLengths == 0) then
-                ""
-            else
-                "="
-        -}
-    in
-        ratlist t.noteLengths
-            <> "="
-            <> show t.bpm
-            <> text
+  let
+    text =
+      fromMaybe "" (map (\s -> " " <> (enquote s)) t.marking)
+  in
+    ratlist t.noteLengths
+      <> "="
+      <> show t.bpm
+      <> text
 
 showRatio :: Rational -> String
 showRatio r =
@@ -107,18 +100,6 @@ meter ms =
 
         Just (Tuple n d) ->
             show n <> "/" <> show d
-
-{- Rational 3.1.1
-duration :: Rational -> String
-duration r =
-  duration' (runRational r)
-
-duration' :: Ratio Int -> String
-duration' (Ratio 1 1 )  = ""
-duration' (Ratio 1 2 )  = "/"
-duration' (Ratio n 1 )  = show n
-duration' r = showRatio r
--}
 
 duration :: Rational -> String
 duration r =
@@ -183,7 +164,7 @@ abcChord a =
         <> "]"
         <> duration a.duration
 
-notes :: List AbcNote -> String
+notes :: NonEmptyList AbcNote -> String
 notes ns =
     let
         f a acc =
@@ -191,7 +172,7 @@ notes ns =
     in
         foldr f "" ns
 
-restsOrNotes :: List RestOrNote -> String
+restsOrNotes :: NonEmptyList RestOrNote -> String
 restsOrNotes rns =
   let
     f :: RestOrNote -> String -> String

@@ -1,4 +1,4 @@
--- | Conversion of an ABC tune to MIDI. 
+-- | Conversion of an ABC tune to MIDI.
 module Data.Abc.Midi
   ( MidiPitch
   , toMidi
@@ -15,7 +15,8 @@ import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
 import Data.Abc.Canonical as Canonical
-import Data.List (List(..), (:), null, concatMap, filter, head, tail, reverse, singleton)
+import Data.List (List(..), (:), null, concatMap, filter, reverse, singleton)
+import Data.List.NonEmpty (head, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Either (Either(..))
@@ -200,7 +201,7 @@ transformMusic m =
       updateState addRestToState r.duration
 
     Tuplet signature restsOrNotes ->
-      updateState (addRestsOrNotesToState false (signature.q % signature.p)) restsOrNotes
+      updateState (addRestsOrNotesToState false (signature.q % signature.p)) (Nel.toList restsOrNotes)
 
     Chord abcChord ->
       let
@@ -211,18 +212,15 @@ transformMusic m =
           , duration : (fromInt 0)
           , tied : false
           }
-        -- chordal notes should really be a non-empty list - the default is arbitrary
-        first = fromMaybe arbitraryNote $
-                   head abcChord.notes
-        others = fromMaybe Nil $
-                   tail abcChord.notes
+        first = Nel.head abcChord.notes
+        others = Nel.tail abcChord.notes
         -- we'll pace the chord from the duration of the first note it contains,
         -- modified by the overall chord duration
         duration = abcChord.duration * first.duration
       in
         do
           -- set the notes all to start at the same time
-          _ <- updateState (addNotesToState true (1 % 1)) abcChord.notes
+          _ <- updateState (addNotesToState true (1 % 1)) (Nel.toList abcChord.notes)
           -- pace by adding a NoteOff for the overall duration
           _ <- updateState (addNoteOffToState duration) first
           -- and terminate all the other notes with a NoteOff at 0 duration
