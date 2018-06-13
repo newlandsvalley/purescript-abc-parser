@@ -42,7 +42,6 @@ import Data.Ordering (Ordering(..))
 import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Ord (genericCompare)
 
 -- | A Tune.
 type AbcTune =

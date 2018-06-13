@@ -11,8 +11,6 @@ import Data.Array as Array
 import Data.Either (Either(..))
 import Data.List (List(..), (:))
 import Data.List.NonEmpty as Nel
-import Data.NonEmpty ((:|))
-import Data.List (length, singleton) as List
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.String.Utils (startsWith, includes)
 import Data.String.CodePoints (codePointFromChar, length)
