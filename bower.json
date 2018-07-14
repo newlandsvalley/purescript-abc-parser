@@ -22,7 +22,7 @@
     "purescript-strings": "^4.0.0",
     "purescript-foldable-traversable": "^4.0.0",
     "purescript-either": "^4.0.0",
-    "purescript-stringutils": "https://github.com/newlandsvalley/purescript-stringutils.git#compiler/0.12",
+    "purescript-stringutils": "^0.0.8",
     "purescript-bifunctors": "^4.0.0",
     "purescript-debug": "^4.0.0",
     "purescript-ordered-collections": "^1.0.0",
