@@ -26,7 +26,7 @@
     "purescript-bifunctors": "^4.0.0",
     "purescript-debug": "^4.0.0",
     "purescript-ordered-collections": "^1.0.0",
-    "purescript-midi": "https://github.com/newlandsvalley/purescript-midi.git#compiler/0.12"
+    "purescript-midi": "^2.0.0"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
