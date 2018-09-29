@@ -149,7 +149,7 @@ normalBarline =
 degenerateBarRepeat :: Parser Music
 degenerateBarRepeat =
     Barline
-        <$> (buildBar Thin Nothing
+        <$> (buildBarType Thin Nothing
                 <$> (Just
                         <$> (whiteSpace *> char '[' *> int)
                     )
@@ -1036,8 +1036,8 @@ buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
   { headers : hs, body : b}
 
-buildBar :: Thickness -> Maybe Repeat -> Maybe Int -> Bar
-buildBar t r i =
+buildBarType :: Thickness -> Maybe Repeat -> Maybe Int -> BarType
+buildBarType t r i =
   { thickness : t, repeat : r, iteration : i}
 
 {- build a bar line

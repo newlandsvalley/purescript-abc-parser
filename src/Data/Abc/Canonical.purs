@@ -26,8 +26,8 @@ enquote :: String -> String
 enquote s =
     "\"" <> s <> "\""
 
-bar :: Bar -> String
-bar b =
+barType :: BarType -> String
+barType b =
     let
         it =
             fromMaybe "" (map show b.iteration)
@@ -217,7 +217,7 @@ music :: Music -> String
 music m =
     case m of
         Barline b ->
-            bar b
+            barType b
 
         Note a ->
             abcNote a

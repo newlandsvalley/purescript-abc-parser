@@ -8,7 +8,7 @@ module Data.Abc.Midi
 import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, RestOrNote, Pitch(..), Accidental(..), Bar, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
+import Data.Abc (AbcTune, AbcNote, RestOrNote, Pitch(..), Accidental(..), BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
    MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Metadata (dotFactor, getKeySig)
@@ -120,11 +120,11 @@ initialBar initialMsg =
   }
 
 -- | build a new bar from a bar number and an ABC bar
-buildNewBar :: Int -> Bar -> MidiBar
-buildNewBar i abcBar =
+buildNewBar :: Int -> BarType -> MidiBar
+buildNewBar i barType =
   {  number : i
-  ,  repeat : abcBar.repeat
-  ,  iteration : abcBar.iteration
+  ,  repeat : barType.repeat
+  ,  iteration : barType.iteration
   ,  midiMessages : Nil
   }
 
@@ -250,11 +250,11 @@ transformMusic m =
         pure $ snd tpl
 
 -- | add a bar tio the state.  index it and add it to the growing list of bars
-addBarToState :: TState -> Bar -> TState
-addBarToState tstate bar =
+addBarToState :: TState -> BarType -> TState
+addBarToState tstate barType =
   -- the current bar held in state is empty so we coalesce
   if (isBarEmpty tstate.currentBar) then
-    coalesceBar tstate bar
+    coalesceBar tstate barType
   -- it's not emmpty so we initialise the new bar
   else
     let
@@ -266,7 +266,7 @@ addBarToState tstate bar =
         -- the current bar is not empty so we aggregate the new bar into the track
         currentBar : tstate.rawTrack
     in
-      tstate { currentBar = buildNewBar (currentBar.number + 1) bar
+      tstate { currentBar = buildNewBar (currentBar.number + 1) barType
              , currentBarAccidentals = Accidentals.empty
              , repeatState = repeatState
              , rawTrack = rawTrack
@@ -274,18 +274,18 @@ addBarToState tstate bar =
 
 -- | coalesce the new bar from ABC with the current one held in the state
 -- | (which has previously been tested for emptiness)
-coalesceBar :: TState -> Bar -> TState
-coalesceBar tstate abcBar =
+coalesceBar :: TState -> BarType -> TState
+coalesceBar tstate barType =
   let
-    barRepeats = Tuple tstate.currentBar.repeat abcBar.repeat
+    barRepeats = Tuple tstate.currentBar.repeat barType.repeat
     newRepeat = case barRepeats of
      Tuple (Just End) (Just Begin) ->
         Just BeginAndEnd
      Tuple ( Just x) _  ->
         Just x
      _ ->
-        abcBar.repeat
-    bar' = tstate.currentBar { repeat = newRepeat, iteration = abcBar.iteration }
+        barType.repeat
+    bar' = tstate.currentBar { repeat = newRepeat, iteration = barType.iteration }
   in
     tstate { currentBar = bar' }
 

@@ -10,7 +10,7 @@ module Data.Abc ( AbcTune
 , AbcNote
 , AbcChord
 , RestOrNote
-, Bar
+, BarType
 , Thickness(..)
 , Repeat(..)
 , NoteDuration
@@ -106,7 +106,7 @@ type RestOrNote
 
 -- | The 'score' part of Music.
 data Music
-    = Barline Bar
+    = Barline BarType
     | Note AbcNote
     | BrokenRhythmPair AbcNote Broken AbcNote
     | Rest AbcRest
@@ -148,13 +148,13 @@ instance showRepeat :: Show Repeat where
   show End = ":|"
   show BeginAndEnd = ":|:"
 
-{-| A Bar line:
+{-| A Bar line type:
 
 *  thickness - the thickness of vertical lines in the bar
 *  repeat - the type (if any) of a repeat marker for the section
 *  iteration - the section end may be iteration 1 or 2.
 -}
-type Bar =
+type BarType =
     { thickness :: Thickness
     , repeat :: Maybe Repeat
     , iteration :: Maybe Int
