@@ -47,7 +47,7 @@ moveBodyPart :: Int -> BodyPart -> BodyPart
 moveBodyPart i bp =
     case bp of
         Score ms ->
-            Score (moveMusicList i ms)
+            Score (moveBarList i ms)
 
         _ ->
             bp
@@ -78,10 +78,17 @@ moveNoteBy :: Int -> AbcNote -> AbcNote
 moveNoteBy i note =
     note { octave = note.octave + i }
 
+moveBarList :: Int -> List Bar -> List Bar
+moveBarList i =
+    map (moveBar i)
 
-moveMusicList :: Int -> List Music -> List Music
-moveMusicList i =
-    map (moveOctave i)
+moveBar :: Int -> Bar -> Bar
+moveBar i bar =
+  let
+    newMusic =
+      map (moveOctave i) bar.music
+  in
+    bar { music = newMusic }
 
 
 moveNoteList :: Int -> NonEmptyList AbcNote -> NonEmptyList AbcNote

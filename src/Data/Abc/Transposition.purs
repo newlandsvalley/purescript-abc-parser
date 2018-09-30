@@ -210,14 +210,14 @@ transposeBodyPart :: TranspositionState -> BodyPart -> Tuple BodyPart Transposit
 transposeBodyPart state bp =
   case bp of
     -- just transpose the score
-    Score ms ->
+    Score bars ->
       let
         -- ( ms1, s1 ) = transposeMusicList state ms
-        result = transposeMusicList state ms
-        ms1 = fst result
+        result = transposeBarList state bars
+        bs1 = fst result
         s1 = snd result
       in
-        Tuple (Score ms1) s1
+        Tuple (Score bs1) s1
 
     -- transpose any Key header found inline
     BodyInfo h ->
@@ -270,10 +270,12 @@ transposeMusic state m =
       Tuple Ignore state
 
     -- new bar, initialise accidentals list
+    {-}
     Barline b ->
       Tuple ( Barline b)
           ( state  { sourceBarAccidentals = Accidentals.empty
                    , targetBarAccidentals = Accidentals.empty } )
+    -}
 
     -- an inline header
     Inline h ->
@@ -312,6 +314,43 @@ transposeList state transposef ns =
             -- ( List.reverse tns, news )
             Tuple (reverse $ fst res) (snd res)
 -}
+
+
+transposeBarList :: TranspositionState -> List Bar -> Tuple (List Bar) TranspositionState
+transposeBarList state bs =
+  let
+    f :: Tuple (List Bar) TranspositionState -> Bar -> Tuple (List Bar) TranspositionState
+    f acc n =
+      let
+        -- ( ns, s0 ) =  acc
+        ns = fst acc
+        s0 = snd acc
+
+        -- ( n1, s1 ) =  transposeMusic s0 n
+        result = transposeBar s0 n
+        n1 = fst result
+        s1 = snd result
+      in
+        -- ( n1 :: ns, s1 )
+        Tuple ( n1 : ns ) s1
+  in
+    let
+      -- ( tns, news ) = List.foldl f ( [], state ) ms
+      res = foldl f (Tuple Nil state) bs
+    in
+      -- ( List.reverse tns, news )
+      Tuple (reverse $ fst res) (snd res)
+
+transposeBar :: TranspositionState -> Bar -> Tuple Bar TranspositionState
+transposeBar state bar =
+  let
+    -- initialise accidentals list
+    state0 = state  { sourceBarAccidentals = Accidentals.empty
+                    , targetBarAccidentals = Accidentals.empty }
+    (Tuple newMusic newState) = transposeMusicList state0 bar.music
+    newBar = bar { music = newMusic }
+  in
+    Tuple newBar newState
 
 transposeMusicList :: TranspositionState -> List Music -> Tuple (List Music) TranspositionState
 transposeMusicList state ms =

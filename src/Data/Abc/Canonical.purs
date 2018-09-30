@@ -26,25 +26,6 @@ enquote :: String -> String
 enquote s =
     "\"" <> s <> "\""
 
-barType :: BarType -> String
-barType b =
-    let
-        it =
-            fromMaybe "" (map show b.iteration)
-        lines = show b.thickness
-    in
-        case b.repeat of
-            Nothing ->
-                lines <> it
-
-            Just Begin ->
-                lines <> ":"
-
-            Just End ->
-                ":" <> lines <> it
-
-            Just BeginAndEnd ->
-                ":" <> lines <> ":"
 
 keySignatureAccidental :: Accidental -> String
 keySignatureAccidental a =
@@ -196,13 +177,50 @@ decorate s =
     else
         "!" <> s <> "!"
 
-musics :: List Music -> String
-musics ms =
+bars :: List Bar -> String
+bars bs =
     let
-        f m acc =
-            (music m) <> acc
+        f b acc =
+            (bar b) <> acc
     in
-        foldr f "" ms
+        foldr f "" bs
+
+
+bar :: Bar -> String
+bar b =
+  let
+    f m acc =
+      (music m) <> acc
+  in
+    barType b.startLine <>
+    foldr f "" b.music <>
+    mBarType b.endLine
+
+barType :: BarType -> String
+barType b =
+    let
+        it =
+            fromMaybe "" (map show b.iteration)
+        lines = show b.thickness
+    in
+        case b.repeat of
+            Nothing ->
+                lines <> it
+
+            Just Begin ->
+                lines <> ":"
+
+            Just End ->
+                ":" <> lines <> it
+
+            Just BeginAndEnd ->
+                ":" <> lines <> ":"
+
+
+mBarType :: Maybe BarType -> String
+mBarType mbt =
+  fromMaybe "" $ map barType mbt
+
 
 broken :: Broken -> String
 broken b =
@@ -216,8 +234,10 @@ broken b =
 music :: Music -> String
 music m =
     case m of
+        {-}
         Barline b ->
             barType b
+        -}
 
         Note a ->
             abcNote a
@@ -363,8 +383,8 @@ tuneHeaders hs =
 bodyPart :: BodyPart -> String
 bodyPart bp =
     case bp of
-        Score ml ->
-            musics ml
+        Score bs ->
+            bars bs
 
         BodyInfo h ->
             header h

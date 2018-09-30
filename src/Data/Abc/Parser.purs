@@ -76,7 +76,39 @@ body =
 
 score :: Parser BodyPart
 score =
-    Score <$> manyTill1 scoreItem eol
+    Score <$>
+      {- there is potential ambiguity here betweeb 'fullyBarredLine' and
+         'inline' both of which commence with '[' making this order in the
+         pairing necessary.  To do it in the other order would involve:
+           (try fullyBarredLine <|> introLine)
+      -}
+      ( introLine <|> fullyBarredLine )
+       <?> "score"
+
+bar :: Parser Bar
+bar =
+  buildBar <$> barline <*> (many scoreItem)
+   <?> "bar"
+
+-- | an intro bar is a bar at the beginning of a line which has no starting bar line
+introBar :: Parser Bar
+introBar =
+  buildBar invisibleBarType <$> many scoreItem
+   <?> "intro bar"
+
+-- | an intro line as a full line of bars thus introduced
+introLine :: Parser (List Bar)
+introLine =
+  (:) <$> introBar <*> manyTill1 bar eol
+   <?> "intro line"
+
+-- | a fully barred line has bar lines both at begin and end
+fullyBarredLine :: Parser (List Bar)
+fullyBarredLine =
+  manyTill1 bar eol
+   <?> "fully barred line"
+
+-- | and an intoLine is a line of bars started by an intro
 
 scoreItem :: Parser Music
 scoreItem =
@@ -96,7 +128,6 @@ scoreItem =
     , rest
     , try brokenRhythmPair -- potential ambiguity with note
     , note
-    , barline
     ]
       <?> "score item"
 
@@ -120,7 +151,7 @@ inline =
         <$> between (char '[') (char ']') (tuneBodyInfo true)
         <?> "inline header"
 
-barline :: Parser Music
+barline :: Parser BarType
 barline =
     choice
         [
@@ -133,12 +164,12 @@ barline =
    Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have
    any shape, using a sequence of | (thin bar line), [| or |] (thick bar line), and : (dots), e.g. |[| or [|:::
 -}
-normalBarline :: Parser Music
+normalBarline :: Parser BarType
 normalBarline =
     buildBarline
         <$> barSeparator
         <*> optionMaybe repeatSection
-        <?> "barline"
+        <?> "bartype"
 
 {- sometimes in the wild we get a degenerate repeat marker at the start of a line of music like this:
      [1 .....
@@ -146,14 +177,13 @@ normalBarline =
      _[1 ....
    again we have to be careful about ambiguity between this and inline headers by making sure we parse '[' immediately followed by '1' etc.
 -}
-degenerateBarRepeat :: Parser Music
+degenerateBarRepeat :: Parser BarType
 degenerateBarRepeat =
-    Barline
-        <$> (buildBarType Thin Nothing
-                <$> (Just
-                        <$> (whiteSpace *> char '[' *> int)
-                    )
-            )
+  (buildBarTypeRecord Thin Nothing
+      <$> (Just
+           <$> (whiteSpace *> char '[' *> int)
+          )
+  )
 
 {- a repeat section at the start of a bar.  We have just parsed a bar marker (say |) and so the combination of this and the repeat may be:
       |1
@@ -1036,8 +1066,15 @@ buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
   { headers : hs, body : b}
 
-buildBarType :: Thickness -> Maybe Repeat -> Maybe Int -> BarType
-buildBarType t r i =
+buildBar :: BarType -> List Music -> Bar
+buildBar bt m =
+  { startLine : bt
+  , music : m
+  , endLine : Nothing :: Maybe BarType
+  }
+
+buildBarTypeRecord :: Thickness -> Maybe Repeat -> Maybe Int -> BarType
+buildBarTypeRecord t r i =
   { thickness : t, repeat : r, iteration : i}
 
 {- build a bar line
@@ -1046,7 +1083,7 @@ buildBarType t r i =
    Try to normalise to representations of basic shapes like (|, |:, :|, :||, ||:, ||, :|:, :||: )
 
 -}
-buildBarline :: String -> Maybe Int -> Music
+buildBarline :: String -> Maybe Int -> BarType
 buildBarline s i =
     let
         -- estimate the bar separator thickness
@@ -1091,7 +1128,15 @@ buildBarline s i =
             else
                 Just BeginAndEnd
     in
-        Barline { thickness : thickness, repeat : repeat, iteration : i }
+      { thickness : thickness, repeat : repeat, iteration : i }
+
+-- | a bar type for an introductory 'bar' where there is no opening bar line
+invisibleBarType :: BarType
+invisibleBarType =
+    { thickness : Invisible
+    , repeat : Nothing
+    , iteration : Nothing
+    }
 
 buildBrokenOperator :: String -> Broken
 buildBrokenOperator s =

@@ -220,6 +220,18 @@ noteSuite =
 barSuite :: Free TestF Unit
 barSuite =
   suite "bar lines" do
+    test "no bars" do
+      assertRoundTrip "A B C\r\n"
+    test "no starting or terminating line" do
+      assertRoundTrip "A B C | D E F\r\n"
+    test "no terminating line" do
+      assertRoundTrip "| A B C | D E F\r\n"
+    test "no bars stave 2" do
+      assertRoundTrip "| A B C |\r\n D E F\r\n"
+    {-}
+    test "from failing transposition test" do
+      assertRoundTrip "| G3A B6 Ac |\r\n B2AG ^FGA^F D4\r\n"
+    -}
     test "repeat" do
       assertRoundTrip "|: A :|\r\n"
     test "bracket line" do

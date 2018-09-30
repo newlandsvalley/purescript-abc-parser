@@ -8,7 +8,7 @@ module Data.Abc.Midi
 import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, RestOrNote, Pitch(..), Accidental(..), BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
+import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
    MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Metadata (dotFactor, getKeySig)
@@ -176,10 +176,27 @@ transformBody (p : ps) =
 transformBodyPart :: BodyPart -> State TransformationState Midi.Recording
 transformBodyPart bodyPart =
   case bodyPart of
-    Score musicLine ->
-      transformMusicLine musicLine
+    Score bars ->
+      transformBarList bars
     BodyInfo header ->
       transformHeader header
+
+transformBarList :: List Bar -> State TransformationState Midi.Recording
+transformBarList Nil =
+  do
+    tpl <- get
+    pure $ snd tpl
+transformBarList (b : bs) =
+  do
+    _ <- transformBar b
+    transformBarList bs
+
+transformBar :: Bar -> State TransformationState Midi.Recording
+transformBar bar =
+  do
+    -- save the bar to state
+    _ <- updateState addBarToState bar.startLine
+    transformMusicLine bar.music
 
 transformMusicLine :: MusicLine -> State TransformationState Midi.Recording
 transformMusicLine Nil =
@@ -237,9 +254,11 @@ transformMusic m =
             _ <- updateState (addNoteToState false (brokenTempo i true)) note1
             updateState (addNoteToState false (brokenTempo i false)) note2
 
+    {-}
     Barline bar ->
       -- transformBar bar
       updateState addBarToState bar
+    -}
 
     Inline header ->
       transformHeader header
@@ -249,7 +268,7 @@ transformMusic m =
         tpl <- get
         pure $ snd tpl
 
--- | add a bar tio the state.  index it and add it to the growing list of bars
+-- | add a bar to the state.  index it and add it to the growing list of bars
 addBarToState :: TState -> BarType -> TState
 addBarToState tstate barType =
   -- the current bar held in state is empty so we coalesce
@@ -657,6 +676,16 @@ buildRepeatedMelody mbs sections =
     Midi.Track Nil
   else
     Midi.Track $ foldl (repeatedSection mbs) Nil sections
+
+-- temp Bar Stuff we should do away with
+{-}
+defaultBarType :: BarType
+defaultBarType =
+    { thickness : Thin
+    , repeat : Nothing
+    , iteration : Nothing
+    }
+-}
 
 
 -- temp Debug

@@ -10,6 +10,7 @@ module Data.Abc ( AbcTune
 , AbcNote
 , AbcChord
 , RestOrNote
+, Bar
 , BarType
 , Thickness(..)
 , Repeat(..)
@@ -59,10 +60,18 @@ type TuneBody =
 
 -- | A Tune Body part
 data BodyPart
-    = Score MusicLine
+    = Score (List Bar)
     | BodyInfo Header
 
--- | A line of musical score up to eol.
+-- | A music phrase is contained within a Bar which is a set of music items
+-- | introduced by a bar line
+type Bar =
+  { startLine :: BarType   -- we always have a startLine even when'invisible'
+  , music :: List Music
+  , endLine :: Maybe BarType
+  }
+
+-- | A line of musical within a bar.
 type MusicLine =
     List Music
 
@@ -106,8 +115,7 @@ type RestOrNote
 
 -- | The 'score' part of Music.
 data Music
-    = Barline BarType
-    | Note AbcNote
+    = Note AbcNote
     | BrokenRhythmPair AbcNote Broken AbcNote
     | Rest AbcRest
     | Tuplet TupletSignature (NonEmptyList RestOrNote)
@@ -124,17 +132,20 @@ data Music
     | Continuation
 
 -- | A bar line Thickness.
+
 data Thickness
     = Thin
     | ThinThin
     | ThinThick
     | ThickThin
+    | Invisible  -- | e.e. an implied bar line at the start of a stave
 
 instance showThickness :: Show Thickness where
   show Thin = "|"
   show ThinThin = "||"
   show ThinThick = "|]"
   show ThickThin = "[|"
+  show Invisible = ""
 
 -- | A Repeat in a Bar line.
 data Repeat
