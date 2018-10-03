@@ -66,9 +66,8 @@ data BodyPart
 -- | A music phrase is contained within a Bar which is a set of music items
 -- | introduced by a bar line
 type Bar =
-  { startLine :: BarType   -- we always have a startLine even when'invisible'
+  { startLine :: BarType   -- we only consider the start line of each bar
   , music :: List Music
-  , endLine :: Maybe BarType
   }
 
 -- | A line of musical within a bar.

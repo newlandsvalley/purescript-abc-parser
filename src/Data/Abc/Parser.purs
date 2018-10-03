@@ -1070,7 +1070,6 @@ buildBar :: BarType -> List Music -> Bar
 buildBar bt m =
   { startLine : bt
   , music : m
-  , endLine : Nothing :: Maybe BarType
   }
 
 buildBarTypeRecord :: Thickness -> Maybe Repeat -> Maybe Int -> BarType

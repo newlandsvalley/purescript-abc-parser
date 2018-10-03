@@ -185,7 +185,6 @@ bars bs =
     in
         foldr f "" bs
 
-
 bar :: Bar -> String
 bar b =
   let
@@ -193,8 +192,7 @@ bar b =
       (music m) <> acc
   in
     barType b.startLine <>
-    foldr f "" b.music <>
-    mBarType b.endLine
+    foldr f "" b.music
 
 barType :: BarType -> String
 barType b =
