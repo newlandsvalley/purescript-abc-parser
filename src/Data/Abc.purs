@@ -158,6 +158,8 @@ instance showRepeat :: Show Repeat where
   show End = ":|"
   show BeginAndEnd = ":|:"
 
+derive instance eqRepeat :: Eq Repeat
+
 {-| A Bar line type:
 
 *  thickness - the thickness of vertical lines in the bar
