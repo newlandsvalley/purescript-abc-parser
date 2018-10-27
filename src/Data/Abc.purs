@@ -146,6 +146,8 @@ instance showThickness :: Show Thickness where
   show ThickThin = "[|"
   show Invisible = ""
 
+derive instance eqThickness :: Eq Thickness
+
 -- | A Repeat in a Bar line.
 data Repeat
     = Begin
