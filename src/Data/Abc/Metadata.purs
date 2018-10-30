@@ -9,16 +9,18 @@ module Data.Abc.Metadata
         , getTitle
         , getUnitNoteLength
         , dotFactor
+        , isEmptyStave
         ) where
 
 import Data.Abc
-import Data.List (List(..), reverse)
+import Data.List (List(..), null, reverse)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
+import Data.Foldable (all)
 import Data.Abc.KeySignature (modifiedKeySet)
-import Prelude (map, ($))
+import Prelude (map, ($), (||))
 
 -- | A representation of the ABC headers as a Map, taking the first definition
 -- | of any header if multiple definitions are present in the ABC.
@@ -216,3 +218,25 @@ dotFactor i =
 
     _ ->
       0 % 1
+
+-- | check if a new stave's contents is effectively empty
+-- | (the list of bars is introduced by the Score BodyPart)
+isEmptyStave :: List Bar -> Boolean
+isEmptyStave bars =
+  all isEmptyBar bars
+    where
+      isEmptyBar :: Bar -> Boolean
+      isEmptyBar bar =
+        let
+          f music' =
+            case music' of
+              Spacer _ ->
+                true
+              Ignore ->
+                true
+              Continuation ->
+                true
+              _ ->
+                false
+        in
+          all f bar.music || null bar.music

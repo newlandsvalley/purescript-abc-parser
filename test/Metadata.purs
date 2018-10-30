@@ -5,11 +5,12 @@ import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.List (List(..), intersect, length, (:))
+import Data.List (List(..), head, intersect, length, (:))
 import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
-import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), Pitch(..), KeySet, Mode(..), AbcNote, AbcTune)
+import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..),
+                 BodyPart(..), Pitch(..), KeySet, Mode(..), AbcNote, AbcTune)
 import Data.Abc.Metadata
 import Data.Abc.Accidentals as Accidentals
 
@@ -126,6 +127,19 @@ assertEquivalentKeys actual expected =
       failure $ "non-equivalent keys: "
          <> (show actual) <> " not equal to: " <> (show expected)
 
+assertEmptyScore :: Boolean -> String -> Test
+assertEmptyScore expected source =
+  case parse source of
+    Right tune ->
+      case (head tune.body) of
+        Just (Score bars) ->
+          Assert.equal expected (isEmptyStave bars)
+        _ ->
+          failure "test has no Score BodyPart"
+    _ ->
+      failure "parse error"
+
+
 {- It's such a pain to provide Eq, Show on what you'd like to be a somple record
    so for testing purposes just collapse tp a string
 
@@ -138,6 +152,7 @@ showKeySig ks =
 metadataSuite :: Free TestF Unit
 metadataSuite = do
    headerSuite
+   scoreSuite
 
 headerSuite :: Free TestF Unit
 headerSuite =
@@ -159,6 +174,13 @@ headerSuite =
    test "getUnitNoteLen" do
      assertOkNoteLen manyHeaders (1 % 16)
 
+scoreSuite :: Free TestF Unit
+scoreSuite =
+  suite "score" do
+    test "empty score" do
+      assertEmptyScore true emptyScore
+    test "non empty score" do
+      assertEmptyScore false keyedTune
 
 -- headers in sample ABC tunes
 keyedTune =
@@ -173,13 +195,10 @@ doublyTitledTune =
 manyHeaders =
     "X: 1\r\nT: Skänklåt efter Brittas Hans\r\nR: Skänklåt\r\nZ: Brian O'Connor, 11/7/2016\r\nL: 1/16\r\nO: Bjorsa\r\nM: 4/4\r\nK:Gmaj\r\n| ABC |\r\n"
 
--- notes
-fNatural :: AbcNote
-fNatural =
-    { pitchClass: F, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
+emptyScore =
+    "| @ # | \\r\n|  |\r\n"
 
--- key signatures
-gMajor :: KeySignature
+
 gMajor =
     { pitchClass: G, accidental: Natural, mode: Major }
 
