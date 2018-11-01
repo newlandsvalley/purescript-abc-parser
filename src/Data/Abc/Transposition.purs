@@ -11,19 +11,21 @@ module Data.Abc.Transposition
    in the same bar which has an explicit marking and secondly from the key signature.  During transposition we must firstly
    make such accidentals explicit, transpose them and finally return to their implicit nature.
 
-   This means we have to thread state through the transposition and hence use folds rather than maps
+   This means we have to thread state through the transposition
 -}
 
-import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=), (<<<), map, mod, negate)
-import Partial.Unsafe (unsafePartial)
+import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=)
+   , bind, map, mod, negate, pure)
+import Control.Monad.State (State, evalStateT, get, put)
 import Data.Either (Either(..))
-import Data.List (List(..), (:), filter, foldl, reverse)
-import Data.List.NonEmpty (NonEmptyList, fromList, toList) as Nel
+import Data.List (List(..), (:), filter, reverse)
+import Data.List.NonEmpty (NonEmptyList) as Nel
 import Data.Map (Map, fromFoldable, lookup)
-import Data.Maybe (fromMaybe, isJust, fromJust)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
+import Data.Newtype (unwrap)
+import Data.Traversable (traverse)
 import Data.Foldable (oneOf)
-import Data.Bifunctor (lmap)
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Metadata (getKeySig)
@@ -40,13 +42,14 @@ type TranspositionState =
     , targetBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune target
     }
 
+type Transposition a = State TranspositionState a
+
 type NoteIndex =
   { notePosition :: Int    -- note position in the appropriate diatonic scale
   , octaveIncrement :: Int -- octave increment -1 <= i <= 1
   }
 
 -- Exposed API
-
 
 -- | The default Key - C Major.
 defaultKey :: ModifiedKeySignature
@@ -79,6 +82,14 @@ keyDistance targetmks srcmks =
               ( Pitch { pitchClass: src.pitchClass, accidental: srcAcc })
             )
 
+runNote :: TranspositionState -> AbcNote -> AbcNote
+runNote state note =
+  unwrap $ evalStateT (transposeNoteBy note) state
+
+runTune :: TranspositionState -> AbcTune -> AbcTune
+runTune state tune =
+  unwrap $ evalStateT (transposeTune tune) state
+
 -- | Transpose a note from its source key to its target.
 transposeNote :: ModifiedKeySignature -> ModifiedKeySignature -> AbcNote -> Either String AbcNote
 transposeNote targetmks srcKey note =
@@ -101,13 +112,8 @@ transposeNote targetmks srcKey note =
             , targetScale: diatonicScale (targetmks.keySignature)
             , targetBarAccidentals: Accidentals.empty
             }
-
-          transposition =
-            (transposeNoteBy transpositionState note)
         in
-          case transposition of
-            Tuple transposedNote _ ->
-              Right transposedNote
+          Right $ runNote transpositionState note
 
 -- | transposition where the target mode is taken from the source tune's key signature
 -- | (it doesn't make any sense to transpose to a different mode)
@@ -143,315 +149,151 @@ transposeTo (Pitch targetP) t =
           , targetBarAccidentals: Accidentals.empty
           }
       in
-        transposeTune transpositionState t
-
+        runTune transpositionState t
 
 -- Implementation
 
-transposeTune :: TranspositionState -> AbcTune -> AbcTune
-transposeTune state t =
-  let
-    newHeaders =
-      replaceKeyHeader state.targetmks t.headers
-  in
-    { headers: newHeaders, body: (transposeTuneBody state t.body) }
-
--- | transpose the tune body.  We need to thread state through the tune in case there's an inline
--- | information header which changes key part way through the tune
-transposeTuneBody :: TranspositionState -> TuneBody -> TuneBody
-transposeTuneBody state body =
-  let
-    f :: Tuple (List BodyPart) TranspositionState -> BodyPart -> Tuple (List BodyPart) TranspositionState
-    f acc n =
-      let
-        bs = fst acc
-        s0 = snd acc
-        newAcc =
-          transposeBodyPart s0 n
-        b1 = fst newAcc
-        s1 = snd newAcc
-      in
-        Tuple (b1 : bs) s1
-  in
+transposeTune :: AbcTune -> Transposition AbcTune
+transposeTune t =
+  do
+    state <- get
     let
-      -- ( tb, news ) = List.foldl f ( [], state ) body
-      result = foldl f (Tuple Nil state ) body
-    in
-      reverse (fst result)
+      newHeaders =
+        replaceKeyHeader state.targetmks t.headers
+    newTuneBody <- transposeTuneBody t.body
+    pure { headers: newHeaders, body: newTuneBody }
 
+-- | transpose the tune body.
+transposeTuneBody :: TuneBody -> Transposition TuneBody
+transposeTuneBody body =
+  traverse transposeBodyPart body
 
-processHeader :: TranspositionState -> Header -> Tuple Header TranspositionState
-processHeader state h =
+processHeader :: Header -> Transposition Header
+processHeader h =
   case h of
     Key mks ->
-      let
-        newmks =
-          transposeKeySignatureBy state.keyDistance mks
+      do
+        state <- get
+        let
+          newmks =
+            transposeKeySignatureBy state.keyDistance mks
 
-        newState =
-          state
-            { sourcemks = mks
-            , sourceBarAccidentals = Accidentals.empty
-            , targetmks = newmks
-            , targetKeySet = modifiedKeySet newmks
-            , targetScale = diatonicScale (newmks.keySignature)
-            , targetBarAccidentals = Accidentals.empty
-            }
-      in
-        Tuple
-          (Key newmks)
-          (newState)
+          newState =
+            state
+              { sourcemks = mks
+              , sourceBarAccidentals = Accidentals.empty
+              , targetmks = newmks
+              , targetKeySet = modifiedKeySet newmks
+              , targetScale = diatonicScale (newmks.keySignature)
+              , targetBarAccidentals = Accidentals.empty
+              }
 
+        _ <- put newState
+        pure $ (Key newmks)
     _ ->
-      Tuple h state
+      pure h
 
-
-transposeBodyPart :: TranspositionState -> BodyPart -> Tuple BodyPart TranspositionState
-transposeBodyPart state bp =
+transposeBodyPart :: BodyPart -> Transposition BodyPart
+transposeBodyPart bp =
   case bp of
     -- just transpose the score
     Score bars ->
-      let
-        -- ( ms1, s1 ) = transposeMusicList state ms
-        result = transposeBarList state bars
-        bs1 = fst result
-        s1 = snd result
-      in
-        Tuple (Score bs1) s1
+      do
+        newBars <- transposeBarList bars
+        pure $ Score newBars
 
     -- transpose any Key header found inline
     BodyInfo h ->
-      let
-        -- ( h1, state1 ) = processHeader state h
-        result = processHeader state h
-        h1 = fst result
-        state1 = snd result
-      in
-        Tuple (BodyInfo h1) state1
+      do
+        newHeader <- processHeader h
+        pure $ BodyInfo newHeader
 
+transposeBarList :: List Bar -> Transposition (List Bar)
+transposeBarList bars =
+  traverse transposeBar bars
 
-transposeMusic :: TranspositionState -> Music -> Tuple Music TranspositionState
-transposeMusic state m =
+transposeBar :: Bar -> Transposition Bar
+transposeBar bar =
+  do
+    state <- get
+    let
+      -- initialise accidentals list
+      state' = state  { sourceBarAccidentals = Accidentals.empty
+                    , targetBarAccidentals = Accidentals.empty }
+    _ <- put state'
+    newMusic <- transposeMusicList bar.music
+    let
+      newBar = bar { music = newMusic }
+    pure newBar
+
+transposeMusicList :: List Music -> Transposition (List Music)
+transposeMusicList musics =
+  traverse transposeMusic musics
+
+transposeMusic :: Music -> Transposition Music
+transposeMusic m =
   case m of
     Note n ->
-      let
-        result = transposeNoteBy state n
-      in
-        Tuple (Note $ fst result) (snd result)
+      do
+        newN <- transposeNoteBy n
+        pure $ Note newN
 
     BrokenRhythmPair n1 b n2 ->
-      let
-        result1 = transposeNoteBy state n1
-        s1 = snd result1
-        result2 = transposeNoteBy s1 n2
-      in
-        Tuple (BrokenRhythmPair (fst result1) b (fst result2)) (snd result2)
+      do
+        result1 <- transposeNoteBy n1
+        result2 <- transposeNoteBy n2
+        pure $ BrokenRhythmPair result1 b result2
 
     Tuplet ts ns ->
-      let
-        result = transposeRestOrNoteList state ns
-      in
-        Tuple ( Tuplet ts (fst result)) (snd result)
+      do
+        newNs <- transposeRestOrNoteList ns
+        pure $ Tuplet ts newNs
 
     GraceNote b ns ->
-      let
-        result = transposeNoteList state ns
-      in
-        Tuple ( GraceNote b (fst result)) (snd result)
+      do
+        newNs <- transposeNoteList ns
+        pure $  GraceNote b newNs
 
     Chord c ->
-      let
-        result = transposeChord state c
-      in
-        Tuple (Chord (fst result)) (snd result)
+      do
+        newC <- transposeChord c
+        pure $ Chord newC
 
     -- we won't attempt to transpose chord symbols - just quietly drop them
     ChordSymbol s ->
-      Tuple Ignore state
+      pure Ignore
 
-    -- new bar, initialise accidentals list
-    {-}
-    Barline b ->
-      Tuple ( Barline b)
-          ( state  { sourceBarAccidentals = Accidentals.empty
-                   , targetBarAccidentals = Accidentals.empty } )
-    -}
-
-    -- an inline header
+      -- an inline header
     Inline h ->
-      let
-        result = processHeader state h
-      in
-        Tuple (Inline (fst result)) (snd result)
+      do
+        newH <- processHeader h
+        pure $ Inline newH
 
     _ ->
-      Tuple m state
+      pure m
 
-{- generic attempt
-transposeList :: forall m. TranspositionState -> (TranspositionState -> m -> m) -> List m -> Tuple (List m) TranspositionState
-transposeList state transposef ns =
-    let
-        f :: forall m. Tuple (List m) TranspositionState -> m -> Tuple (List m) TranspositionState
-        f acc n =
-            let
-                -- ( ns, s0 ) = acc
-                ns = fst acc
-                s0 = snd acc
+transposeNoteList :: Nel.NonEmptyList AbcNote -> Transposition (Nel.NonEmptyList AbcNote)
+transposeNoteList nonemptyns =
+  traverse transposeNoteBy nonemptyns
 
-                -- ( n1, s1 ) = transposeNoteBy s0 n
-                result :: Tuple m TranspositionState
-                result = transposef s0 n
-                n1 = fst result
-                s1 = snd result
-            in
-                -- ( n1 :: ns, s1 )
-                Tuple (n1 : ns) s1
-    in
-        let
-            -- ( tns, news ) = List.foldl f ( [], state ) ns
-            res = foldl f (Tuple Nil state) ns
-        in
-            -- ( List.reverse tns, news )
-            Tuple (reverse $ fst res) (snd res)
--}
+transposeRestOrNoteList :: Nel.NonEmptyList RestOrNote -> Transposition (Nel.NonEmptyList RestOrNote)
+transposeRestOrNoteList nonemptyns =
+  traverse transposeRestOrNoteBy nonemptyns
 
+transposeChord :: AbcChord -> Transposition AbcChord
+transposeChord c =
+  do
+    newNotes <- transposeNoteList c.notes
+    pure $ c { notes = newNotes }
 
-transposeBarList :: TranspositionState -> List Bar -> Tuple (List Bar) TranspositionState
-transposeBarList state bs =
-  let
-    f :: Tuple (List Bar) TranspositionState -> Bar -> Tuple (List Bar) TranspositionState
-    f acc n =
-      let
-        -- ( ns, s0 ) =  acc
-        ns = fst acc
-        s0 = snd acc
-
-        -- ( n1, s1 ) =  transposeMusic s0 n
-        result = transposeBar s0 n
-        n1 = fst result
-        s1 = snd result
-      in
-        -- ( n1 :: ns, s1 )
-        Tuple ( n1 : ns ) s1
-  in
-    let
-      -- ( tns, news ) = List.foldl f ( [], state ) ms
-      res = foldl f (Tuple Nil state) bs
-    in
-      -- ( List.reverse tns, news )
-      Tuple (reverse $ fst res) (snd res)
-
-transposeBar :: TranspositionState -> Bar -> Tuple Bar TranspositionState
-transposeBar state bar =
-  let
-    -- initialise accidentals list
-    state0 = state  { sourceBarAccidentals = Accidentals.empty
-                    , targetBarAccidentals = Accidentals.empty }
-    (Tuple newMusic newState) = transposeMusicList state0 bar.music
-    newBar = bar { music = newMusic }
-  in
-    Tuple newBar newState
-
-transposeMusicList :: TranspositionState -> List Music -> Tuple (List Music) TranspositionState
-transposeMusicList state ms =
-  let
-    f :: Tuple (List Music) TranspositionState -> Music -> Tuple (List Music) TranspositionState
-    f acc n =
-      let
-        -- ( ns, s0 ) =  acc
-        ns = fst acc
-        s0 = snd acc
-
-        -- ( n1, s1 ) =  transposeMusic s0 n
-        result = transposeMusic s0 n
-        n1 = fst result
-        s1 = snd result
-      in
-        -- ( n1 :: ns, s1 )
-        Tuple ( n1 : ns ) s1
-  in
-    let
-      -- ( tns, news ) = List.foldl f ( [], state ) ms
-      res = foldl f (Tuple Nil state) ms
-    in
-      -- ( List.reverse tns, news )
-      Tuple (reverse $ fst res) (snd res)
-
-
-transposeNoteList :: TranspositionState -> Nel.NonEmptyList AbcNote -> Tuple (Nel.NonEmptyList AbcNote) TranspositionState
-transposeNoteList state nonemptyns =
-  let
-    ns =
-      Nel.toList nonemptyns
-    f :: Tuple (List AbcNote) TranspositionState -> AbcNote -> Tuple (List AbcNote) TranspositionState
-    f acc n =
-      let
-        -- ( ns, s0 ) = acc
-        n0 = fst acc
-        s0 = snd acc
-
-        -- ( n1, s1 ) = transposeNoteBy s0 n
-        result = transposeNoteBy s0 n
-        n1 = fst result
-        s1 = snd result
-      in
-        -- ( n1 :: ns, s1 )
-        Tuple (n1 : n0) s1
-  in
-    let
-      -- ( tns, news ) = List.foldl f ( [], state ) ns
-      res = foldl f (Tuple Nil state) ns
-    in
-      Tuple ((unsafeListToNel <<< reverse <<< fst) res) (snd res)
-
-
-
-transposeRestOrNoteList :: TranspositionState -> Nel.NonEmptyList RestOrNote -> Tuple (Nel.NonEmptyList RestOrNote) TranspositionState
-transposeRestOrNoteList state nonemptyns =
-  let
-    ns =
-      Nel.toList nonemptyns
-    f :: Tuple (List RestOrNote) TranspositionState -> RestOrNote -> Tuple (List RestOrNote) TranspositionState
-    f acc rn =
-      let
-        -- ( ns, s0 ) = acc
-        n0 = fst acc
-        s0 = snd acc
-
-        -- a rest (in a tuplet) doesn't affect the state, but a note does
-        result =
-          case rn of
-            Left r ->
-              Tuple (Left r) s0
-            Right n ->
-              lmap Right (transposeNoteBy s0 n)
-        n1 = fst result
-        s1 = snd result
-      in
-        -- ( n1 :: ns, s1 )
-        Tuple (n1 : n0) s1
-  in
-    let
-      -- ( tns, news ) = List.foldl f ( [], state ) ns
-      res = foldl f (Tuple Nil state) ns
-    in
-      Tuple ((unsafeListToNel <<< reverse <<< fst) res) (snd res)
-
--- an unsafe conversion from a List to a NonEmptyList
--- use this when folding over NonEmptyLists and (for convenience)
--- you want to use a normal List fold and convert at each end
-unsafeListToNel :: ∀ a. List a -> Nel.NonEmptyList a
-unsafeListToNel xs =
-  unsafePartial (go xs) where
-    go :: Partial => List a -> Nel.NonEmptyList a
-    go = fromJust <<< Nel.fromList
-
-transposeChord :: TranspositionState -> AbcChord -> Tuple AbcChord TranspositionState
-transposeChord state c =
-  let
-    result = transposeNoteList state c.notes
-  in
-    Tuple ( c { notes= fst result }) (snd result)
+transposeRestOrNoteBy :: RestOrNote -> Transposition RestOrNote
+transposeRestOrNoteBy restOrNote =
+  case (restOrNote) of
+    Left r ->
+      pure $ Left r
+    Right n -> do
+      newN <- transposeNoteBy n
+      pure $ Right newN
 
 {-| transpose a note by the required distance which may be positive or negative
     transposition distance and source and target keys are taken from the state.  This is the heart of the module.
@@ -465,82 +307,84 @@ transposeChord state c =
         (i.e. there is an accidental for the pitch but it's a different one) and finally look up the note in the target scale for the key in question
       * if there is an explicit accidental, save the source note in the source bar accidentals, ditto for the target, keep in the state
 -}
-transposeNoteBy :: TranspositionState -> AbcNote -> Tuple AbcNote TranspositionState
-transposeNoteBy state note =
-  let
-    -- make any implicit accidental explicit in the source note to be transposed if it's not marked as an accidental
-    inSourceKeyAccidental =
-      Accidentals.implicitInKeySet note.pitchClass (modifiedKeySet state.sourcemks)
+transposeNoteBy :: AbcNote -> Transposition AbcNote
+transposeNoteBy note =
+  do
+    state <- get
+    let
+      -- make any implicit accidental explicit in the source note to be transposed if it's not marked as an accidental
+      inSourceKeyAccidental =
+        Accidentals.implicitInKeySet note.pitchClass (modifiedKeySet state.sourcemks)
 
-    inSourceBarAccidental =
-      lookup note.pitchClass state.sourceBarAccidentals
+      inSourceBarAccidental =
+        lookup note.pitchClass state.sourceBarAccidentals
 
-    -- we must do the lookup of the source accidental in this order - local bar overrides key
-    maybeSourceAccidental =
-      oneOf ( inSourceBarAccidental : inSourceKeyAccidental : Nil)
+      -- we must do the lookup of the source accidental in this order - local bar overrides key
+      maybeSourceAccidental =
+        oneOf ( inSourceBarAccidental : inSourceKeyAccidental : Nil)
 
-    implicitSourceAccidental = fromMaybe Implicit maybeSourceAccidental
+      implicitSourceAccidental = fromMaybe Implicit maybeSourceAccidental
 
-    explicitSourceNote =
-      case note.accidental of
-        Implicit ->
-          note { accidental = implicitSourceAccidental }
-        _ ->
-          note
+      explicitSourceNote =
+        case note.accidental of
+          Implicit ->
+            note { accidental = implicitSourceAccidental }
+          _ ->
+            note
 
-    srcNum =
-      noteNumber explicitSourceNote
+      srcNum =
+        noteNumber explicitSourceNote
 
-    -- ( targetNum, octaveIncrement ) =  noteIndex srcNum (state.keyDistance)
-    noteIdx = noteIndex srcNum (state.keyDistance)
+      -- ( targetNum, octaveIncrement ) =  noteIndex srcNum (state.keyDistance)
+      noteIdx = noteIndex srcNum (state.keyDistance)
 
-    ka =
-      pitchFromInt (state.targetmks.keySignature) noteIdx.notePosition
+      ka =
+        pitchFromInt (state.targetmks.keySignature) noteIdx.notePosition
 
-    -- ( pc, acc ) = sharpenFlatEnharmonic ka
-    Pitch safeKa = sharpenFlatEnharmonic ka
+      -- ( pc, acc ) = sharpenFlatEnharmonic ka
+      Pitch safeKa = sharpenFlatEnharmonic ka
 
-    --JMW
-    targetBarAcc = Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals
+      --JMW
+      targetBarAcc = Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals
 
-    targetAcc =
-      -- is it present in the local target bar accidentals
-      if (Accidentals.member (Pitch safeKa) state.targetBarAccidentals) then
-        Implicit
-        -- is it present in the local target bar accidentals but with a different value
-       -- else if (isJust (Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals)) then
-      else if (isJust targetBarAcc) then
-        safeKa.accidental
-          -- is it in the set of keys in the target diatonic scale
-      else if (inKeySet (Pitch safeKa) state.targetScale) then
-        Implicit
-      else
-        safeKa.accidental
+      targetAcc =
+        -- is it present in the local target bar accidentals
+        if (Accidentals.member (Pitch safeKa) state.targetBarAccidentals) then
+          Implicit
+          -- is it present in the local target bar accidentals but with a different value
+         -- else if (isJust (Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals)) then
+        else if (isJust targetBarAcc) then
+          safeKa.accidental
+            -- is it in the set of keys in the target diatonic scale
+        else if (inKeySet (Pitch safeKa) state.targetScale) then
+          Implicit
+        else
+          safeKa.accidental
 
-    transposedNote =
-      note { pitchClass = safeKa.pitchClass
-           , accidental = targetAcc
-           , octave = note.octave + noteIdx.octaveIncrement }
+      transposedNote =
+        note { pitchClass = safeKa.pitchClass
+             , accidental = targetAcc
+             , octave = note.octave + noteIdx.octaveIncrement }
 
-    -- save any accidental nature of the original untransposed note
-    newSourceAccs =
-      addBarAccidental note.pitchClass note.accidental state.sourceBarAccidentals
+      -- save any accidental nature of the original untransposed note
+      newSourceAccs =
+        addBarAccidental note.pitchClass note.accidental state.sourceBarAccidentals
 
-    -- if the target, after all this, has an explicit accidental, we need to save it in the target bar accidental state
-    newTargetAccs =
-      case targetAcc of
-        Implicit ->
-          state.targetBarAccidentals
-        _ ->
-          -- we use the explicit form of the target
-          addBarAccidental safeKa.pitchClass (safeKa.accidental) state.targetBarAccidentals
+      -- if the target, after all this, has an explicit accidental, we need to save it in the target bar accidental state
+      newTargetAccs =
+        case targetAcc of
+          Implicit ->
+            state.targetBarAccidentals
+          _ ->
+            -- we use the explicit form of the target
+            addBarAccidental safeKa.pitchClass (safeKa.accidental) state.targetBarAccidentals
 
-    -- update the state with both the source an target bar accidentals
-    newState =
-      state { sourceBarAccidentals = newSourceAccs
-            , targetBarAccidentals = newTargetAccs }
-  in
-    Tuple transposedNote newState
+      -- update the state with both the source an target bar accidentals
+      newState =
+        state { sourceBarAccidentals = newSourceAccs
+              , targetBarAccidentals = newTargetAccs }
+    _ <-  put newState
+    pure transposedNote
 
 
 -- | enharmonic equivalence for flattened accidentals
