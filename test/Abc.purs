@@ -327,6 +327,8 @@ structureSuite  =
       assertParses text
       -- we now coalesce the lines after a continuation
       assertMusicLines text 1
+    test "empty bar" do
+      assertRoundTrip "| ABc | | def |\x0D\n"
     test "inline key" do
       assertRoundTrip "| ABC def g3 | [K: AMajor] g3 a3 |\x0D\n"
     test "inline comment" do
