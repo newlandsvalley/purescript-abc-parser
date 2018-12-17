@@ -322,7 +322,11 @@ structureSuite  =
       -- we now coalesce the lines after a continuation
       assertMusicLines text 1
     test "continuation with comment" do
-      assertParses "| ABc |\\ ignored comment\x0D\n| def |\x0D\n"
+      let
+        text = "| ABc |\\ ignored comment\x0D\n| def |\x0D\n"
+      assertParses text
+      -- we now coalesce the lines after a continuation
+      assertMusicLines text 1
     test "inline key" do
       assertRoundTrip "| ABC def g3 | [K: AMajor] g3 a3 |\x0D\n"
     test "inline comment" do
