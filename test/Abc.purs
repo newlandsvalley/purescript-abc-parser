@@ -4,6 +4,7 @@ import Prelude
 import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
+import Data.List (length)
 import Data.Abc.Parser (parse, parseKeySignature)
 import Data.Abc.Canonical (fromTune)
 
@@ -16,55 +17,69 @@ assertRoundTrip s =
 
 assertCanonical :: String -> String -> Test
 assertCanonical s canonical =
-    let
-        parseResult =
-            parse s
-    in
-        case parseResult of
-            Right tune ->
-                Assert.equal canonical (fromTune tune)
+  let
+    parseResult =
+      parse s
+  in
+    case parseResult of
+      Right tune ->
+        Assert.equal canonical (fromTune tune)
 
-            Left err ->
-                failure ("parse failed: " <> (show err))
+      Left err ->
+        failure ("parse failed: " <> (show err))
 
 assertParses :: String -> Test
 assertParses s =
-    let
-        parseResult =
-            parse s
-    in
-        case parseResult of
-            Right res ->
-                success
+  let
+    parseResult =
+      parse s
+  in
+    case parseResult of
+      Right res ->
+        success
 
-            Left err ->
-                failure ("parse failed: " <> (show err))
+      Left err ->
+        failure ("parse failed: " <> (show err))
 
 assertParseError :: String -> Test
 assertParseError s =
-    let
-        parseResult =
-            parse s
-    in
-        case parseResult of
-           Right res ->
-                failure "parses when it shouldn't"
+  let
+    parseResult =
+      parse s
+  in
+    case parseResult of
+      Right res ->
+        failure "parses when it shouldn't"
 
-           Left err ->
-                success
+      Left err ->
+        success
 
 assertKeySigParses :: String -> Test
 assertKeySigParses s =
-    let
-        parseResult =
-            parseKeySignature s
-    in
-        case parseResult of
-            Right res ->
-                success
+  let
+    parseResult =
+      parseKeySignature s
+  in
+    case parseResult of
+      Right res ->
+        success
 
-            Left err ->
-                failure ("parse failed: " <> (show err))
+      Left err ->
+        failure ("parse failed: " <> (show err))
+
+assertMusicLines :: String -> Int -> Test
+assertMusicLines s target =
+  let
+    parseResult =
+      parse s
+  in
+    case parseResult of
+      Right tune ->
+        Assert.equal target (length tune.body)
+
+      Left err ->
+        failure ("parse failed: " <> (show err))
+
 
 abcSuite :: Free TestF Unit
 abcSuite = do
@@ -301,7 +316,11 @@ structureSuite  =
     test "new part" do
       assertRoundTrip "| ABc |\x0D\nP: B\x0D\n| def |\x0D\n"
     test "continuation" do
-      assertRoundTrip "| ABc |\\\x0D\n| def |\x0D\n"
+      let
+        text = "| ABc |\\\x0D\n| def |\x0D\n"
+      assertRoundTrip text
+      -- we now coalesce the lines after a continuation
+      assertMusicLines text 1
     test "continuation with comment" do
       assertParses "| ABc |\\ ignored comment\x0D\n| def |\x0D\n"
     test "inline key" do
