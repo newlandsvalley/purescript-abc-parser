@@ -276,8 +276,8 @@ music m =
         Ignore ->
             ""
 
-        Continuation ->
-            "\\"
+        Continuation comment ->
+            ("\\" <> comment <> "\r\n")
 
 header :: Header -> String
 header h =

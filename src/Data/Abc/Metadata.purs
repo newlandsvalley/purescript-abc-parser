@@ -234,7 +234,7 @@ isEmptyStave bars =
                 true
               Ignore ->
                 true
-              Continuation ->
+              Continuation _ ->
                 true
               _ ->
                 false

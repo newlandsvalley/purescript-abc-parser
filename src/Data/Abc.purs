@@ -128,7 +128,7 @@ data Music
     | Inline Header
     | Spacer Int
     | Ignore
-    | Continuation
+    | Continuation String
 
 -- | A bar line Thickness.
 

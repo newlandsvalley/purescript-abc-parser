@@ -517,20 +517,25 @@ ignore =
         (regex "[#@;`\\*\\?]+")
         <?> "ignored character"
 
-{- this is an area where the spec is uncertain.  See 6.1.1 Typesetting line-breaks
+{- This is an area where the spec is uncertain.  See 6.1.1 Typesetting line-breaks
    The forward slash is used to indicate 'continuation of input lines' often because
    users may need to avoid long lines if, for example, they would otherwise extend
    beyond the limit of an old email system.  All very out of date, but nevertheless
    still prevalent in the wild.  We take the view that we must do our best to recognise
    them and then throw them away (along with any other later stuff in the line)
 
-   Return Continuation if we have a continuation
+   Any text between the forward slash and eol is treated as comment.
+
+   Return  (Continuation comment) if we have a continuation.  Now we consume the
+   eol character at the end of the continuation so that the parser will continue
+   to accumulate the following line into the ADT as a continuation of this line.
 -}
 continuation :: Parser Music
 continuation =
     Continuation
         <$ char '\\'
-        <* regex "[^\x0D\n]*"
+        <*> regex "[^\x0D\n]*"
+        <* eol
         <?> "continuation"
 
 -- tune headers
