@@ -56,16 +56,13 @@ moveOctave :: Int -> Music -> Music
 moveOctave i m =
     case m of
         Note n ->
-            Note (moveNoteBy i n)
+            Note (moveGraceableNoteBy i n)
 
         BrokenRhythmPair n1 b n2 ->
-            BrokenRhythmPair (moveNoteBy i n1) b (moveNoteBy i n2)
+            BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
 
         Tuplet ts ns ->
             Tuplet ts (moveRestOrNoteList i ns)
-
-        GraceNote b ns ->
-            GraceNote b (moveNoteList i ns)
 
         Chord c ->
             Chord (moveChord i c)
@@ -73,14 +70,25 @@ moveOctave i m =
         _ ->
             m
 
+moveGraceableNoteBy :: Int -> GraceableNote -> GraceableNote
+moveGraceableNoteBy i gn =
+  let
+    abcNote = moveNoteBy i gn.abcNote
+    maybeGrace = map (moveGraceBy i) gn.maybeGrace
+  in
+    { maybeGrace, abcNote }
 
 moveNoteBy :: Int -> AbcNote -> AbcNote
 moveNoteBy i note =
-    note { octave = note.octave + i }
+  note { octave = note.octave + i }
+
+moveGraceBy :: Int -> Grace -> Grace
+moveGraceBy i g =
+  g { notes = moveNoteList i g.notes  }
 
 moveBarList :: Int -> List Bar -> List Bar
 moveBarList i =
-    map (moveBar i)
+  map (moveBar i)
 
 moveBar :: Int -> Bar -> Bar
 moveBar i bar =
@@ -89,7 +97,6 @@ moveBar i bar =
       map (moveOctave i) bar.music
   in
     bar { music = newMusic }
-
 
 moveNoteList :: Int -> NonEmptyList AbcNote -> NonEmptyList AbcNote
 moveNoteList i =
@@ -103,7 +110,7 @@ moveRestOrNoteList i =
     f rn =
       case rn of
         Left r -> Left r
-        Right n -> Right (moveNoteBy i n)
+        Right n -> Right (moveGraceableNoteBy i n)
   in
     map f
 

@@ -5,28 +5,28 @@ module Data.Abc.Parser
         , parseKeySignature
         ) where
 
-import Prelude (class Show, ($), (<$>), (<$), (<<<), (<*>), (<*), (*>), (==), (<>), (+), (-), (/), join, flip, show)
+import Data.Abc
+
 import Control.Alt ((<|>))
 import Data.Array as Array
+import Data.Bifunctor (bimap)
 import Data.Either (Either(..))
+import Data.Foldable (foldr, foldMap)
+import Data.Functor (map)
+import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List.NonEmpty as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.String.Utils (startsWith, includes)
+import Data.Rational (Rational, fromInt, (%))
+import Data.String (toUpper, singleton)
 import Data.String.CodePoints (codePointFromChar, length)
 import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
-import Data.String (toUpper, singleton)
-import Data.Int (fromString, pow)
-import Data.Foldable (foldr, foldMap)
-import Data.Functor (map)
-import Data.Bifunctor (bimap)
-import Data.Rational (Rational, fromInt, (%))
--- import Data.Rational (rational) as Rational
+import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
+import Prelude (class Show, flip, join, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
-import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
-import Data.Abc
+import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
 -- import Debug.Trace (trace)
 
 
@@ -122,7 +122,6 @@ scoreItem =
     , decoration
     , chordSymbol
     , annotation
-    , graceNote
     , try tuplet  -- potential ambiguity with slurs
     , slur
     , rest
@@ -230,14 +229,14 @@ brokenRhythmTie =
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
     BrokenRhythmPair
-        <$> abcNote
+        <$> graceableNote
         <*> brokenRhythmTie
-        <*> abcNote
+        <*> graceableNote
         <?> "broken rhythm pair"
 
 note :: Parser Music
 note =
-  Note <$> abcNote
+  Note <$> graceableNote
 
 abcNote :: Parser AbcNote
 abcNote =
@@ -248,6 +247,13 @@ abcNote =
         <*> optionMaybe noteDur
         <*> maybeTie
         <?> "ABC note"
+
+graceableNote :: Parser GraceableNote
+graceableNote =
+  buildGraceableNote
+    <$> optionMaybe graceBracket
+    <*> abcNote
+    <?> "graceable note"
 
 {- maybe an accidental defining a note's pitch -}
 maybeAccidental :: Parser (Maybe Accidental)
@@ -343,7 +349,7 @@ abcRest =
 -- | tuplets may now contain either a (Left) rest or a (Right) Note
 restOrNote :: Parser RestOrNote
 restOrNote =
-  (Left <$> abcRest) <|> (Right <$> abcNote)
+  (Left <$> abcRest) <|> (Right <$> graceableNote)
 
 tuplet :: Parser Music
 tuplet =
@@ -387,18 +393,18 @@ tup =
 -}
 slur :: Parser Music
 slur =
-    Slur
-        <$> (char '(' <|> char ')')
-        <?> "slur"
+  Slur
+    <$> (char '(' <|> char ')')
+    <?> "slur"
 
-graceNote :: Parser Music
-graceNote =
+graceBracket :: Parser Grace
+graceBracket =
     between (char '{') (char '}') grace
-        <?> "grace note"
+        <?> "grace bracket"
 
-grace :: Parser Music
+grace :: Parser Grace
 grace =
-    GraceNote <$> acciaccatura <*> (many1 abcNote)
+    buildGrace <$> acciaccatura <*> (many1 abcNote)
 
 {- acciaccaturas are indicated with an optional forward slash
    was
@@ -1152,6 +1158,14 @@ buildBrokenOperator s =
 buildRest :: Rational -> AbcRest
 buildRest r =
   { duration : r }
+
+buildGrace :: Boolean -> Nel.NonEmptyList AbcNote -> Grace
+buildGrace isAcciaccatura ns =
+  { isAcciaccatura, notes: ns }
+
+buildGraceableNote :: Maybe Grace -> AbcNote -> GraceableNote
+buildGraceableNote maybeGrace n =
+  { maybeGrace, abcNote : n }
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =

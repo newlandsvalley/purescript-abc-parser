@@ -119,6 +119,15 @@ pitch octaveNumber p =
     else
         Str.toLower (show p)
 
+-- | Pretty-print a note which may be prefaced by grace notes.
+graceableNote :: GraceableNote -> String
+graceableNote gn =
+  (fromMaybe "" $ map grace gn.maybeGrace)
+    <> abcNote (gn.abcNote)
+
+grace :: Grace -> String
+grace g =
+  "{" <> notes g.notes <> "}"
 
 -- | Pretty-print a note.
 abcNote :: AbcNote -> String
@@ -162,7 +171,7 @@ restsOrNotes rns =
         Left r ->
           (abcRest r) <> acc
         Right n ->
-          (abcNote n) <> acc
+          (graceableNote n) <> acc
   in
     foldr f "" rns
 
@@ -232,16 +241,12 @@ broken b =
 music :: Music -> String
 music m =
     case m of
-        {-}
-        Barline b ->
-            barType b
-        -}
 
-        Note a ->
-            abcNote a
+        Note gn ->
+            graceableNote gn
 
-        BrokenRhythmPair a1 b a2 ->
-            abcNote a1 <> (broken b) <> abcNote a2
+        BrokenRhythmPair g1 b g2 ->
+            graceableNote g1 <> (broken b) <> graceableNote g2
 
         Rest r ->
             abcRest r
@@ -251,10 +256,7 @@ music m =
 
         Decoration s ->
             decorate s
-
-        GraceNote isAcciaccatura ns ->
-            "{" <> notes ns <> "}"
-
+            
         Slur c ->
             singleton $ codePointFromChar c
 

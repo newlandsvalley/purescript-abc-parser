@@ -8,8 +8,10 @@ module Data.Abc.Midi
 import Data.Abc.Accidentals as Accidentals
 import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
-   MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
+import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..),
+   BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
+   GraceableNote,  MusicLine, Music(..), Mode(..),
+   ModifiedKeySignature, TempoSignature, PitchClass(..))
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
@@ -211,8 +213,8 @@ transformMusicLine (l : ls) =
 transformMusic :: Music -> State TransformationState Midi.Recording
 transformMusic m =
   case m of
-    Note abcNote ->
-      updateState (addNoteToState false (1 % 1)) abcNote
+    Note graceableNote ->
+      updateState (addGraceableNoteToState false (1 % 1)) graceableNote
 
     Rest r ->
       updateState addRestToState r.duration
@@ -247,18 +249,12 @@ transformMusic m =
       case broken of
         LeftArrow i ->
           do
-            _ <- updateState (addNoteToState false (brokenTempo i false)) note1
-            updateState (addNoteToState false (brokenTempo i true)) note2
+            _ <- updateState (addGraceableNoteToState false (brokenTempo i false)) note1
+            updateState (addGraceableNoteToState false (brokenTempo i true)) note2
         RightArrow i ->
           do
-            _ <- updateState (addNoteToState false (brokenTempo i true)) note1
-            updateState (addNoteToState false (brokenTempo i false)) note2
-
-    {-}
-    Barline bar ->
-      -- transformBar bar
-      updateState addBarToState bar
-    -}
+            _ <- updateState (addGraceableNoteToState false (brokenTempo i true)) note1
+            updateState (addGraceableNoteToState false (brokenTempo i false)) note2
 
     Inline header ->
       transformHeader header
@@ -327,6 +323,10 @@ transformHeader h =
         tpl <- get
         pure $ snd tpl
 
+addGraceableNoteToState :: Boolean -> Rational -> TState-> GraceableNote -> TState
+addGraceableNoteToState chordal tempoModifier tstate graceableNote =
+  addNoteToState chordal tempoModifier tstate graceableNote.abcNote
+
 -- | a note is added to the current barAccidentals as a NoteOn NoteOff pair
 -- | there are other implications for state - if the note has an explicit
 -- | accidental, overriding the key then it is added to state because it
@@ -353,48 +353,10 @@ addRestOrNoteToState chordal tempoModifier tstate restOrNote =
       --  modifiy the rest duration by the tempo modifier
       addRestToState tstate (r.duration * tempoModifier)
     Right n ->
-      addNoteToState chordal tempoModifier tstate n
+      addGraceableNoteToState chordal tempoModifier tstate n
 
 
-{-}
-addNoteToState :: Boolean -> Rational -> TState-> AbcNote -> TState
-addNoteToState chordal tempoModifier tstate abcNote =
-  let
-    barAccidentals = tstate.currentBarAccidentals
-    -- if the last note was tied, we treat this note simply as a rest (zero pitch) in order to pace the tune properly
-    pitch =
-        toMidiPitch abcNote tstate.modifiedKeySignature barAccidentals
-    ticks =
-        noteTicks (abcNote.duration * tempoModifier)
 
-    msgOn = midiNoteOn 0 pitch
-    msgOff = midiNoteOff ticks pitch
-    msgRest = midiNoteOn ticks 0
-
-    bar = tstate.currentBar
-    -- when we're adding a note, a 'normal note' is sounded by emitting
-    -- a NoteOn followed by a NoteOff message.  However a note within a chord
-    -- is started at the same time as it's accompanying notes and will only be switched
-    -- off after each note is started (outside of this function)
-    bar' =
-      if chordal then
-        bar { midiMessages = (msgOn : bar.midiMessages)}
-      else if isJust (tstate.lastNoteTied) then
-        bar { midiMessages = (msgRest : bar.midiMessages)}
-      else
-        bar { midiMessages = (msgOff : msgOn : bar.midiMessages)}
-    barAccidentals' = addNoteToBarAccidentals abcNote barAccidentals
-
-  in
-    tstate { currentBar = bar'
-           , lastNoteTied =
-              if abcNote.tied then
-                Just abcNote
-              else
-                Nothing
-           , currentBarAccidentals = barAccidentals'
-           }
--}
 
 -- | process the incoming note, accounting for the fact that the previous note may have been tied.
 -- |

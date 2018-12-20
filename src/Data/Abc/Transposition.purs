@@ -21,7 +21,7 @@ import Data.Either (Either(..))
 import Data.List (List(..), (:), filter, reverse)
 import Data.List.NonEmpty (NonEmptyList) as Nel
 import Data.Map (Map, fromFoldable, lookup)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Newtype (unwrap)
 import Data.Traversable (traverse)
@@ -90,6 +90,17 @@ runTune :: TranspositionState -> AbcTune -> AbcTune
 runTune state tune =
   unwrap $ evalStateT (transposeTune tune) state
 
+{-
+-- | Transpose a note from its source key to its target.
+transposeGraceableNote :: ModifiedKeySignature -> ModifiedKeySignature -> GraceableNote -> Either String GraceableNote
+transposeGraceableNote targetmks srcKey gn =
+  let
+    abcNote = transposeNote targetmks srcKey gn.abcNote
+    maybeGrace = map (transposeGrace keyDistance) gn.maybeGrace
+  in
+    { maybeGrace, abcNote}
+-}
+
 -- | Transpose a note from its source key to its target.
 transposeNote :: ModifiedKeySignature -> ModifiedKeySignature -> AbcNote -> Either String AbcNote
 transposeNote targetmks srcKey note =
@@ -114,6 +125,7 @@ transposeNote targetmks srcKey note =
             }
         in
           Right $ runNote transpositionState note
+
 
 -- | transposition where the target mode is taken from the source tune's key signature
 -- | (it doesn't make any sense to transpose to a different mode)
@@ -235,13 +247,13 @@ transposeMusic m =
   case m of
     Note n ->
       do
-        newN <- transposeNoteBy n
+        newN <- transposeGraceableNoteBy n
         pure $ Note newN
 
     BrokenRhythmPair n1 b n2 ->
       do
-        result1 <- transposeNoteBy n1
-        result2 <- transposeNoteBy n2
+        result1 <- transposeGraceableNoteBy n1
+        result2 <- transposeGraceableNoteBy n2
         pure $ BrokenRhythmPair result1 b result2
 
     Tuplet ts ns ->
@@ -249,10 +261,13 @@ transposeMusic m =
         newNs <- transposeRestOrNoteList ns
         pure $ Tuplet ts newNs
 
+
+    {-}
     GraceNote b ns ->
       do
         newNs <- transposeNoteList ns
         pure $  GraceNote b newNs
+    -}
 
     Chord c ->
       do
@@ -292,8 +307,28 @@ transposeRestOrNoteBy restOrNote =
     Left r ->
       pure $ Left r
     Right n -> do
-      newN <- transposeNoteBy n
+      newN <- transposeGraceableNoteBy n
       pure $ Right newN
+
+
+transposeGraceableNoteBy :: GraceableNote -> Transposition GraceableNote
+transposeGraceableNoteBy gn =
+  do
+    abcNote <- transposeNoteBy gn.abcNote
+    maybeGrace <- transposeGrace gn.maybeGrace
+    pure { maybeGrace, abcNote }
+
+transposeGrace :: Maybe Grace -> Transposition (Maybe Grace)
+transposeGrace mGrace =
+  case
+    mGrace of
+      Just grace ->
+        do
+          newNotes <- transposeNoteList grace.notes
+          pure $ Just grace { notes = newNotes }
+      _ ->
+         pure Nothing
+
 
 {-| transpose a note by the required distance which may be positive or negative
     transposition distance and source and target keys are taken from the state.  This is the heart of the module.

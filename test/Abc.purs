@@ -214,6 +214,10 @@ noteSuite =
        assertRoundTrip "| (3zfg |\r\n"
     test "grace note" do
        assertRoundTrip "| {d^f}GA |\x0D\n"
+    test "grace note in tuplet" do
+       assertRoundTrip "| (3c{d}fg A |\x0D\n"
+    test "grace note in broken rhythm pair" do
+       assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
     test "double sharp" do
        assertRoundTrip "| ^^C2 |\r\n"
     test "sharp" do
@@ -324,7 +328,7 @@ structureSuite  =
     test "continuation with comment" do
       let
         text = "| ABc |\\ ignored comment\x0D\n| def |\x0D\n"
-      assertParses text
+      assertRoundTrip text
       -- we now coalesce the lines after a continuation
       assertMusicLines text 1
     test "empty bar" do

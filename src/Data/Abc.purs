@@ -8,6 +8,8 @@ module Data.Abc ( AbcTune
 , Music(..)
 , AbcRest
 , AbcNote
+, Grace
+, GraceableNote
 , AbcChord
 , RestOrNote
 , Bar
@@ -87,6 +89,18 @@ type AbcNote =
     , tied ::  Boolean  -- to the next note
     }
 
+-- | a set of one or more grace notes
+type Grace =
+  {  isAcciaccatura :: Boolean
+  ,  notes :: NonEmptyList AbcNote
+  }
+
+-- | A (possibly) Graced Note.
+type GraceableNote =
+    { maybeGrace :: Maybe Grace
+    , abcNote :: AbcNote
+    }
+
 -- | A Chord.
 type AbcChord =
     { notes :: NonEmptyList AbcNote
@@ -110,17 +124,17 @@ instance showAnnotationPlacement :: Show AnnotationPlacement where
 
 -- | either a Rest or a Note.
 type RestOrNote
-  = Either AbcRest AbcNote
+  = Either AbcRest GraceableNote
 
 -- | The 'score' part of Music.
 data Music
-    = Note AbcNote
-    | BrokenRhythmPair AbcNote Broken AbcNote
+    = Note GraceableNote
+    | BrokenRhythmPair GraceableNote Broken GraceableNote
     | Rest AbcRest
     | Tuplet TupletSignature (NonEmptyList RestOrNote)
     | Decoration String
     | Slur Char
-    | GraceNote Boolean (NonEmptyList AbcNote)
+    -- | GraceNote Boolean (NonEmptyList AbcNote)
       -- Music restricted to note sequences or chords
     | Annotation AnnotationPlacement String
     | ChordSymbol String
