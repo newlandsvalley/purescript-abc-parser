@@ -7,5 +7,20 @@ purescript-abc-parser
 
 This is a parser for Chris Walshaw's [ABC Notation](http://abcnotation.com/) which is primarily designed as an interchange format for scores of traditional music.  Also included are functions to manipulate the parse tree in order to provide alteration of tempo, transposition, conversion to MIDI etc.
 
+Features
+--------
+
+*  The parser is primarily aimed at web applications that deal with single voice traditional music.
+*  It is biased towards editor applications in that it attempts to be as lenient as possible whilst still honouring the intentions of the ABC specification. In particular, there is no requirement for any header to be present at all - sensible defaults are used instead.  This means that an editor application can allow the user (if she prefers) to concentrate on the notes and only add the headers at a later stage.
+*  It attempts to be helpful to score-engraving software.  For example, bars are first class entities in the ABC ADT; grace notes are directly attached to the notes that they 'grace'; line continuations do actually join the two lines in question.
+*  It attempts to be helpful to player applications in that it provides a translation to MIDI.
+
+Issues
+------
+
+* I am unhappy about the way in which the specification defines slurs (represented by round brackets). These seem to be impossible to match - for instance they can span across bars or even across separate lines of music.  I treat them as free-floating entities.
+* Grace notes are not supported against chords.  (I am unclear what the specification defines here.)
+* Grace notes are, however, supported against notes in all other contexts and attached to them directly. This means that they cannot be separated by a slur. 
+
 
 
