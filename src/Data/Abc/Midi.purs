@@ -5,30 +5,33 @@ module Data.Abc.Midi
   , toMidiPitch
   , midiPitchOffset) where
 
-import Data.Abc.Accidentals as Accidentals
-import Data.Midi as Midi
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..),
-   BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..),
-   GraceableNote,  MusicLine, Music(..), Mode(..),
-   ModifiedKeySignature, TempoSignature, PitchClass(..))
-import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
-import Data.Abc.Metadata (dotFactor, getKeySig)
-import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
-import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
+import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), Grace, GraceableNote, MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
+import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Canonical as Canonical
-import Data.List (List(..), (:), null, concatMap, filter, reverse, singleton)
-import Data.List.NonEmpty (head, tail, toList) as Nel
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Rational (Rational, fromInt, (%))
+import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
+import Data.Abc.Metadata (dotFactor, getKeySig)
+import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
+import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
 import Data.Either (Either(..))
-import Data.Tuple (Tuple(..), fst, snd)
 import Data.Foldable (foldl, oneOf)
-import Prelude (bind, pure, ($), (+), (-), (*), (<>), (>=), (<), (&&))
+import Data.List (List(..), (:), null, concatMap, foldr, filter, reverse, singleton)
+import Data.List.NonEmpty (head, length, tail, toList) as Nel
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Midi as Midi
+import Data.Rational (Rational, fromInt, (%))
+import Data.Tuple (Tuple(..), fst, snd)
+import Prelude (bind, map, pure, ($), (&&), (*), (+), (-), (<), (<>), (>=))
 
 -- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
     Int
+
+-- | the fraction  of the duration of a note that is 'stolen' by any
+-- | preceding grace note that it has
+graceFraction :: Rational
+graceFraction =
+  (1 % 10)
 
 -- | Convert an ABC note pitch to a MIDI pitch.
 -- |
@@ -325,18 +328,21 @@ transformHeader h =
 
 addGraceableNoteToState :: Boolean -> Rational -> TState-> GraceableNote -> TState
 addGraceableNoteToState chordal tempoModifier tstate graceableNote =
-  addNoteToState chordal tempoModifier tstate graceableNote.abcNote
+  addNoteToState chordal tempoModifier graceableNote.maybeGrace tstate graceableNote.abcNote
 
 -- | a note is added to the current barAccidentals as a NoteOn NoteOff pair
+-- | possible preceded by its grace notes (if they exist)
 -- | there are other implications for state - if the note has an explicit
 -- | accidental, overriding the key then it is added to state because it
 -- | influences other notes later in the bar
-
-addNoteToState :: Boolean -> Rational -> TState-> AbcNote -> TState
-addNoteToState chordal tempoModifier tstate abcNote =
+addNoteToState :: Boolean -> Rational -> Maybe Grace -> TState-> AbcNote -> TState
+addNoteToState chordal tempoModifier maybeGrace tstate abcNote =
   let
     Tuple msgs newTie =
-      processNoteWithTie chordal tempoModifier tstate abcNote
+      if chordal then
+        processChordalNote tempoModifier tstate abcNote
+      else
+        processNoteWithTie tempoModifier maybeGrace tstate abcNote
     barAccidentals =
       addNoteToBarAccidentals abcNote tstate.currentBarAccidentals
   in
@@ -355,61 +361,73 @@ addRestOrNoteToState chordal tempoModifier tstate restOrNote =
     Right n ->
       addGraceableNoteToState chordal tempoModifier tstate n
 
-
-
+-- | process the incoming  note that is part of a chord.
+-- | Here, ties and grace notes preceding the note
+-- | are not supported
+processChordalNote ::  Rational -> TState -> AbcNote -> Tuple (List Midi.Message) (Maybe AbcNote)
+processChordalNote tempoModifier tstate abcNote =
+  let
+    msgOn = emitNoteOn tstate abcNote
+  in
+    case tstate.lastNoteTied of
+      Just lastNote ->
+        -- we don't support ties or grace notes into chords
+        -- just emit the tied note before the chordal note
+        let
+          tiedNotes = emitNoteOnOff tempoModifier tstate lastNote
+        in
+          Tuple (msgOn : (tiedNotes <> tstate.currentBar.midiMessages)) Nothing
+      _ ->
+        Tuple (msgOn : tstate.currentBar.midiMessages) Nothing
 
 -- | process the incoming note, accounting for the fact that the previous note may have been tied.
--- |
--- | Chordal notes:
--- |
--- | we don't support ties into chords.  Just ensure the wrongly tied note is emitted
--- |
--- | Standard Notes:
 -- |
 -- | if it was tied, then we simply coalesce the notes by adding their durations.  If the incoming note
 -- | is tied, then the (possibly combined) note is saved as the 'lastNoteTied' so that the whole
 -- | process will begin again at the next note.  If not tied, then the (possibly combined) note
 -- | is written into the current MIDI bar
-processNoteWithTie ::  Boolean -> Rational -> TState -> AbcNote -> Tuple (List Midi.Message) (Maybe AbcNote)
-processNoteWithTie chordal tempoModifier tstate abcNote =
-  if chordal then
-    let
-      msgOn = emitNoteOn tstate abcNote
-    in
-      case tstate.lastNoteTied of
-        Just lastNote ->
-          -- we don't support ties into chords - just emit the tied note before the chordal note
-          let
-            tiedNotes = emitNoteOnOff tempoModifier tstate lastNote
-          in
-            Tuple (msgOn : (tiedNotes <> tstate.currentBar.midiMessages)) Nothing
-        _ ->
-          Tuple (msgOn : tstate.currentBar.midiMessages) Nothing
-  else
-    case tstate.lastNoteTied of
-      Just lastNote ->
-        let
-          combinedAbcNote = abcNote { duration = abcNote.duration + lastNote.duration }
-        in
-          if abcNote.tied then
-            -- save the combined note in lastNoteTied
-            Tuple tstate.currentBar.midiMessages (Just combinedAbcNote)
-          else
-            -- emit the note and set lastNoteTied to Nothing
-            let
-              notes = emitNoteOnOff tempoModifier tstate combinedAbcNote
-            in
-              Tuple (notes <> tstate.currentBar.midiMessages) Nothing
-      _ ->
+processNoteWithTie :: Rational -> Maybe Grace -> TState -> AbcNote -> Tuple (List Midi.Message) (Maybe AbcNote)
+processNoteWithTie tempoModifier maybeGrace tstate abcNote =
+  case tstate.lastNoteTied of
+    Just lastNote ->
+      -- if the last note was tied, we can't have grace notes on this new note
+      -- so we just ignore them
+      let
+        combinedAbcNote = abcNote { duration = abcNote.duration + lastNote.duration }
+      in
         if abcNote.tied then
+          -- save the combined note in lastNoteTied
+          Tuple tstate.currentBar.midiMessages (Just combinedAbcNote)
+        else
+          -- emit the note and set lastNoteTied to Nothing
+          let
+            notes = emitNoteOnOff tempoModifier tstate combinedAbcNote
+          in
+            Tuple (notes <> tstate.currentBar.midiMessages) Nothing
+    _ ->
+      let
+        -- the note is perhaps graced, in which case we have to reduce its duration
+        gracedNote = curtailedGracedNote maybeGrace abcNote
+        -- and we need to calculate the exact duration of each AbcNote in the
+        -- list of ABC Notes
+        graceAbcNotes =
+          case maybeGrace of
+            Just grace ->
+              map (individualGraceNote abcNote) $ Nel.toList grace.notes
+            _ ->
+              Nil
+        -- and emit the MIDI notes for each grace note
+        graceNotes = emitNotesOnOff tempoModifier tstate graceAbcNotes
+      in
+        if gracedNote.tied then
           -- set lastNoteTied
-          Tuple tstate.currentBar.midiMessages (Just abcNote)
+          Tuple (graceNotes <> tstate.currentBar.midiMessages) (Just gracedNote)
         else
           let
-             notes = emitNoteOnOff tempoModifier tstate abcNote
+            notes = emitNoteOnOff tempoModifier tstate gracedNote
           in
             -- write out the note to the current MIDI bar
-            Tuple (notes <> tstate.currentBar.midiMessages) Nothing
+            Tuple (notes <> graceNotes <> tstate.currentBar.midiMessages) Nothing
 
 -- | emit a standard note which is represented by a NoteOn Message
 -- | followed by a NoteOff for the same pitch with the required delay
@@ -422,6 +440,17 @@ emitNoteOnOff tempoModifier tstate abcNote =
       noteTicks (abcNote.duration * tempoModifier)
     in
       (midiNoteOff ticks pitch) : (midiNoteOn 0 pitch) : Nil
+
+-- | emit a sequence of on off MIDI messages from a sequence of ABC notes
+-- | used for grace notes
+emitNotesOnOff :: Rational -> TState -> List AbcNote -> List Midi.Message
+emitNotesOnOff tempoModifier tstate abcNotes =
+  let
+    f :: AbcNote -> List Midi.Message -> List Midi.Message
+    f n acc =
+      acc <> (emitNoteOnOff tempoModifier tstate n)
+  in
+    foldr f Nil abcNotes
 
 -- | emit just a NoteOn message (this is restricted to chords)
 emitNoteOn :: TState -> AbcNote -> Midi.Message
@@ -437,7 +466,7 @@ emitNoteOn tstate abcNote =
 -- | NoteOff messages to be generated after each note
 addNotesToState :: Boolean -> Rational -> TState-> List AbcNote -> TState
 addNotesToState chordal tempoModifier tstate abcNotes =
-  foldl (addNoteToState chordal tempoModifier) tstate abcNotes
+  foldl (addNoteToState chordal tempoModifier Nothing) tstate abcNotes
 
 -- | as above, but with (rests or notes) as now found within tuplets
 addRestsOrNotesToState :: Boolean -> Rational -> TState-> List RestOrNote -> TState
@@ -628,6 +657,26 @@ repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding :
   (trackSlice a d mbs) <> (trackSlice a d mbs) <> acc
 repeatedSection mbs acc _ =
   acc
+
+-- | Curtail the duration of the note by taking account of any grace notes
+-- | that it may have
+curtailedGracedNote :: Maybe Grace -> AbcNote -> AbcNote
+curtailedGracedNote maybeGrace abcNote =
+  case maybeGrace of
+    Just grace ->
+      let
+        totalFraction = (fromInt $ Nel.length grace.notes) * graceFraction
+        duration = abcNote.duration - (abcNote.duration * totalFraction)
+      in
+        abcNote { duration = duration }
+    _ ->
+      abcNote
+
+-- | Calculate an individual grace note with its duration dependent on a
+-- | fraction of the note that it graces
+individualGraceNote :: AbcNote -> AbcNote -> AbcNote
+individualGraceNote abcNote graceNote =
+  graceNote { duration = graceFraction * abcNote.duration }
 
 -- | build any repeated section into an extended melody with all repeats realised -}
 buildRepeatedMelody :: List MidiBar -> Sections -> Midi.Track

@@ -33,6 +33,7 @@ midiSuite :: Free TestF Unit
 midiSuite = do
   transformationSuite
   repeatSuite
+  graceSuite
 
 transformationSuite :: Free TestF Unit
 transformationSuite =
@@ -175,8 +176,28 @@ repeatSuite =
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
         ))
 
-
-
+-- each grace note 'steals' 10% of the note it graces
+graceSuite :: Free TestF Unit
+graceSuite =
+  suite "grace notes" do
+    test "single grace" do
+      assertMidi "| {D}CDE |\r\n"
+        (Midi.Track (standardTempo <> noteD (1 % 10) <> noteC (9 % 10) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "double grace" do
+      assertMidi "| {ED}CDE |\r\n"
+        (Midi.Track (standardTempo <> noteE (1 % 10) <> noteD (1 % 10) <> noteC (8 % 10) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "graces immediately after ties are ignored" do
+      assertMidi "| C-{D}CDE |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 2) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "graces before ties are accumulated" do
+      assertMidi "| {D}C-CDE |\r\n"
+        (Midi.Track (standardTempo <> noteD (1 % 10) <> noteC (19 % 10) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "graces in tuplets" do
+      assertMidi "| (3C{E}DE |\r\n"
+        (Midi.Track (standardTempo <> noteC (2 % 3) <> noteE (2 % 30) <> noteD (18 % 30) <> noteE (2 % 3)))
+    test "graces in broken rhythm >" do
+      assertMidi "| C>{E}D |\r\n"
+        (Midi.Track (standardTempo <> noteC (3 % 2) <> noteE (1 % 20) <> noteD (9 % 20)))
 
 
 -- | the number of MIDI ticks that equates to 1/4=120
