@@ -120,7 +120,6 @@ scoreItem =
     , decoratedSpace  -- potential ambiguity with a decorated note
     , ignore
     , spacer
-    --, decoration
     , chordSymbol
     , annotation
     , try tuplet  -- potential ambiguity with slurs
@@ -470,10 +469,8 @@ longDecoration =
     between (char '!') (char '!') (regex "[^\x0D\n!]*")
         <?> "long decoration"
 
-{-| our whiteSpace differs from that of the string parser we do NOT want to
-  consume carriage returns or newlines
--}
-
+-- | our whiteSpace differs from that of the string parser we do NOT want to
+-- |consume carriage returns or newlines
 whiteSpace :: Parser String
 whiteSpace =
   foldMap (singleton <<< codePointFromChar ) <$>
@@ -1162,8 +1159,8 @@ buildGrace isAcciaccatura ns =
   { isAcciaccatura, notes: ns }
 
 buildGraceableNote :: Maybe Grace -> List String -> AbcNote -> GraceableNote
-buildGraceableNote maybeGrace decorations n =
-  { maybeGrace, decorations, abcNote : n }
+buildGraceableNote maybeGrace decs n =
+  { maybeGrace, decorations : decs, abcNote : n }
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =

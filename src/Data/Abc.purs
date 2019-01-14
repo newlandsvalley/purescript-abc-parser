@@ -135,8 +135,6 @@ data Music
     | Tuplet TupletSignature (NonEmptyList RestOrNote)
     | DecoratedSpace (List String)
     | Slur Char
-    -- | GraceNote Boolean (NonEmptyList AbcNote)
-      -- Music restricted to note sequences or chords
     | Annotation AnnotationPlacement String
     | ChordSymbol String
     | Chord AbcChord
@@ -146,7 +144,6 @@ data Music
     | Continuation String
 
 -- | A bar line Thickness.
-
 data Thickness
     = Thin
     | ThinThin
