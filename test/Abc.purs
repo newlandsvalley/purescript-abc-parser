@@ -203,7 +203,7 @@ noteSuite =
     test "octave" do
        assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
     test "tie" do
-       assertRoundTrip "| A4~ A2 |\x0D\n"
+       assertRoundTrip "| A4- A2 |\x0D\n"
     test "complex tie" do
        assertRoundTrip "| fg-ga ab-bc|\x0D\n"
     test "triplet" do
@@ -292,9 +292,13 @@ phrasingSuite  =
     test "slur" do
       assertRoundTrip  "| (de^f) (cda) |\x0D\n"
     test "articulation" do
-      assertRoundTrip  "(vA2 | !fz!Ld2).d.f .e.d.c.B A2(A2 | d2).d.f .e.d.c.B A2A2 |\x0D\n"
+      assertRoundTrip  "(vA2 | !fz! Ld2).d.f .e.d.c.B A2(A2 | d2).d.f .e.d.c.B A2A2 |\x0D\n"
     test "annotation" do
       assertRoundTrip  "| \"<(\" \">)\" EG |\x0D\n"
+    test "decorated note" do
+      assertRoundTrip  "| !uppermordent! !trill! C |\x0D\n"
+    test "decorated space" do
+      assertRoundTrip  "| ABc !coda! y |\x0D\n"
 
 structureSuite :: Free TestF Unit
 structureSuite  =

@@ -261,14 +261,6 @@ transposeMusic m =
         newNs <- transposeRestOrNoteList ns
         pure $ Tuplet ts newNs
 
-
-    {-}
-    GraceNote b ns ->
-      do
-        newNs <- transposeNoteList ns
-        pure $  GraceNote b newNs
-    -}
-
     Chord c ->
       do
         newC <- transposeChord c
@@ -316,7 +308,9 @@ transposeGraceableNoteBy gn =
   do
     abcNote <- transposeNoteBy gn.abcNote
     maybeGrace <- transposeGrace gn.maybeGrace
-    pure { maybeGrace, abcNote }
+    let
+      decorations = gn.decorations
+    pure { maybeGrace, decorations, abcNote }
 
 transposeGrace :: Maybe Grace -> Transposition (Maybe Grace)
 transposeGrace mGrace =

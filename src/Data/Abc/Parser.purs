@@ -117,9 +117,10 @@ scoreItem =
       try chord -- potential ambiguity with (inline) in-score headers
     , try inline
     , continuation
+    , decoratedSpace  -- potential ambiguity with a decorated note
     , ignore
     , spacer
-    , decoration
+    --, decoration
     , chordSymbol
     , annotation
     , try tuplet  -- potential ambiguity with slurs
@@ -252,6 +253,7 @@ graceableNote :: Parser GraceableNote
 graceableNote =
   buildGraceableNote
     <$> optionMaybe graceBracket
+    <*> decorations
     <*> abcNote
     <?> "graceable note"
 
@@ -448,18 +450,20 @@ chordSymbol =
         <$> quotedString
         <?> "chord symbol"
 
-decoration :: Parser Music
-decoration =
-    Decoration
-        <$> (shortDecoration <|> longDecoration)
-        <?> "decoration"
+decorations :: Parser (List String)
+decorations =
+  many decoration
 
+decoration :: Parser String
+decoration =
+   (shortDecoration <|> longDecoration)
+     <* whiteSpace
+      <?> "decoration"
 
 shortDecoration :: Parser String
 shortDecoration =
     regex "[\\.~HLMOPSTuv]"
         <?> "short decoration"
-
 
 longDecoration :: Parser String
 longDecoration =
@@ -473,12 +477,7 @@ longDecoration =
 whiteSpace :: Parser String
 whiteSpace =
   foldMap (singleton <<< codePointFromChar ) <$>
-     many
-       (choice
-         [ space
-         , tab
-         ]
-        )
+     many scoreSpace
 
 -- at least one (intended) space somewhere inside the music body
 spacer :: Parser Music
@@ -487,22 +486,21 @@ spacer =
         <$> (Nel.length <$> (many1 scoreSpace))
         <?> "space"
 
+-- | see section 6.1.2 Typesetting extra space
+-- | y can be used to add extra space between the surrounding notes; moreover,
+-- | chord symbols and decorations can be attached to it, to separate them from notes.
+decoratedSpace :: Parser Music
+decoratedSpace =
+  try (DecoratedSpace <$> decorations <* char 'y')
 
-{- space within a line of the tune's score -}
+-- normal space within a line of the tune's score
 scoreSpace :: Parser Char
 scoreSpace =
-    choice
-        [
-          tab
-        , char 'y'
-        , space
-        ]
+  -- tab <|> space
+  (char '\t') <|> space
 
-space :: Parser Char
+space :: Parser Char--
 space = char ' '
-
-tab :: Parser Char
-tab = char '\t'
 
 {- characters to ignore
 
@@ -1163,9 +1161,9 @@ buildGrace :: Boolean -> Nel.NonEmptyList AbcNote -> Grace
 buildGrace isAcciaccatura ns =
   { isAcciaccatura, notes: ns }
 
-buildGraceableNote :: Maybe Grace -> AbcNote -> GraceableNote
-buildGraceableNote maybeGrace n =
-  { maybeGrace, abcNote : n }
+buildGraceableNote :: Maybe Grace -> List String -> AbcNote -> GraceableNote
+buildGraceableNote maybeGrace decorations n =
+  { maybeGrace, decorations, abcNote : n }
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =

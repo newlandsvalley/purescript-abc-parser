@@ -10,7 +10,7 @@ module Data.Abc.Canonical
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
-import Data.List (List)
+import Data.List (List, foldMap)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, numerator, denominator)
@@ -119,10 +119,11 @@ pitch octaveNumber p =
     else
         Str.toLower (show p)
 
--- | Pretty-print a note which may be prefaced by grace notes.
+-- | Pretty-print a note which may be prefaced by grace notes and/or decorations.
 graceableNote :: GraceableNote -> String
 graceableNote gn =
   (fromMaybe "" $ map grace gn.maybeGrace)
+    <> decorate gn.decorations
     <> abcNote (gn.abcNote)
 
 grace :: Grace -> String
@@ -179,12 +180,16 @@ abcRest :: AbcRest -> String
 abcRest r =
     "z" <> (duration r.duration)
 
-decorate :: String -> String
-decorate s =
+decorate :: List String -> String
+decorate ds =
+  foldMap decorate1 ds
+
+decorate1 :: String -> String
+decorate1 s =
     if (Str.length s == 1) then
         s
     else
-        "!" <> s <> "!"
+        "!" <> s <> "! "
 
 bars :: List Bar -> String
 bars bs =
@@ -254,9 +259,9 @@ music m =
         Tuplet tup rns ->
             tuplet tup <> restsOrNotes rns
 
-        Decoration s ->
-            decorate s
-            
+        DecoratedSpace decorations ->
+            (decorate decorations) <> "y"
+
         Slur c ->
             singleton $ codePointFromChar c
 

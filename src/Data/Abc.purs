@@ -95,9 +95,10 @@ type Grace =
   ,  notes :: NonEmptyList AbcNote
   }
 
--- | A (possibly) Graced Note.
+-- | A (possibly) Graced and Decorated Note.
 type GraceableNote =
     { maybeGrace :: Maybe Grace
+    , decorations :: List String
     , abcNote :: AbcNote
     }
 
@@ -132,7 +133,7 @@ data Music
     | BrokenRhythmPair GraceableNote Broken GraceableNote
     | Rest AbcRest
     | Tuplet TupletSignature (NonEmptyList RestOrNote)
-    | Decoration String
+    | DecoratedSpace (List String)
     | Slur Char
     -- | GraceNote Boolean (NonEmptyList AbcNote)
       -- Music restricted to note sequences or chords
