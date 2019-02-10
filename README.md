@@ -21,6 +21,7 @@ Issues
 * I am unhappy about the way in which the specification defines slurs (represented by round brackets). These seem to be impossible to match - for instance they can span across bars or even across separate lines of music.  I treat them as free-floating entities.
 * Grace notes and decorations are not supported against chords.  (I am unclear what the specification defines here with respect to grace notes.)
 * Grace notes are, however, supported against notes in all other contexts and attached to them directly. This means that they cannot be separated by a slur. 
+* In translating to MIDI, only a single voice is recognized and if voltas are present only the first and second are recognized (third and fourth are ignored).
 
 
 
