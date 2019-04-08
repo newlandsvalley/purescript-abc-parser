@@ -1443,25 +1443,27 @@ int =
     anyInt
     <?> "expected a positive integer"
 
--- | quoted string parses a normal string bracketed by a '"' quote
--- | and returns just the raw string
-quotedString :: Parser String
-quotedString =
-    string "\""
-       *> regex "(\\\\\"|[^\"\n])*"
-       <* string "\""
-       <?> "quoted string"
 
--- | literal quoted String retains the quotes in the returned String
+-- | literal quoted String retains the quotes surrounding the returned String
 literalQuotedString :: Parser String
 literalQuotedString =
-  (\s -> "\"" <> s <> "\"") <$>
+  let
+    quotedString :: Parser String
+    quotedString =
+      string "\""
+         *> regex "(\\\\\"|[^\"\n])*"
+         <* string "\""
+         <?> "quoted string"
+  in
+    -- replace the framing quotes
+    (\s -> "\"" <> s <> "\"") <$>
+      quotedString
 
--- | ditto where it may be prefaced by spaces
+-- | ditto where it may be bracketed by spaces
 spacedQuotedString :: Parser String
 spacedQuotedString =
     try -- whitespace can crop up anywhere
-      (whiteSpace *> quotedString <* whiteSpace)
+      (whiteSpace *> literalQuotedString <* whiteSpace)
 
 
 -- utility Functions

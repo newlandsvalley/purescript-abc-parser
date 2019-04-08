@@ -23,11 +23,6 @@ import Data.Either (Either(..))
 
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
 
-enquote :: String -> String
-enquote s =
-    "\"" <> s <> "\""
-
-
 keySignatureAccidental :: Accidental -> String
 keySignatureAccidental a =
   case a of
@@ -55,7 +50,7 @@ tempo :: TempoSignature -> String
 tempo t =
   let
     text =
-      fromMaybe "" (map (\s -> " " <> (enquote s)) t.marking)
+      fromMaybe "" (map (\s -> " " <> s) t.marking)
   in
     ratlist t.noteLengths
       <> "="
@@ -282,7 +277,7 @@ music m =
             "\"" <> show placement <> s <> "\""
 
         ChordSymbol s ->
-            s <> " "
+            s
 
         Chord a ->
             abcChord a
