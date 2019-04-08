@@ -279,10 +279,10 @@ music m =
             singleton $ codePointFromChar c
 
         Annotation placement s ->
-            show placement <> ":" <> s
+            "\"" <> show placement <> s <> "\""
 
         ChordSymbol s ->
-            enquote s
+            s <> " "
 
         Chord a ->
             abcChord a

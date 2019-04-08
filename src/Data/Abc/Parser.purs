@@ -18,7 +18,7 @@ import Data.List (List(..), (:))
 import Data.List.NonEmpty as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
-import Data.String (toUpper, singleton)
+import Data.String (drop, toUpper, singleton)
 import Data.String.CodePoints (codePointFromChar, length)
 import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
 import Data.String.Utils (startsWith, includes)
@@ -122,8 +122,8 @@ scoreItem =
     , decoratedSpace  -- potential ambiguity with a decorated note
     , ignore
     , spacer
+    , try annotation  -- potential ambiguity with chordSymbol
     , chordSymbol
-    , annotation
     , try tuplet  -- potential ambiguity with slurs
     , slur
     , rest
@@ -439,6 +439,7 @@ annotation =
 
 annotationString :: Parser String
 annotationString =
+  -- (\s -> "\"" <> s <> "\"") <$>
     string "\""
         *> regex "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
         <* string "\""
@@ -448,7 +449,7 @@ annotationString =
 chordSymbol :: Parser Music
 chordSymbol =
     ChordSymbol
-        <$> quotedString
+        <$> literalQuotedString
         <?> "chord symbol"
 
 decorations :: Parser (List String)
@@ -1320,7 +1321,7 @@ buildAnnotation s =
                 _ ->
                     Discretional
     in
-        Annotation placement s
+        Annotation placement (drop 1 s)
 
 {- default tempo signature builder which builds from
      an optional label
