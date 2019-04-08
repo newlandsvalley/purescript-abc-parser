@@ -15,9 +15,10 @@ import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, numerator, denominator)
 import Data.Tuple (Tuple(..))
+import Data.Map (Map, size, toUnfoldable)
 import Data.String (trim, toLower, length, take) as Str
 import Data.String.CodePoints (codePointFromChar, singleton)
-import Data.Foldable (foldr)
+import Data.Foldable (foldr, intercalate)
 import Data.Either (Either(..))
 
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
@@ -97,6 +98,18 @@ key k =
 keyAccidentals :: List Pitch -> String
 keyAccidentals =
     concatenate <<< map (\ka -> " " <> (show ka))
+
+voiceProperties :: Map String String -> String
+voiceProperties properties =
+  if (size properties == 0)
+    then ""
+  else
+    let
+      kvs = toUnfoldable properties
+      strs :: Array String
+      strs = map (\(Tuple k v) -> k <> "=" <> v) kvs
+    in
+      " " <> intercalate " " strs
 
 octave :: Int -> String
 octave i =
@@ -352,8 +365,9 @@ header h =
         UserDefined s ->
             "U: " <> s
 
-        Voice s ->
-            "V: " <> s
+        Voice voiceDescription ->
+            "V: " <> voiceDescription.id
+                  <> voiceProperties voiceDescription.properties
 
         WordsAfter s ->
             "W: " <> s

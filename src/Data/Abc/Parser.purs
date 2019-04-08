@@ -23,10 +23,12 @@ import Data.String.CodePoints (codePointFromChar, length)
 import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
+import Data.Map (Map)
+import Data.Map (fromFoldable) as Map
 import Prelude (class Show, flip, join, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
-import Text.Parsing.StringParser.String (satisfy, string, char, eof, regex)
+import Text.Parsing.StringParser.String (satisfy, string, alphaNum, char, eof, regex)
 -- import Debug.Trace (trace)
 
 
@@ -838,13 +840,13 @@ userDefined isInline =
         <$> ((headerCode 'U') *> (inlineInfo isInline))
         <?> "U header"
 
-
 voice :: Boolean -> Parser Header
 voice isInline =
-    Voice
-        <$> ((headerCode 'V') *> (inlineInfo isInline))
+    buildVoice
+        <$> (headerCode 'V')
+        <*> alphaNumString
+        <*> voiceProperties
         <?> "V header"
-
 
 wordsAfter :: Boolean -> Parser Header
 wordsAfter isInline =
@@ -999,12 +1001,25 @@ keyAccidental :: Parser Pitch
 keyAccidental =
   buildPitch <$> accidental <*> pitch
 
-{- a complete list of key accidentals which may be empty
-   each is separated by a single space
--}
+-- | a complete list of key accidentals which may be empty
+-- | each is separated by a single space
 keyAccidentals :: Parser KeySet
 keyAccidentals =
     whiteSpace *> sepBy keyAccidental space
+
+-- | (optional) properties for the Voice header
+voiceProperties :: Parser (Map String String)
+voiceProperties =
+  Map.fromFoldable <$>
+    many kvPair <* whiteSpace
+
+-- | a key-value pair as used in a voice property
+kvPair :: Parser (Tuple String String)
+kvPair =
+  Tuple <$>
+    alphaNumString
+      <*> ((char '=')
+        *> (literalQuotedString <|> alphaNumString))
 
 mode :: Parser Mode
 mode =
@@ -1348,6 +1363,11 @@ buildKey :: String -> KeySignature -> List Pitch -> Header
 buildKey code ks pitches =
     Key { keySignature: ks, modifications: pitches }
 
+
+buildVoice :: String -> String -> Map String String -> Header
+buildVoice code id properties  =
+    Voice { id, properties }
+
 -- lookups
 
 lookupPitch :: String -> PitchClass
@@ -1380,6 +1400,11 @@ anyInt =
   regex "(0|[1-9][0-9]*)"
 
 -- low level
+
+alphaNumString :: Parser String
+alphaNumString =
+  (fromCharArray <<< Array.fromFoldable <<< Nel.toList)
+    <$> (whiteSpace *> many1 (alphaNum <|> char '-'))
 
 {-| Parse a `\n` character. -}
 newline :: Parser Char
@@ -1417,6 +1442,8 @@ int =
     anyInt
     <?> "expected a positive integer"
 
+-- | quoted string parses a normal string bracketed by a '"' quote
+-- | and returns just the raw string
 quotedString :: Parser String
 quotedString =
     string "\""
@@ -1424,6 +1451,12 @@ quotedString =
        <* string "\""
        <?> "quoted string"
 
+-- | literal quoted String retains the quotes in the returned String
+literalQuotedString :: Parser String
+literalQuotedString =
+  (\s -> "\"" <> s <> "\"") <$>
+
+-- | ditto where it may be prefaced by spaces
 spacedQuotedString :: Parser String
 spacedQuotedString =
     try -- whitespace can crop up anywhere

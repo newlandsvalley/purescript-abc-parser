@@ -29,22 +29,24 @@ module Data.Abc ( AbcTune
 , Accidental(..)
 , PitchClass(..)
 , Broken(..)
+, VoiceDescription(..)
 , middlecOctave
 ) where
 
 
-import Data.List (List)
-import Data.List.NonEmpty (NonEmptyList)
-import Data.Maybe (Maybe(..))
-import Data.Rational (Rational)
-import Data.Tuple (Tuple)
 import Data.Either (Either)
-import Data.String (toLower) as Str
 import Data.Enum (class Enum)
-import Data.Ordering (Ordering(..))
-import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
+import Data.List (List)
+import Data.List.NonEmpty (NonEmptyList)
+import Data.Map (Map)
+import Data.Maybe (Maybe(..))
+import Data.Ordering (Ordering(..))
+import Data.Rational (Rational)
+import Data.String (toLower) as Str
+import Data.Tuple (Tuple)
+import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
 
 -- | A Tune.
 type AbcTune =
@@ -357,6 +359,12 @@ data Broken
     = LeftArrow Int
     | RightArrow Int
 
+-- | voice description
+type VoiceDescription =
+  { id :: String
+  , properties :: Map String String
+  }
+
 -- | An ABC Tune Header.
 data Header
     = Area String
@@ -383,7 +391,7 @@ data Header
     | SymbolLine String
     | Title String
     | UserDefined String
-    | Voice String
+    | Voice VoiceDescription
       -- voice properties
     | WordsAfter String
       -- words after notes

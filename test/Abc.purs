@@ -159,8 +159,10 @@ headerSuite =
       assertRoundTrip "T: Engelska efter Albert Augustsson\x0D\n| ABC |\x0D\n"
     test "user-defined" do
       assertRoundTrip "U: some comment\x0D\n| ABC |\x0D\n"
+    test "simple voice" do
+      assertRoundTrip "V: T1\x0D\n| ABC |\x0D\n"
     test "voice" do
-      assertRoundTrip "V: T1           clef=treble-8  name=\"Tenore I\"   snm=\"T.I\"\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "V: T1 clef=treble-8 name=\"Tenore I\" snm=\"T.I\"\x0D\n| ABC |\x0D\n"
     test "words after" do
       assertRoundTrip "W: doh re mi fa \x0D\n| ABC |\x0D\n"
     -- the words aligned header only appears inline
@@ -311,6 +313,8 @@ structureSuite  =
       assertParses "| A``B``C |\x0D\n"
     test "inline" do
       assertRoundTrip "| ABC z2 def z/ \x0D\nQ: 1/4=120\x0D\n| ABC z2 def z/ |\x0D\n"
+    test "inline voice reference" do
+      assertRoundTrip "[V: T1]| ABC |\x0D\n"
     test "inline bracket" do
       assertRoundTrip "| ABC def g3 | [L: 1/8] A3 A3 |\x0D\n"
     test "inline bracket 1" do
