@@ -12,6 +12,7 @@ import Test.Accidentals (accidentalsSuite)
 import Test.KeySignature (keySignatureSuite)
 import Test.Transposition (transpositionSuite)
 import Test.Midi (midiSuite)
+import Test.Voice (voiceSuite)
 
 main :: Effect  Unit
 main = runTest do
@@ -24,3 +25,4 @@ main = runTest do
     keySignatureSuite
     transpositionSuite
     midiSuite
+    voiceSuite
