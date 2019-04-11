@@ -51,6 +51,8 @@ voiceSuite = do
       assertVoice twoVoices firstVoiceOfTwo 0
     test "second voice of two" do
       assertVoice twoVoices secondVoiceOfTwo 1
+    test "three voices with empty stave" do
+      assertVoiceCount (threeVoices <> "\x0D\n") 3
 
 noVoice :: String
 noVoice =

@@ -4,8 +4,9 @@
 -- | Note that voice headers in the initial TuneHeaders section are ignored here.
 module Data.Abc.Voice (partitionTuneBody) where
 
-import Prelude (($), (<<<), join, map)
+import Prelude (($), (<<<), join, map, not)
 import Data.Abc (Bar, BodyPart(..), Header(..), Music(..), TuneBody)
+import Data.Abc.Metadata (isEmptyStave)
 import Data.List (List, head, singleton, snoc)
 import Data.Maybe (Maybe(..))
 import Data.Map (Map, empty, lookup, insert, toUnfoldable)
@@ -28,7 +29,11 @@ partitionTuneBody b =
     foldf vmap bp =
       case (bodyPartLabel bp) of
         "bodyInfoLabel" -> addToAll bp vmap
-        otherLabel -> addAtLabel otherLabel bp vmap
+        otherLabel ->
+          if (not $ isEmptyBodyPart bp) then
+            addAtLabel otherLabel bp vmap
+          else
+            vmap
     voiceMap = foldl foldf (empty :: VoiceMap) b
   in
     map (\(Tuple k v) -> v) $ toUnfoldable voiceMap
@@ -65,3 +70,9 @@ voiceLabel h =
   case h of
     (Voice description) -> description.id
     _ -> noLabel
+
+isEmptyBodyPart :: BodyPart -> Boolean
+isEmptyBodyPart bp =
+  case bp of
+    (BodyInfo _) -> false
+    (Score bars) -> isEmptyStave bars

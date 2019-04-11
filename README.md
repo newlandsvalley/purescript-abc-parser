@@ -14,6 +14,7 @@ Features
 *  It is biased towards editor applications in that it attempts to be as lenient as possible whilst still honouring the intentions of the ABC specification. In particular, there is no requirement for any header to be present at all - sensible defaults are used instead.  This means that an editor application can allow the user (if she prefers) to concentrate on the notes and only add the headers at a later stage.
 *  It attempts to be helpful to score-engraving software.  For example, bars are first class entities in the ABC ADT; grace notes are directly attached to the notes that they 'grace'; line continuations do actually join the two lines in question.
 *  It attempts to be helpful to player applications in that it provides a translation to MIDI.
+*  There is limited support for polyphony.  The parser recognizes 'V' voice headers which may introduce each polyphonic voice.  The __Voices__ module allows the tune body to be partitioned into separate bodies for each voice if a score line is introduced by a Voice inline field (See section 7.3 of the ABC specification).  However, the MIDI module ignores these Voice headers and thus does not support polyphony
 
 Issues
 ------

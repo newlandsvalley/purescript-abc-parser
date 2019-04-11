@@ -162,7 +162,7 @@ headerSuite =
     test "simple voice" do
       assertRoundTrip "V: T1\x0D\n| ABC |\x0D\n"
     test "voice" do
-      assertRoundTrip "V: T1 clef=treble-8 name=\"Tenore I\" snm=\"T.I\"\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "V: T1 clef=treble-8+8 name=\"Tenore I\" snm=\"T.I\"\x0D\n| ABC |\x0D\n"
     test "words after" do
       assertRoundTrip "W: doh re mi fa \x0D\n| ABC |\x0D\n"
     -- the words aligned header only appears inline

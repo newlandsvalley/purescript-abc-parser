@@ -1405,7 +1405,7 @@ anyInt =
 alphaNumString :: Parser String
 alphaNumString =
   (fromCharArray <<< Array.fromFoldable <<< Nel.toList)
-    <$> (whiteSpace *> many1 (alphaNum <|> char '-'))
+    <$> (whiteSpace *> many1 (alphaNum <|> char '-' <|> char '+'))
 
 {-| Parse a `\n` character. -}
 newline :: Parser Char
