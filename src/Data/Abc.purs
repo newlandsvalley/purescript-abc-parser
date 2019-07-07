@@ -397,7 +397,8 @@ data Header
       -- words after notes
     | WordsAligned String
       -- words aligned with notes
-    | ReferenceNumber Int
+    | ReferenceNumber (Maybe Int)
+      -- spec says number is optionally allowed to be blank but not recommended
     | Transcription String
     | FieldContinuation String
     | Comment String

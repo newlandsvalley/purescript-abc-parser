@@ -864,7 +864,7 @@ wordsAligned isInline =
 referenceNumber :: Parser Header
 referenceNumber =
     ReferenceNumber
-        <$> ((headerCode 'X') *> int)
+        <$> ((headerCode 'X') *> (optionMaybe int))
         <?> "x header"
 
 transcription :: Parser Header

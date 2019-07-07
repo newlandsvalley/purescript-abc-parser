@@ -170,6 +170,8 @@ headerSuite =
       assertRoundTrip "| ABC |\x0D\nw: doh re mi fa \x0D\n| ABC |\x0D\n"
     test "reference" do
       assertRoundTrip "X: 125\x0D\n| ABC |\x0D\n"
+    test "degenerate reference with no number" do
+      assertRoundTrip "X: \x0D\n| ABC |\x0D\n"
     test "transcriber" do
       assertRoundTrip "Z: John Watson\x0D\n| ABC |\x0D\n"
     test "field continuation" do

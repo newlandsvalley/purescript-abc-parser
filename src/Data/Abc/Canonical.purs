@@ -12,7 +12,7 @@ import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
 import Data.List (List, foldMap)
 import Data.List.NonEmpty (NonEmptyList)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, numerator, denominator)
 import Data.Tuple (Tuple(..))
 import Data.Map (Map, size, toUnfoldable)
@@ -370,8 +370,8 @@ header h =
         WordsAligned s ->
             "w: " <> s
 
-        ReferenceNumber i ->
-            "X: " <> (show i)
+        ReferenceNumber mi ->
+            "X: " <> (maybe "" show mi)
 
         Transcription s ->
             "Z: " <> s
