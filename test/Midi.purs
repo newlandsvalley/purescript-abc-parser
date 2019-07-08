@@ -192,9 +192,12 @@ graceSuite =
     test "graces before ties are accumulated" do
       assertMidi "| {D}C-CDE |\r\n"
         (Midi.Track (standardTempo <> noteD (1 % 10) <> noteC (19 % 10) <> noteD (fromInt 1) <> noteE (fromInt 1)))
-    test "graces in tuplets" do
+    test "graces inside tuplets" do
       assertMidi "| (3C{E}DE |\r\n"
         (Midi.Track (standardTempo <> noteC (2 % 3) <> noteE (2 % 30) <> noteD (18 % 30) <> noteE (2 % 3)))
+    test "graces immediately preceding tuplets" do
+      assertMidi "| {E}(3CDE |\r\n"
+        (Midi.Track (standardTempo <> noteE (2 % 30) <> noteC (18 % 30) <> noteD (2 % 3) <> noteE (2 % 3)))
     test "graces in broken rhythm >" do
       assertMidi "| C>{E}D |\r\n"
         (Midi.Track (standardTempo <> noteC (3 % 2) <> noteE (1 % 20) <> noteD (9 % 20)))

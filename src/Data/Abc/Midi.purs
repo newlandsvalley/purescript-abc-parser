@@ -14,14 +14,16 @@ import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
 import Data.Either (Either(..))
+import Data.Bifunctor (bimap)
 import Data.Foldable (foldl, oneOf)
 import Data.List (List(..), (:), null, concatMap, foldr, filter, reverse, singleton)
+import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
 import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, map, pure, ($), (&&), (*), (+), (-), (<), (<>), (>=))
+import Prelude (bind, identity, map, pure, ($), (&&), (*), (+), (-), (<), (<>), (>=))
 
 -- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
@@ -222,9 +224,8 @@ transformMusic m =
     Rest r ->
       updateState addRestToState r.duration
 
-    -- at the moment, MIDI ignores grace notes which directly precedes tuplets
     Tuplet maybeGrace signature restsOrNotes ->
-      updateState (addRestsOrNotesToState false (signature.q % signature.p)) (Nel.toList restsOrNotes)
+      updateState (addTupletContentsToState maybeGrace (signature.q % signature.p)) restsOrNotes
 
     Chord abcChord ->
       let
@@ -462,17 +463,24 @@ emitNoteOn tstate abcNote =
   in
     midiNoteOn 0 pitch
 
--- | add a bunch of notes to the state
+
 -- | chordal means that the notes form a chord and thus do not need
 -- | NoteOff messages to be generated after each note
 addNotesToState :: Boolean -> Rational -> TState-> List AbcNote -> TState
 addNotesToState chordal tempoModifier tstate abcNotes =
   foldl (addNoteToState chordal tempoModifier Nothing) tstate abcNotes
 
--- | as above, but with (rests or notes) as now found within tuplets
-addRestsOrNotesToState :: Boolean -> Rational -> TState-> List RestOrNote -> TState
-addRestsOrNotesToState chordal tempoModifier tstate restsOrNotes =
-  foldl (addRestOrNoteToState chordal tempoModifier) tstate restsOrNotes
+-- | Add the contents of a tuplet to state.  This is an optional grace note
+-- | plus a list of either rests or notes.
+-- | tempo modifier is the modification of the tempo indicate donly by the
+-- | tuplet signature (e.g. 3 notes in the time of two)
+addTupletContentsToState :: Maybe Grace -> Rational -> TState-> NonEmptyList RestOrNote -> TState
+addTupletContentsToState mGrace tempoModifier tstate restsOrNotes =
+  let
+    -- move the grace notes from external to internal
+    gracedRestsOrNotes = gracifyFirstNote mGrace restsOrNotes
+  in
+    foldl (addRestOrNoteToState false tempoModifier) tstate gracedRestsOrNotes
 
 -- possibly combine these next rwo routines
 
@@ -688,6 +696,20 @@ buildRepeatedMelody mbs sections =
     Midi.Track Nil
   else
     Midi.Track $ foldl (repeatedSection mbs) Nil sections
+
+-- | add a grace note (which may be defined outside the tuplet) to the first
+-- | note inside the tuplet (assuming it is a note and not a rest)
+-- | n.b. The external grace takes precedence over any internal grace
+gracifyFirstNote :: Maybe Grace -> NonEmptyList RestOrNote -> List RestOrNote
+gracifyFirstNote maybeGrace restsOrNotes =
+  let
+    hd = Nel.head restsOrNotes
+    tl = Nel.tail restsOrNotes
+    f :: RestOrNote -> RestOrNote
+    f =
+      bimap identity (\gn -> gn { maybeGrace = maybeGrace })
+    in
+      Cons (f hd) tl
 
 -- temp Bar Stuff we should do away with
 {-}
