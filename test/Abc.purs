@@ -208,6 +208,9 @@ noteSuite =
        assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
     test "tie" do
        assertRoundTrip "| A4- A2 |\x0D\n"
+    -- relaxation of the spec for degenerate ties
+    test "degenerate tie" do
+       assertCanonical "| A4 -A2 |\x0D\n" "| A4-A2 |\x0D\n"
     test "complex tie" do
        assertRoundTrip "| fg-ga ab-bc|\x0D\n"
     test "triplet" do

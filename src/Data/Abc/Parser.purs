@@ -331,10 +331,23 @@ integralAsRational :: Parser Rational
 integralAsRational =
     fromInt <$> int
 
-{- attaches to leading barand not free-standing -}
+{-}
+-- | this implements the spec - a tie attaches to the end of the note and is
+-- | not free standing
 maybeTie :: Parser (Maybe Char)
 maybeTie =
     (optionMaybe (char '-'))
+        <?> "tie"
+-}
+
+-- | but here we relax the spec.  The tie still attaches to the previous note
+-- | bur can now be separated from it with spaces.  It can thus appear to attach
+-- | to the next note syntactically.  This helps a good deal of 'bad' ABC
+-- | examples in the wild.
+maybeTie :: Parser (Maybe Char)
+maybeTie =
+  map (\_ -> '-') <$>
+    (optionMaybe (regex " *-"))
         <?> "tie"
 
 rest :: Parser Music
