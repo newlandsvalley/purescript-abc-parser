@@ -9,6 +9,7 @@ import Prelude ((+), map, negate)
 import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Either (Either(..))
+import Data.Maybe (Maybe)
 import Data.Abc
 
 -- import Test.Unit.Assert as Assert
@@ -61,8 +62,8 @@ moveOctave i m =
         BrokenRhythmPair n1 b n2 ->
             BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
 
-        Tuplet ts ns ->
-            Tuplet ts (moveRestOrNoteList i ns)
+        Tuplet maybeGrace ts ns ->
+            Tuplet (moveMaybeGraceBy i maybeGrace) ts (moveRestOrNoteList i ns)
 
         Chord c ->
             Chord (moveChord i c)
@@ -74,7 +75,8 @@ moveGraceableNoteBy :: Int -> GraceableNote -> GraceableNote
 moveGraceableNoteBy i gn =
   let
     abcNote = moveNoteBy i gn.abcNote
-    maybeGrace = map (moveGraceBy i) gn.maybeGrace
+    -- maybeGrace = map (moveGraceBy i) gn.maybeGrace
+    maybeGrace = moveMaybeGraceBy i gn.maybeGrace
     decorations = gn.decorations
   in
     { maybeGrace, decorations, abcNote }
@@ -83,9 +85,13 @@ moveNoteBy :: Int -> AbcNote -> AbcNote
 moveNoteBy i note =
   note { octave = note.octave + i }
 
-moveGraceBy :: Int -> Grace -> Grace
-moveGraceBy i g =
-  g { notes = moveNoteList i g.notes  }
+moveMaybeGraceBy :: Int -> Maybe Grace -> Maybe Grace
+moveMaybeGraceBy i mGrace =
+  map moveGraceBy mGrace
+  where
+    moveGraceBy :: Grace -> Grace
+    moveGraceBy g =
+       g { notes = moveNoteList i g.notes  }
 
 moveBarList :: Int -> List Bar -> List Bar
 moveBarList i =

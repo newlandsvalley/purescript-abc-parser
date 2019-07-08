@@ -383,11 +383,11 @@ dmPhrase =
 
 
 bmPhrase =
-    "K: BMinor\x0D\n| B4 A4 B4 | c2d2 e2dc c2d2 |\x0D\n"
+    "K: BMinor\x0D\n| B4 A4 B4 | c2d2 e2dc {b}(3c2d2e2 |\x0D\n"
 
 
 emPhrase =
-    "K: EMinor\x0D\n| e4 d4 e4 | f2g2 a2gf f2g2 |\x0D\n"
+    "K: EMinor\x0D\n| e4 d4 e4 | f2g2 a2gf {e'}(3f2g2a2 |\x0D\n"
 
 
 amPhrase0 =

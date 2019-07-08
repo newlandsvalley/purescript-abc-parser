@@ -357,7 +357,8 @@ restOrNote =
 tuplet :: Parser Music
 tuplet =
     Tuplet
-        <$> (char '(' *> tupletSignature)
+        <$> optionMaybe graceBracket
+        <*> (char '(' *> tupletSignature)
         <*> many1 restOrNote
         <?> "tuplet"
 

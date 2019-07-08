@@ -256,10 +256,11 @@ transposeMusic m =
         result2 <- transposeGraceableNoteBy n2
         pure $ BrokenRhythmPair result1 b result2
 
-    Tuplet ts ns ->
+    Tuplet maybeGrace ts ns ->
       do
+        newGrace <- transposeGrace maybeGrace
         newNs <- transposeRestOrNoteList ns
-        pure $ Tuplet ts newNs
+        pure $ Tuplet newGrace ts newNs
 
     Chord c ->
       do

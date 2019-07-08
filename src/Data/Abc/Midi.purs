@@ -222,7 +222,8 @@ transformMusic m =
     Rest r ->
       updateState addRestToState r.duration
 
-    Tuplet signature restsOrNotes ->
+    -- at the moment, MIDI ignores grace notes which directly precedes tuplets
+    Tuplet maybeGrace signature restsOrNotes ->
       updateState (addRestsOrNotesToState false (signature.q % signature.p)) (Nel.toList restsOrNotes)
 
     Chord abcChord ->

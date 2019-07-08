@@ -220,6 +220,8 @@ noteSuite =
        assertRoundTrip "| {d^f}GA |\x0D\n"
     test "grace note in tuplet" do
        assertRoundTrip "| (3c{d}fg A |\x0D\n"
+    test "grace note before tuplet" do
+       assertRoundTrip "| {d}(3cfg A |\x0D\n"
     test "grace note in broken rhythm pair" do
        assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
     test "double sharp" do

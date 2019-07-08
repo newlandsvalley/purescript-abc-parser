@@ -130,9 +130,14 @@ pitch octaveNumber p =
 -- | Pretty-print a note which may be prefaced by grace notes and/or decorations.
 graceableNote :: GraceableNote -> String
 graceableNote gn =
-  (fromMaybe "" $ map grace gn.maybeGrace)
+  (maybeGrace gn.maybeGrace)
     <> decorate gn.decorations
     <> abcNote (gn.abcNote)
+
+-- | pretty print an optional grace note
+maybeGrace :: Maybe Grace -> String
+maybeGrace mGrace =
+  fromMaybe "" $ map grace mGrace
 
 grace :: Grace -> String
 grace g =
@@ -264,8 +269,8 @@ music m =
         Rest r ->
             abcRest r
 
-        Tuplet tup rns ->
-            tuplet tup <> restsOrNotes rns
+        Tuplet mGrace tup rns ->
+            (maybeGrace mGrace) <> tuplet tup <> restsOrNotes rns
 
         DecoratedSpace decorations ->
             (decorate decorations) <> "y"
