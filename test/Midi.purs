@@ -9,7 +9,7 @@ import Data.Rational (Rational, fromInt, toNumber, (%))
 import Data.Int (round)
 
 import Data.Abc.Parser (parse)
-import Data.Abc.Midi (toMidi)
+import Data.Abc.Midi (toMidi, toMidiAtBpm)
 import Data.Midi as Midi
 import Data.Abc.Tempo (standardMidiTick)
 
@@ -29,11 +29,25 @@ assertMidi s midiTrack =
     Left err ->
       failure ("parse failed: " <> (show err))
 
+assertMidiAtBpm :: String -> Int -> Midi.Track -> Test
+assertMidiAtBpm s bpm midiTrack =
+  case (parse s) of
+    Right tune ->
+      let
+        Midi.Recording midiRecording = toMidiAtBpm tune bpm
+        track0 = fromMaybe (Midi.Track Nil) (head midiRecording.tracks)
+      in
+        Assert.equal midiTrack track0
+
+    Left err ->
+      failure ("parse failed: " <> (show err))
+
 midiSuite :: Free TestF Unit
 midiSuite = do
   transformationSuite
   repeatSuite
   graceSuite
+  atTempoSuite
 
 transformationSuite :: Free TestF Unit
 transformationSuite =
@@ -203,6 +217,17 @@ graceSuite =
         (Midi.Track (standardTempo <> noteC (3 % 2) <> noteE (1 % 20) <> noteD (9 % 20)))
 
 
+atTempoSuite :: Free TestF Unit
+atTempoSuite =
+  suite "set tempo externally" do
+    test "identical tempo" do
+      assertMidiAtBpm "| CDE |\r\n" 120
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+    test "half tempo" do
+      assertMidiAtBpm "| CDE |\r\n" 60
+        (Midi.Track (halfTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+
+
 -- | the number of MIDI ticks that equates to 1/4=120
 standardTicks :: Int
 standardTicks = 250000
@@ -211,6 +236,12 @@ standardTicks = 250000
 standardTempo :: List Midi.Message
 standardTempo =
   Midi.Message 0 (Midi.Tempo standardTicks)
+  : Nil
+
+-- half the standard tempo - a MIDI tick is twice as long
+halfTempo :: List Midi.Message
+halfTempo =
+  Midi.Message 0 (Midi.Tempo (standardTicks * 2))
   : Nil
 
 tempo :: Rational -> List Midi.Message

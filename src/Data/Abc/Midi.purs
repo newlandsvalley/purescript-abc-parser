@@ -2,6 +2,7 @@
 module Data.Abc.Midi
   ( MidiPitch
   , toMidi
+  , toMidiAtBpm
   , toMidiPitch
   , midiPitchOffset) where
 
@@ -12,7 +13,7 @@ import Data.Abc.Canonical as Canonical
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
-import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, standardMidiTick)
+import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
 import Data.Foldable (foldl, oneOf)
@@ -78,6 +79,15 @@ midiPitchOffset n mks barAccidentals =
 toMidi :: AbcTune -> Midi.Recording
 toMidi tune =
   do
+    evalState (transformTune tune) (initialState tune)
+
+-- | Transform ABC into a MIDI recording but at the mdified tempo
+-- | defined by the new BPM  (beats per minute)
+toMidiAtBpm :: AbcTune -> Int -> Midi.Recording
+toMidiAtBpm originalTune bpm =
+  let
+    tune = setBpm bpm originalTune
+  in
     evalState (transformTune tune) (initialState tune)
 
 -- | a bar of MIDI music
