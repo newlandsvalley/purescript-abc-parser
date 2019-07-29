@@ -28,7 +28,7 @@ import Data.Map (fromFoldable) as Map
 import Prelude (class Show, flip, join, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
-import Text.Parsing.StringParser.String (satisfy, string, alphaNum, char, eof, regex)
+import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 -- import Debug.Trace (trace)
 
 

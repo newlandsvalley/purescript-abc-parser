@@ -17,19 +17,19 @@
   },
   "dependencies": {
     "purescript-rationals": "^5.0.0",
-    "purescript-tuples": "^5.0.0",
-    "purescript-maybe": "^4.0.0",
-    "purescript-strings": "^4.0.0",
-    "purescript-foldable-traversable": "^4.0.0",
-    "purescript-either": "^4.0.0",
-    "purescript-stringutils": "^0.0.8",
+    "purescript-tuples": "^5.1.0",
+    "purescript-maybe": "^4.0.1",
+    "purescript-strings": "^4.0.1",
+    "purescript-foldable-traversable": "^4.1.1",
+    "purescript-either": "^4.1.1",
+    "purescript-stringutils": "^0.0.9",
     "purescript-bifunctors": "^4.0.0",
     "purescript-debug": "^4.0.0",
-    "purescript-ordered-collections": "^1.0.0",
-    "purescript-midi": "^2.2.0"
+    "purescript-ordered-collections": "^1.6.1",
+    "purescript-midi": "^2.2.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
-    "purescript-test-unit": "^14.0.0"
+    "purescript-test-unit": "^15.0.0"
   }
 }
