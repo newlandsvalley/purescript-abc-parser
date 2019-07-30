@@ -10,17 +10,19 @@ module Data.Abc.Metadata
         , getUnitNoteLength
         , dotFactor
         , isEmptyStave
+        , thumbnail
         ) where
 
 import Data.Abc
-import Data.List (List(..), null, reverse)
+
+import Data.Abc.KeySignature (modifiedKeySet)
+import Data.Foldable (all)
+import Data.List (List(..), head, null, reverse, singleton, take)
 import Data.Map (Map, fromFoldable, lookup)
-import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
-import Data.Foldable (all)
-import Data.Abc.KeySignature (modifiedKeySet)
-import Prelude (map, ($), (||))
+import Prelude (map, ($), (||), (==))
 
 -- | A representation of the ABC headers as a Map, taking the first definition
 -- | of any header if multiple definitions are present in the ABC.
@@ -240,3 +242,33 @@ isEmptyStave bars =
                 false
         in
           all f bar.music || null bar.music
+
+-- filter the bars we need for the thumbnail
+filterBars :: List Bar -> List Bar
+filterBars bars =
+  let
+    -- identify whether we have a lead-in bar
+    count =
+      case head bars of
+        Nothing ->
+          0
+        Just bar ->
+          if (bar.startLine.thickness == Invisible)
+            then 3
+            else 2
+  in
+    take count bars
+
+-- | reduce an ABC tune to a 'thumbnail' of the first two full bars
+thumbnail :: AbcTune -> AbcTune
+thumbnail t =
+  let
+    f :: BodyPart -> List Bar
+    f = case _ of
+      Score bars -> bars
+      _ -> Nil
+    firstLine :: List Bar
+    firstLine = maybe Nil f $ head t.body
+    newBody = singleton (Score $ filterBars firstLine)
+  in
+    t { body = newBody }

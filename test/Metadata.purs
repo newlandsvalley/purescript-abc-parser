@@ -13,6 +13,7 @@ import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(
                  BodyPart(..), Pitch(..), KeySet, Mode(..), AbcNote, AbcTune)
 import Data.Abc.Metadata
 import Data.Abc.Accidentals as Accidentals
+import Data.Abc.Canonical (fromTune)
 
 import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Assert as Assert
@@ -139,6 +140,14 @@ assertEmptyScore expected source =
     _ ->
       failure "parse error"
 
+buildThumbnail :: String -> String
+buildThumbnail s =
+  case parse s of
+    Right tune ->
+      fromTune $ thumbnail tune
+    _ ->
+      "parse error"
+
 
 {- It's such a pain to provide Eq, Show on what you'd like to be a somple record
    so for testing purposes just collapse tp a string
@@ -153,6 +162,7 @@ metadataSuite :: Free TestF Unit
 metadataSuite = do
    headerSuite
    scoreSuite
+   thumbnailSuite
 
 headerSuite :: Free TestF Unit
 headerSuite =
@@ -181,6 +191,14 @@ scoreSuite =
       assertEmptyScore true emptyScore
     test "non empty score" do
       assertEmptyScore false keyedTune
+
+thumbnailSuite :: Free TestF Unit
+thumbnailSuite =
+  suite "thumbnail" do
+    test "with lead-in bar" do
+      Assert.equal augustssonThumbnail (buildThumbnail augustsson)
+    test "without lead-in bar" do
+      Assert.equal fastanThumbnail (buildThumbnail fastan)
 
 -- headers in sample ABC tunes
 keyedTune =
@@ -225,3 +243,49 @@ fMajor =
 fMajorM :: ModifiedKeySignature
 fMajorM =
     { keySignature: fMajor, modifications: Nil }
+
+augustssonHeaders :: String
+augustssonHeaders =
+  "X: 1\r\n"
+  <> "T: Engelska efter Albert Augustsson\r\n"
+  <> "N: From the playing of Albert Augustsson, Bohuslän county.\r\n"
+  <> "M: 4/4\r\n"
+  <> "R: Engelska\r\n"
+  <> "S: Orust\r\n"
+  <> "Z: John Watson 24/01/2015\r\n"
+  <> "L: 1/8\r\n"
+  <> "K: AMajor\r\n"
+
+augustsson :: String
+augustsson =
+  augustssonHeaders
+  <> "A>c|: e2f2 efed | c2a2 e3d | cedc BdcB | Aced cBAc |\r\n"
+  <> "e2f2 efed | c2a2 e3d | cedc BdcB | A4 A>AA>B :|\r\n"
+  <> "|: e2e2 e2de | f2ed B3c | d3c d2cd | e3d cdBc |\r\n"
+  <> "A2a2 a2gf | e2f2 e3d | cedc BdcB |1 A4 A>AA>B :|2 [A4E4] [A4E4] |\r\n"
+
+augustssonThumbnail :: String
+augustssonThumbnail =
+  augustssonHeaders
+  <> "A>c|: e2f2 efed | c2a2 e3d \r\n"
+
+fastanHeaders :: String
+fastanHeaders =
+  "T: Fastan\r\n"
+  <> "R: Polska\r\n"
+  <> "M: 3/4\r\n"
+  <> "K: FMajor\r\n"
+  <> "L: 1/16\r\n"
+
+fastan :: String
+fastan =
+  fastanHeaders
+  <> "| (3A4F4G4 A2B2 | (3:4:3c2d2B4c4 A2F2 | (3F4E4D4 B,2D2 | EA3 A8- |\r\n"
+  <> "| (3A4F4G4 A2B2 | (3:4:3c2d2B4c4 A2F2 | (3F4E4D4 G2A2 | AF3 F8- |\r\n"
+  <> "| (3:5:3F4B4cBA2 B2d2 | ge3 c4 A4- | (3:5:3A4B4cBA2 B2d2 | de3 c8- |\r\n"
+  <> "| (3:5:3F4B4cBA2 B2d2 | (3:4:3g2a2f4g4 e4- | (3:c4B4A4 F2G2 | ef3 F8 |\r\n"
+
+fastanThumbnail :: String
+fastanThumbnail =
+  fastanHeaders
+  <> "| (3A4F4G4 A2B2 | (3:4:3c2d2B4c4 A2F2 \r\n"
