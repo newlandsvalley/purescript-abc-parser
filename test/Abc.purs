@@ -204,6 +204,9 @@ noteSuite =
        assertRoundTrip "| A>B C>>D a<b c<<d |\x0D\n"
     test "broken rhythm spaced" do
        assertCanonical "| A> B |\x0D\n" "| A>B |\x0D\n"
+    -- at the moment we throw away the slur open bracket
+    test "broken rhythm slurred" do
+       assertCanonical "| A>(BC) |\x0D\n" "| A>BC) |\x0D\n"
     test "octave" do
        assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
     test "tie" do
@@ -227,6 +230,9 @@ noteSuite =
        assertRoundTrip "| {d}(3cfg A |\x0D\n"
     test "grace note in broken rhythm pair" do
        assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
+    -- at the moment we throw away the slur open bracket
+    test "grace note with slur" do
+       assertCanonical "| {d^f}(GA) |\x0D\n" "| {d^f}GA) |\x0D\n"
     test "double sharp" do
        assertRoundTrip "| ^^C2 |\r\n"
     test "sharp" do

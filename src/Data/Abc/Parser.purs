@@ -27,7 +27,7 @@ import Data.Map (Map)
 import Data.Map (fromFoldable) as Map
 import Prelude (class Show, flip, join, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
-import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
+import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, (<?>))
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 -- import Debug.Trace (trace)
 
@@ -233,7 +233,7 @@ brokenRhythmPair =
     BrokenRhythmPair
         <$> graceableNote
         <*> brokenRhythmTie
-        <*> graceableNote
+        <*> (optional slur *> graceableNote)
         <?> "broken rhythm pair"
 
 note :: Parser Music
@@ -253,7 +253,7 @@ abcNote =
 graceableNote :: Parser GraceableNote
 graceableNote =
   buildGraceableNote
-    <$> optionMaybe graceBracket
+    <$> optionMaybe (graceBracket <* optional slur)
     <*> decorations
     <*> abcNote
     <?> "graceable note"
