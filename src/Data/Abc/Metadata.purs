@@ -11,6 +11,7 @@ module Data.Abc.Metadata
         , dotFactor
         , isEmptyStave
         , thumbnail
+        , removeRepeatMarkers
         ) where
 
 import Data.Abc
@@ -272,3 +273,34 @@ thumbnail t =
     newBody = singleton (Score $ filterBars firstLine)
   in
     t { body = newBody }
+
+-- | remove repeat markers (used for thumbnails where we need to ignore them)
+removeRepeatMarkers :: AbcTune -> AbcTune
+removeRepeatMarkers abcTune =
+
+  { headers : abcTune.headers
+  , body : replaceBody abcTune.body
+  }
+
+  where
+
+    removeRepeat :: Bar -> Bar
+    removeRepeat bar =
+      let
+        newStartLine = bar.startLine { repeat = Nothing }
+      in
+        bar { startLine = newStartLine }
+
+    replaceBars :: List Bar -> List Bar
+    replaceBars = map removeRepeat
+
+    replaceBodyPart :: BodyPart -> BodyPart
+    replaceBodyPart bp =
+      case bp of
+        Score bars ->
+          Score $ replaceBars bars
+        _ ->
+          bp
+
+    replaceBody  :: List BodyPart -> List BodyPart
+    replaceBody = map replaceBodyPart

@@ -5,14 +5,13 @@ import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.List (List(..), head, intersect, length, (:))
-import Data.Rational (Rational, fromInt, (%))
+import Data.List (List(..), head, intersect, length)
+import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..),
                  BodyPart(..), Pitch(..), KeySet, Mode(..), AbcNote, AbcTune)
 import Data.Abc.Metadata
-import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Canonical (fromTune)
 
 import Test.Unit (Test, TestF, suite, test, success, failure)
@@ -148,6 +147,14 @@ buildThumbnail s =
     _ ->
       "parse error"
 
+buildThumbnailNoRepeats :: String -> String
+buildThumbnailNoRepeats s =
+  case parse s of
+    Right tune ->
+      fromTune $ removeRepeatMarkers $ thumbnail tune
+    _ ->
+      "parse error"
+
 
 {- It's such a pain to provide Eq, Show on what you'd like to be a somple record
    so for testing purposes just collapse tp a string
@@ -199,6 +206,8 @@ thumbnailSuite =
       Assert.equal augustssonThumbnail (buildThumbnail augustsson)
     test "without lead-in bar" do
       Assert.equal fastanThumbnail (buildThumbnail fastan)
+    test "remove repeat markers" do
+      Assert.equal augustssonThumbnailNoRepeats (buildThumbnailNoRepeats augustsson)
 
 -- headers in sample ABC tunes
 keyedTune =
@@ -268,6 +277,11 @@ augustssonThumbnail :: String
 augustssonThumbnail =
   augustssonHeaders
   <> "A>c|: e2f2 efed | c2a2 e3d \r\n"
+
+augustssonThumbnailNoRepeats :: String
+augustssonThumbnailNoRepeats =
+  augustssonHeaders
+  <> "A>c| e2f2 efed | c2a2 e3d \r\n"
 
 fastanHeaders :: String
 fastanHeaders =
