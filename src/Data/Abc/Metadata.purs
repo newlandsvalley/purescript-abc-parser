@@ -18,7 +18,7 @@ import Data.Abc
 
 import Data.Abc.KeySignature (modifiedKeySet)
 import Data.Foldable (all)
-import Data.List (List(..), head, null, reverse, singleton, take)
+import Data.List (List(..), head, null, reverse, singleton, snoc, take)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, (%))
@@ -244,7 +244,8 @@ isEmptyStave bars =
         in
           all f bar.music || null bar.music
 
--- filter the bars we need for the thumbnail
+-- filter the bars we need for the thumbnail and terminate properly with
+-- an empty bar.
 filterBars :: List Bar -> List Bar
 filterBars bars =
   let
@@ -257,8 +258,21 @@ filterBars bars =
           if (bar.startLine.thickness == Invisible)
             then 3
             else 2
+
+    emptyBarType :: BarType
+    emptyBarType =
+      { thickness : Thin
+      , repeat : Nothing
+      , iteration : Nothing
+      }
+
+    emptyBar :: Bar
+    emptyBar =
+      { startLine : emptyBarType
+      , music : Nil
+      }
   in
-    take count bars
+    snoc (take count bars) emptyBar
 
 -- | reduce an ABC tune to a 'thumbnail' of the first two full bars
 thumbnail :: AbcTune -> AbcTune

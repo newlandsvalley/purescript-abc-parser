@@ -276,12 +276,12 @@ augustsson =
 augustssonThumbnail :: String
 augustssonThumbnail =
   augustssonHeaders
-  <> "A>c|: e2f2 efed | c2a2 e3d \r\n"
+  <> "A>c|: e2f2 efed | c2a2 e3d |\r\n"
 
 augustssonThumbnailNoRepeats :: String
 augustssonThumbnailNoRepeats =
   augustssonHeaders
-  <> "A>c| e2f2 efed | c2a2 e3d \r\n"
+  <> "A>c| e2f2 efed | c2a2 e3d |\r\n"
 
 fastanHeaders :: String
 fastanHeaders =
@@ -302,4 +302,4 @@ fastan =
 fastanThumbnail :: String
 fastanThumbnail =
   fastanHeaders
-  <> "| (3A4F4G4 A2B2 | (3:4:3c2d2B4c4 A2F2 \r\n"
+  <> "| (3A4F4G4 A2B2 | (3:4:3c2d2B4c4 A2F2 |\r\n"
