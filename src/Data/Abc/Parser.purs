@@ -119,7 +119,7 @@ scoreItem =
       try chord -- potential ambiguity with (inline) in-score headers
     , try inline
     , continuation
-    , decoratedSpace  -- potential ambiguity with a decorated note
+    , try decoratedSpace  -- potential ambiguity with a decorated note
     , ignore
     , spacer
     , try annotation  -- potential ambiguity with chordSymbol
@@ -505,7 +505,7 @@ spacer =
 -- | chord symbols and decorations can be attached to it, to separate them from notes.
 decoratedSpace :: Parser Music
 decoratedSpace =
-  try (DecoratedSpace <$> decorations <* char 'y')
+  DecoratedSpace <$> decorations <* (char 'y')
 
 -- normal space within a line of the tune's score
 scoreSpace :: Parser Char
