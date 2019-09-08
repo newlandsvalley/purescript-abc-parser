@@ -232,7 +232,7 @@ brokenRhythmPair :: Parser Music
 brokenRhythmPair =
     BrokenRhythmPair
         <$> graceableNote
-        <*> brokenRhythmTie
+        <*> (optional slur *> brokenRhythmTie)
         <*> (optional slur *> graceableNote)
         <?> "broken rhythm pair"
 

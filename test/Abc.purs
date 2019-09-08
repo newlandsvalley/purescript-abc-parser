@@ -205,8 +205,10 @@ noteSuite =
     test "broken rhythm spaced" do
        assertCanonical "| A> B |\x0D\n" "| A>B |\x0D\n"
     -- at the moment we throw away the slur open bracket
-    test "broken rhythm slurred" do
+    test "broken rhythm slurred start" do
        assertCanonical "| A>(BC) |\x0D\n" "| A>BC) |\x0D\n"
+    test "broken rhythm slurred finish" do
+       assertCanonical "| (BC)>A |\x0D\n" "| (BC>A |\x0D\n"
     test "octave" do
        assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
     test "tie" do
