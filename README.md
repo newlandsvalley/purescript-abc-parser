@@ -21,6 +21,7 @@ Issues
 
 * I am unhappy about the way in which the specification defines slurs (represented by round brackets). These seem to be impossible to match - for instance they can span across bars or even across separate lines of music.  I treat them as free-floating entities.
 * I am also unhappy about **order of constructs** (4.20).  A decoration in this ordering has to decorate an individual note.  But there is a clear requirement in many cases (such as codas) to decorate a note group such as a chord or tuplet.
+* I have found no description of how a tuplet should be validated.  Must the number of notes in the signature equal the number of notes supplied? Are spaces allowed between the notes?  How lenient should a parser be?  At the moment, we bar spaces, allow the counts to mismatch and terminate the tuplet with the first non-note encountered (usually a space).
 * Grace notes and decorations are not supported against chords.  (I am unclear what the specification defines here with respect to grace notes and see note above.)
 * Grace notes are, however, supported against notes in all other contexts and attached to them directly. This would otherwise mean that they cannot be separated by a slur but we accept a slur here and throw it away. We also do this for a slur before the second note in a broken-rhythm pair. 
 * In translating to MIDI, only a single voice is recognized and if voltas are present only the first and second are recognized (third and fourth are ignored).
