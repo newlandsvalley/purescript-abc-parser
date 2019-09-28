@@ -12,6 +12,7 @@ import Data.Array as Array
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..))
 import Data.Foldable (foldr, foldMap)
+import Data.Unfoldable1 (replicate1A)
 import Data.Functor (map)
 import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
@@ -25,7 +26,7 @@ import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Data.Map (Map)
 import Data.Map (fromFoldable) as Map
-import Prelude (class Show, flip, join, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
+import Prelude (class Show, bind, flip, join, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, (<?>))
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
@@ -362,18 +363,20 @@ abcRest =
       <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
       <?> "abcRest"
 
+tuplet :: Parser Music
+tuplet = do
+  maybeGrace <- optionMaybe graceBracket
+  signature <- (char '(' *> tupletSignature)
+  -- ensure that the contents match the signature count
+  contents <- counted signature.r restOrNote
+  pure $ Tuplet maybeGrace signature contents
+
 -- | tuplets may now contain either a (Left) rest or a (Right) Note
 restOrNote :: Parser RestOrNote
 restOrNote =
   (Left <$> abcRest) <|> (Right <$> graceableNote)
+    <* whiteSpace
 
-tuplet :: Parser Music
-tuplet =
-    Tuplet
-        <$> optionMaybe graceBracket
-        <*> (char '(' *> tupletSignature)
-        <*> many1 restOrNote
-        <?> "tuplet"
 
 {- possible tuplet signatures
    (3             --> {3,2,3}
@@ -1306,7 +1309,7 @@ buildTupletSignature ps mq mr =
         r =
             fromMaybe p (map toTupletInt mr)
     in
-        { p : p, q : q, r : r }
+      { p, q, r }
 
 toTupletInt :: String -> Int
 toTupletInt s =
@@ -1481,6 +1484,13 @@ spacedQuotedString =
 
 
 -- utility Functions
+
+-- | Specialize replicate1A to the Parser i order to allow a counted
+-- | number of instances of the parser
+counted :: ∀ a. Int -> Parser a -> Parser (Nel.NonEmptyList a)
+counted num parser =
+  replicate1A num parser
+
 concatenate :: List String -> String
 concatenate = foldr (<>) ""
 

@@ -220,8 +220,14 @@ noteSuite =
        assertRoundTrip "| fg-ga ab-bc|\x0D\n"
     test "triplet" do
        assertRoundTrip "| (3efg |\r\n"
+    test "triplet long form" do
+       assertCanonical "| (3:2:3efg |\r\n"  "| (3efg |\r\n"
+    test "triplet intermediate form" do
+       assertCanonical "| (3:2efg |\r\n"  "| (3efg |\r\n"
     test "spaced triplet" do
        assertCanonical "| (3 abc def |\x0D\n" "| (3abc def |\x0D\n"
+    test "space between notes in triplet" do
+       assertCanonical "| (3 a b c def |\x0D\n" "| (3abc def |\x0D\n"
     test "triplet with rest" do
        assertRoundTrip "| (3zfg |\r\n"
     test "grace note" do
@@ -382,6 +388,10 @@ badInputSuite =
       assertParseError "| foo bar |\x0D\n| ABC z2 def z/ |\x0D\n"
     test "bracket in inline header" do
       assertParseError "| ABC |\x0D\nr: this is a remark [part 1]\x0D\n"
+    test "too few notes in short form triplet" do
+      assertParseError "| ABC (3DE | GGG |\x0D\n"
+    test "too few notes in long form triplet" do
+      assertParseError "| ABC (3:2:3DE | GGG |\x0D\n"
 
 keySigSuite :: Free TestF Unit
 keySigSuite =

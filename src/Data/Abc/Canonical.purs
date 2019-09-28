@@ -270,7 +270,7 @@ music m =
             abcRest r
 
         Tuplet mGrace tup rns ->
-            (maybeGrace mGrace) <> tuplet tup <> restsOrNotes rns
+            (maybeGrace mGrace) <> tuplet tup <> restsOrNotes rns <> " "
 
         DecoratedSpace decorations ->
             (decorate decorations) <> "y"
