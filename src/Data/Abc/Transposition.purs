@@ -6,6 +6,7 @@ module Data.Abc.Transposition
         , transposeTo
         ) where
 
+
 {- A parse tree score contains pitches with accidentals of type Implicit in cases where no accidental is explitly marked
    (sharp, flat, natural etc.).  Such pitches inherit their accidental nature firstly from any preceding note of the same pitch
    in the same bar which has an explicit marking and secondly from the key signature.  During transposition we must firstly
@@ -311,7 +312,9 @@ transposeGraceableNoteBy gn =
     maybeGrace <- transposeGrace gn.maybeGrace
     let
       decorations = gn.decorations
-    pure { maybeGrace, decorations, abcNote }
+      leftSlurs = gn.leftSlurs
+      rightSlurs = gn.rightSlurs
+    pure { maybeGrace, leftSlurs, decorations, abcNote, rightSlurs }
 
 transposeGrace :: Maybe Grace -> Transposition (Maybe Grace)
 transposeGrace mGrace =

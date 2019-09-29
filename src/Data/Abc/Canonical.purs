@@ -18,7 +18,9 @@ import Data.Tuple (Tuple(..))
 import Data.Map (Map, size, toUnfoldable)
 import Data.String (trim, toLower, length, take) as Str
 import Data.String.CodePoints (codePointFromChar, singleton)
+import Data.String.CodeUnits (fromCharArray)
 import Data.Foldable (foldr, intercalate)
+import Data.Unfoldable (replicate)
 import Data.Either (Either(..))
 
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
@@ -131,8 +133,18 @@ pitch octaveNumber p =
 graceableNote :: GraceableNote -> String
 graceableNote gn =
   (maybeGrace gn.maybeGrace)
+    <> leftSlurs gn.leftSlurs
     <> decorate gn.decorations
     <> abcNote (gn.abcNote)
+    <> rightSlurs gn.rightSlurs
+
+leftSlurs :: Int -> String
+leftSlurs n =
+  fromCharArray $ replicate n '('
+
+rightSlurs :: Int -> String
+rightSlurs n =
+  fromCharArray $ replicate n ')'
 
 -- | pretty print an optional grace note
 maybeGrace :: Maybe Grace -> String
@@ -274,9 +286,6 @@ music m =
 
         DecoratedSpace decorations ->
             (decorate decorations) <> "y"
-
-        Slur c ->
-            singleton $ codePointFromChar c
 
         Annotation placement s ->
             "\"" <> show placement <> s <> "\""

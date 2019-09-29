@@ -75,11 +75,12 @@ moveGraceableNoteBy :: Int -> GraceableNote -> GraceableNote
 moveGraceableNoteBy i gn =
   let
     abcNote = moveNoteBy i gn.abcNote
-    -- maybeGrace = map (moveGraceBy i) gn.maybeGrace
     maybeGrace = moveMaybeGraceBy i gn.maybeGrace
     decorations = gn.decorations
+    leftSlurs = gn.leftSlurs
+    rightSlurs = gn.rightSlurs
   in
-    { maybeGrace, decorations, abcNote }
+    { maybeGrace, leftSlurs, decorations, abcNote, rightSlurs }
 
 moveNoteBy :: Int -> AbcNote -> AbcNote
 moveNoteBy i note =

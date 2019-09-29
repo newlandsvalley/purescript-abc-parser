@@ -16,6 +16,7 @@ import Data.Unfoldable1 (replicate1A)
 import Data.Functor (map)
 import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
+import Data.List (length) as L
 import Data.List.NonEmpty as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
@@ -28,7 +29,7 @@ import Data.Map (Map)
 import Data.Map (fromFoldable) as Map
 import Prelude (class Show, bind, flip, join, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
-import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, (<?>))
+import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 -- import Debug.Trace (trace)
 
@@ -125,8 +126,7 @@ scoreItem =
     , spacer
     , try annotation  -- potential ambiguity with chordSymbol
     , chordSymbol
-    , try tuplet  -- potential ambiguity with slurs
-    , slur
+    , try tuplet  -- potential ambiguity with slurs inside a note
     , rest
     , try brokenRhythmPair -- potential ambiguity with note
     , note
@@ -233,8 +233,8 @@ brokenRhythmPair :: Parser Music
 brokenRhythmPair =
     BrokenRhythmPair
         <$> graceableNote
-        <*> (optional slur *> brokenRhythmTie)
-        <*> (optional slur *> graceableNote)
+        <*> brokenRhythmTie
+        <*> graceableNote
         <?> "broken rhythm pair"
 
 note :: Parser Music
@@ -254,9 +254,11 @@ abcNote =
 graceableNote :: Parser GraceableNote
 graceableNote =
   buildGraceableNote
-    <$> optionMaybe (graceBracket <* optional slur)
+    <$> optionMaybe graceBracket
+    <*> leftSlurBrackets
     <*> decorations
     <*> abcNote
+    <*> rightSlurBrackets
     <?> "graceable note"
 
 {- maybe an accidental defining a note's pitch -}
@@ -401,21 +403,21 @@ tup =
         <$> optionMaybe
                 (char ':' *> optionMaybe tupletLength)
 
-{- Note, Slur should really be defined as Slur (List Music) and then parsed as shown below.  This would allow slurs to be
-      nested and the parser to test that the brackets are balanced.  However, unfortunately, in the wild there are examples
-      of slurs that go across music lines which make this interpretation impossible.  We thus simply parse the bracket characters.
+-- | left and right slurs.  We now attach the (optional) slur brackets to thr
+-- | actual target note which respectively starts or ends the slurred sequence
+-- | this may be prefaced by an optional grace note - e.g.(fg)(abc)
+-- | here the openinhg slur is attached to note a and the final slur to c
+leftSlurBrackets :: Parser Int
+leftSlurBrackets =
+  L.length
+    <$> many (char '(')
+    <?> "left slurs"
 
-
-   slur :: Parser Music
-   slur = fix \i ->
-           Slur <$>  parens (many1 musicItem)
-                <?> "slur"
--}
-slur :: Parser Music
-slur =
-  Slur
-    <$> (char '(' <|> char ')')
-    <?> "slur"
+rightSlurBrackets :: Parser Int
+rightSlurBrackets =
+  L.length
+    <$> many (char ')')
+    <?> "right slurs"
 
 graceBracket :: Parser Grace
 graceBracket =
@@ -1191,9 +1193,9 @@ buildGrace :: Boolean -> Nel.NonEmptyList AbcNote -> Grace
 buildGrace isAcciaccatura ns =
   { isAcciaccatura, notes: ns }
 
-buildGraceableNote :: Maybe Grace -> List String -> AbcNote -> GraceableNote
-buildGraceableNote maybeGrace decs n =
-  { maybeGrace, decorations : decs, abcNote : n }
+buildGraceableNote :: Maybe Grace -> Int -> List String -> AbcNote -> Int -> GraceableNote
+buildGraceableNote maybeGrace leftSlurs decs n rightSlurs =
+  { maybeGrace, leftSlurs, decorations : decs, abcNote : n, rightSlurs }
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =

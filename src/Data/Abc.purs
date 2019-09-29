@@ -100,8 +100,10 @@ type Grace =
 -- | A (possibly) Graced and Decorated Note.
 type GraceableNote =
     { maybeGrace :: Maybe Grace
+    , leftSlurs :: Int
     , decorations :: List String
     , abcNote :: AbcNote
+    , rightSlurs :: Int
     }
 
 -- | A Chord.
@@ -136,7 +138,6 @@ data Music
     | Rest AbcRest
     | Tuplet (Maybe Grace) TupletSignature (NonEmptyList RestOrNote)
     | DecoratedSpace (List String)
-    | Slur Char
     | Annotation AnnotationPlacement String
     | ChordSymbol String
     | Chord AbcChord
