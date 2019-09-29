@@ -86,6 +86,7 @@ abcSuite = do
    headerSuite
    noteSuite
    barSuite
+   slurSuite
    phrasingSuite
    structureSuite
    ambiguitySuite
@@ -204,10 +205,6 @@ noteSuite =
        assertRoundTrip "| A>B C>>D a<b c<<d |\x0D\n"
     test "broken rhythm spaced" do
        assertCanonical "| A> B |\x0D\n" "| A>B |\x0D\n"
-    test "broken rhythm slurred start" do
-       assertRoundTrip "| A>(BC) |\x0D\n"
-    test "broken rhythm slurred finish" do
-       assertRoundTrip  "| (BC)>A |\x0D\n"
     test "octave" do
        assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
     test "tie" do
@@ -237,8 +234,6 @@ noteSuite =
        assertRoundTrip "| {d}(3cfg A |\x0D\n"
     test "grace note in broken rhythm pair" do
        assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
-    test "grace note with slur" do
-       assertRoundTrip "| {d^f}(GA) |\x0D\n"
     test "double sharp" do
        assertRoundTrip "| ^^C2 |\r\n"
     test "sharp" do
@@ -255,7 +250,6 @@ noteSuite =
        assertRoundTrip "| [de^f]g [cda]b |\x0D\n"
     test "chord duration" do
        assertRoundTrip "| [cda]4 |\x0D\n"
-
 
 barSuite :: Free TestF Unit
 barSuite =
@@ -307,11 +301,29 @@ barSuite =
     test "degenerate repeat 2" do
       assertCanonical  "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
 
+slurSuite :: Free TestF Unit
+slurSuite =
+  suite "slurs" do
+    test "slur" do
+      assertRoundTrip  "| (de^f) (cda) |\x0D\n"
+    test "broken rhythm slurred start" do
+      assertRoundTrip "| A>(BC) |\x0D\n"
+    test "broken rhythm slurred finish" do
+      assertRoundTrip  "| (BC)>A |\x0D\n"
+    test "grace note with slur" do
+      assertRoundTrip "| {d^f}(GA) |\x0D\n"
+    test "degenerate slurred tuplet" do
+      assertParses "| ((3def) |\x0D\n"
+    test "degenerate slurred grace" do
+      assertParses "| ({d^f}GA) |\x0D\n"
+    test "degenerate slurred broken rhythm start" do
+      assertParses "| A(>BC) |\x0D\n"
+    test "degenerate slurred broken rhythm finish" do
+      assertParses "| (BC>)A |\x0D\n"
+
 phrasingSuite :: Free TestF Unit
 phrasingSuite  =
   suite "phrasing" do
-    test "slur" do
-      assertRoundTrip  "| (de^f) (cda) |\x0D\n"
     test "articulation" do
       assertRoundTrip  "(vA2 | !fz! Ld2).d.f .e.d.c.B A2(A2 | d2).d.f .e.d.c.B A2A2 |\x0D\n"
     test "annotation" do
