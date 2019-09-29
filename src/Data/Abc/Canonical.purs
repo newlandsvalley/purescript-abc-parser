@@ -17,7 +17,6 @@ import Data.Rational (Rational, numerator, denominator)
 import Data.Tuple (Tuple(..))
 import Data.Map (Map, size, toUnfoldable)
 import Data.String (trim, toLower, length, take) as Str
-import Data.String.CodePoints (codePointFromChar, singleton)
 import Data.String.CodeUnits (fromCharArray)
 import Data.Foldable (foldr, intercalate)
 import Data.Unfoldable (replicate)
