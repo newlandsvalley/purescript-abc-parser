@@ -12,12 +12,13 @@ import Data.Array as Array
 import Data.Bifunctor (bimap)
 import Data.Either (Either(..))
 import Data.Foldable (foldr, foldMap)
-import Data.Unfoldable1 (replicate1A)
 import Data.Functor (map)
 import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
+import Data.Map (Map)
+import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
 import Data.String (drop, toUpper, singleton)
@@ -25,12 +26,12 @@ import Data.String.CodePoints (codePointFromChar, length)
 import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
-import Data.Map (Map)
-import Data.Map (fromFoldable) as Map
+import Data.Unfoldable1 (replicate1A)
 import Prelude (class Show, bind, flip, join, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
-import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optionMaybe, sepBy, (<?>))
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
+import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, (<?>))
+
 -- import Debug.Trace (trace)
 
 
@@ -227,7 +228,15 @@ barSeparator =
 -- spec is unclear if spaces are allowed after a broken rhythm operator but it's easy to support, is more permissive and doesn't break anything
 brokenRhythmTie :: Parser Broken
 brokenRhythmTie =
-    buildBrokenOperator <$> brokenRhythmOperator <* whiteSpace
+    buildBrokenOperator <$> degenerateBrokenRhythmOperator <* whiteSpace
+
+-- | In the wild, we can see slurs encompassing the operator.  For example,
+-- | instead of A>(BC) we can see  A(>BC)
+-- | instead of (AB)>C we can see  (AB>)C
+-- | Be lenient but throw the slur away
+degenerateBrokenRhythmOperator :: Parser String
+degenerateBrokenRhythmOperator =
+  optional leftBracket *> brokenRhythmOperator <* optional rightBracket
 
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
@@ -368,7 +377,7 @@ abcRest =
 tuplet :: Parser Music
 tuplet = do
   maybeGrace <- optionMaybe graceBracket
-  signature <- (char '(' *> tupletSignature)
+  signature <- degenerateTupletBracket *> tupletSignature
   -- ensure that the contents match the signature count
   contents <- counted signature.r restOrNote
   pure $ Tuplet maybeGrace signature contents
@@ -379,6 +388,12 @@ restOrNote =
   (Left <$> abcRest) <|> (Right <$> graceableNote)
     <* whiteSpace
 
+-- | we require a single open bracket as in (3abc but need to recover from a
+-- | slurred tuplet as in ((3abc) where currently we just throw away the
+-- | opening slur.
+degenerateTupletBracket :: Parser String
+degenerateTupletBracket =
+  try $ string "((" <|> string "("
 
 {- possible tuplet signatures
    (3             --> {3,2,3}
@@ -410,14 +425,22 @@ tup =
 leftSlurBrackets :: Parser Int
 leftSlurBrackets =
   L.length
-    <$> many (char '(')
+    <$> many leftBracket
     <?> "left slurs"
+
+leftBracket :: Parser Char
+leftBracket =
+  char '('
 
 rightSlurBrackets :: Parser Int
 rightSlurBrackets =
   L.length
-    <$> many (char ')')
+    <$> many rightBracket
     <?> "right slurs"
+
+rightBracket :: Parser Char
+rightBracket =
+  char ')'
 
 graceBracket :: Parser Grace
 graceBracket =
@@ -1401,6 +1424,9 @@ lookupPitch p =
      "F" -> F
      "G" -> G
      _ -> C
+
+
+
 
 -- regex parsers.  Place some at the top level so that we can precompile the regex
 brokenRhythmOperator :: Parser String

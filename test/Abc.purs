@@ -314,12 +314,17 @@ slurSuite =
       assertRoundTrip "| {d^f}(GA) |\x0D\n"
     test "degenerate slurred tuplet" do
       assertParses "| ((3def) |\x0D\n"
+    -- we throw away the slur if it mistakenly encompasses the operator
+    test "degenerate slurred broken rhythm start" do
+      assertCanonical "| A(>BC) |\x0D\n" "| A>BC) |\x0D\n"
+    test "degenerate slurred broken rhythm finish" do
+      assertCanonical "| (BC>)A |\x0D\n" "| (BC>A |\x0D\n"
+    {- this test would fail.  We dom't allow slurs to span mote sequences
+       starting with a grace note.  Instead, users should start the slur at
+       the first full note
     test "degenerate slurred grace" do
       assertParses "| ({d^f}GA) |\x0D\n"
-    test "degenerate slurred broken rhythm start" do
-      assertParses "| A(>BC) |\x0D\n"
-    test "degenerate slurred broken rhythm finish" do
-      assertParses "| (BC>)A |\x0D\n"
+    -}
 
 phrasingSuite :: Free TestF Unit
 phrasingSuite  =

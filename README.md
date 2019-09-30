@@ -19,8 +19,8 @@ Features
 Issues
 ------
 
-* I am unhappy about the way in which the specification defines slurs (represented by round brackets). These seem to be impossible to match - for instance they can span across bars or even across separate lines of music.  I attach them directly to the notes that delineate the slur.
-* I am also unhappy about **order of constructs** (4.20).  A decoration in this ordering has to decorate an individual note.  But there is a clear requirement in many cases (such as codas) to decorate a note group such as a chord or tuplet. It also seems to be ambiguous as to whether a grace note should occur before or after a slur. 
+* I am unhappy about the way in which the specification defines slurs (represented by round brackets). These seem to be impossible to match - for instance they can span across bars or even across separate lines of music.  I attach them directly to the notes that delineate the slur. However, where the slur is not directly attached to the note (e.g. when attached to a broken rhythm operator or tuplet operator) then the parser is lenient, accepting but discarding the slur bracket. However, if a note is prefaced by both grace note(s) and an opening slur then the grace note must come before the slur bracket.
+* I am also unhappy about **order of constructs** (4.20).  A decoration in this ordering has to decorate an individual note.  But there is a clear requirement in many cases (such as codas) to decorate a note group such as a chord or tuplet. 
 * I have found no description of how a tuplet should be validated. Currently, tuplets must be completely contained within a bar and the number of items in the tuplet must agree with the its signature.  Spaces are allowed between the notes but tuplets may not be embedded, one inside the other.
 * Grace notes and decorations are not supported against chords.  (I am unclear what the specification defines here with respect to grace notes and see note above.)
 * Grace notes are, however, supported against notes in all other contexts and attached to them directly, although optionally mediated by a left slur bracket. 
