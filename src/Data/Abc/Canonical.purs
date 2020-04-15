@@ -5,6 +5,7 @@ module Data.Abc.Canonical
         , abcNote
         , abcChord
         , tuplet
+        , bars
         , keySignatureAccidental
         ) where
 
