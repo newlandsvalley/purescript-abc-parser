@@ -9,6 +9,7 @@ module Data.Abc.Metadata
         , getTitle
         , getUnitNoteLength
         , dotFactor
+        , normaliseChord
         , isEmptyStave
         , thumbnail
         , removeRepeatMarkers
@@ -21,9 +22,9 @@ import Data.Foldable (all)
 import Data.List (List(..), head, null, reverse, singleton, snoc, take)
 import Data.Map (Map, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Rational (Rational, (%))
+import Data.Rational (Rational, (%), toNumber)
 import Data.Tuple (Tuple(..))
-import Prelude (map, ($), (||), (==))
+import Prelude (map, ($), (||), (==), (*))
 
 -- | A representation of the ABC headers as a Map, taking the first definition
 -- | of any header if multiple definitions are present in the ABC.
@@ -243,6 +244,18 @@ isEmptyStave bars =
                 false
         in
           all f bar.music || null bar.music
+
+-- | Normalise an ABC chord by placing the correct duration against each note
+-- | and setting the overall Chord length to Unit
+normaliseChord :: AbcChord -> AbcChord
+normaliseChord abcChord =
+  case (toNumber abcChord.duration) of
+    1.0 -> abcChord
+    _ ->
+      let
+        notes = map (\n -> n { duration = n.duration * abcChord.duration} ) abcChord.notes
+      in
+        { notes, duration : (1 % 1) }
 
 -- filter the bars we need for the thumbnail and terminate properly with
 -- an empty bar.

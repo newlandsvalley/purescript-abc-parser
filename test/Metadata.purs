@@ -5,12 +5,15 @@ import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.List (List(..), head, intersect, length)
+import Data.List (List(..), head, intersect, length, (:))
+import Data.List.NonEmpty (NonEmptyList(..))
+import Data.NonEmpty ((:|))
 import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..),
-                 BodyPart(..), Pitch(..), KeySet, Mode(..), AbcNote, AbcTune)
+                 BodyPart(..), NoteDuration, Pitch(..), KeySet, Mode(..),
+                 AbcChord, AbcNote, AbcTune)
 import Data.Abc.Metadata
 import Data.Abc.Canonical (fromTune)
 
@@ -170,6 +173,7 @@ metadataSuite = do
    headerSuite
    scoreSuite
    thumbnailSuite
+   utilsSuite
 
 headerSuite :: Free TestF Unit
 headerSuite =
@@ -208,6 +212,13 @@ thumbnailSuite =
       Assert.equal fastanThumbnail (buildThumbnail fastan)
     test "remove repeat markers" do
       Assert.equal augustssonThumbnailNoRepeats (buildThumbnailNoRepeats augustsson)
+
+
+utilsSuite :: Free TestF Unit
+utilsSuite =
+  suite "utils" do
+    test "normalise chord" do
+      Assert.equal normalisedChord $ normaliseChord denormalisedChord
 
 -- headers in sample ABC tunes
 keyedTune =
@@ -303,3 +314,27 @@ fastanThumbnail :: String
 fastanThumbnail =
   fastanHeaders
   <> "| (3A4F4G4 A2B2 | (3:2:4c2d2B4c4 A2F2 |\r\n"
+
+bnote :: NoteDuration -> AbcNote
+bnote duration =
+  { pitchClass: B, accidental: Implicit, octave: 4, duration, tied: false }
+
+dnote :: NoteDuration -> AbcNote
+dnote duration =
+  { pitchClass: D, accidental: Implicit, octave: 4, duration, tied: false }
+
+denormalisedChordNotes :: NonEmptyList AbcNote
+denormalisedChordNotes =
+  NonEmptyList $ (bnote (1 % 4)) :| ((dnote (1 % 4)) : Nil)
+
+normalisedChordNotes :: NonEmptyList AbcNote
+normalisedChordNotes =
+  NonEmptyList $ (bnote (3 % 4)) :| ((dnote (3 % 4)) : Nil)
+
+normalisedChord :: AbcChord
+normalisedChord =
+  { notes : normalisedChordNotes, duration : (1 % 1) }
+
+denormalisedChord :: AbcChord
+denormalisedChord =
+  { notes : denormalisedChordNotes, duration : (3 % 1) }
