@@ -13,20 +13,20 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git://github.com/newlandsvalley/purescript-abc-parser.git"
+    "url": "https://github.com/newlandsvalley/purescript-abc-parser.git"
   },
   "dependencies": {
     "purescript-rationals": "^5.0.0",
     "purescript-tuples": "^5.1.0",
     "purescript-maybe": "^4.0.1",
-    "purescript-strings": "^4.0.1",
+    "purescript-strings": "^4.0.2",
     "purescript-foldable-traversable": "^4.1.1",
     "purescript-either": "^4.1.1",
-    "purescript-stringutils": "^0.0.9",
+    "purescript-stringutils": "^0.0.10",
     "purescript-bifunctors": "^4.0.0",
-    "purescript-debug": "^4.0.0",
+    "purescript-debug": "^4.0.1",
     "purescript-ordered-collections": "^1.6.1",
-    "purescript-midi": "^2.2.1"
+    "purescript-midi": "^2.3.2"
   },
   "devDependencies": {
     "purescript-psci-support": "^4.0.0",
