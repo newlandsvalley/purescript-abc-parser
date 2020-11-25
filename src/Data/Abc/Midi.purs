@@ -239,13 +239,6 @@ transformMusic m =
 
     Chord abcChord ->
       let
-        arbitraryNote =
-          { pitchClass : C
-          , accidental : Implicit
-          , octave : 0
-          , duration : (fromInt 0)
-          , tied : false
-          }
         first = Nel.head abcChord.notes
         others = Nel.tail abcChord.notes
         -- we'll pace the chord from the duration of the first note it contains,
