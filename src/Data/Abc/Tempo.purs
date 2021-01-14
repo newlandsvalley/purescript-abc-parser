@@ -23,7 +23,8 @@ import Data.List.NonEmpty (singleton)
 import Data.Foldable (foldl)
 import Data.Rational (Rational, (%), fromInt, toNumber)
 import Data.Abc
-import Data.Abc.Metadata (getUnitNoteLength, getTempoSig, getHeader)
+import Data.Abc.Metadata (getMeter, getUnitNoteLength, getTempoSig, getHeader)
+import Data.Abc.UnitNote (defaultUnitNoteLength)
 
 -- Exposed API
 
@@ -77,7 +78,8 @@ getAbcTempo :: AbcTune -> AbcTempo
 getAbcTempo tune =
   let
     tempoSig = fromMaybe defaultTempo $ getTempoSig tune
-    unitNoteLength = fromMaybe (1 % 8) $ getUnitNoteLength tune
+    mMeterSig = getMeter tune
+    unitNoteLength = fromMaybe (defaultUnitNoteLength mMeterSig) $ getUnitNoteLength tune
   in
     { tempoNoteLength : foldl (+) (fromInt 0) tempoSig.noteLengths
     , bpm : tempoSig.bpm
