@@ -12,7 +12,7 @@ import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..),
-                 BodyPart(..), NoteDuration, Header(..), Pitch(..), KeySet, Mode(..),
+                 BodyPart(..), NoteDuration, Header(..), KeySet, Mode(..),
                  AbcChord, AbcNote, AbcTune)
 import Data.Abc.Metadata
 import Data.Abc.Canonical (fromTune)
