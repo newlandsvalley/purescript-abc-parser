@@ -26,5 +26,5 @@ main = runTest do
     keySignatureSuite
     transpositionSuite
     midiSuite
-    voiceSuite
     unitNoteSuite
+    voiceSuite

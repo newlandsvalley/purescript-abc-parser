@@ -1,5 +1,6 @@
 -- | Basic support for polyphonic ABC tunes.
--- | Where inline Voice headers are present in the tune body, partition it
+-- |
+-- | Where voice headers are present in the tune body, partition it
 -- | into seperate bodies, one for each voice.
 -- |
 -- | In ABC, voices can be introduced like this:
@@ -28,7 +29,7 @@
 -- | The strategy is to fold over the tune structure in the State monad.  State will be 
 -- | changed each time we come across a free-standing Voice header in the tune body.
 -- | The current voice is this unless over-ridden by an inline voice.  
--- | The fold builds up a Map of Voices to partitioned ABC tunes
+-- | The fold builds up a Map of Voices to partitioned ABC tune bodies
 module Data.Abc.Voice 
   ( partitionVoices
   , partitionTuneBody) where
