@@ -29,17 +29,21 @@
 -- | changed each time we come across a free-standing Voice header in the tune body.
 -- | The current voice is this unless over-ridden by an inline voice.  
 -- | The fold builds up a Map of Voices to partitioned ABC tunes
-module Data.Abc.Voice (partitionTuneBody) where
+module Data.Abc.Voice 
+  ( partitionVoices
+  , partitionTuneBody) where
 
-import Prelude (class Eq, class Ord, ($), (<<<), join, map, not, pure)
-import Data.Abc (Bar, BodyPart(..), Header(..), Music(..), TuneBody)
-import Data.Abc.Metadata (isEmptyStave)
-import Data.List (List, head, singleton, snoc)
+import Prelude (class Eq, class Ord, ($), (<<<), bind, join, map, not, pure)
+import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody)
+import Data.Abc.Metadata (getHeaders, isEmptyStave)
+import Data.List (List, head, last, singleton, snoc)
 import Data.Maybe (Maybe(..))
 import Data.Map (Map, empty, lookup, insert, toUnfoldable)
 import Data.Tuple (Tuple(..))
 import Data.Foldable (foldM)
 import Data.Identity (Identity(..))
+import Control.Monad.State.Trans (StateT, evalStateT)
+import Control.Monad.State.Class (get, put)
 
 data VoiceLabel = 
     VoiceLabel String
@@ -50,18 +54,37 @@ derive instance ordVoiceLabel :: Ord VoiceLabel
 
 type VoiceMap = Map VoiceLabel TuneBody
 
-type VoiceM = Identity
+type VoiceM = StateT VoiceLabel Identity
 
-partitionTuneBody :: TuneBody -> Array TuneBody
-partitionTuneBody b =    
-  let 
-    voiceMap = runVoiceM (voiceFold b) 
+-- | given a tune, partition it into multiple such tunes
+-- | one for each voice
+partitionVoices :: AbcTune -> Array AbcTune 
+partitionVoices tune = 
+  map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
+
+-- | given a tune, partition its body into multiple such bodies 
+-- | with a separate body for each distinct voice
+partitionTuneBody :: AbcTune -> Array TuneBody
+partitionTuneBody tune =    
+  let
+    initialVoiceLabel = case (last $ getHeaders 'V' tune) of
+      Just (Voice description) -> VoiceLabel description.id 
+      _ -> NoLabel
+    voiceMap = runVoiceM initialVoiceLabel (voiceFold tune.body) 
   in 
     map (\(Tuple k v) -> v) $ toUnfoldable voiceMap
 
-runVoiceM :: forall a. VoiceM a -> a
-runVoiceM (Identity a) = a
+runVoiceM :: forall a. VoiceLabel -> VoiceM a -> a
+runVoiceM initialVoiceLabel v =
+  let
+    (Identity a) = evalStateT v initialVoiceLabel
+  in 
+    a
 
+-- The heart of the algorithm
+-- Track voice labels for all score lines in the tune and separate 
+-- parts of the tune with distinct voices into distinct tunes
+-- meanwhile ensuring any common constructs are shared by all tune partitions
 voiceFold :: TuneBody -> VoiceM VoiceMap
 voiceFold b = 
   let  
@@ -70,34 +93,19 @@ voiceFold b =
       case bp of
         BodyInfo header -> 
           case header of 
-            Voice voiceDescription ->
+            Voice voiceDescription -> do
+              _ <- put (VoiceLabel voiceDescription.id)
               pure $ addAtLabel (VoiceLabel voiceDescription.id) bp vmap
             _ -> 
               pure $ addToAll bp vmap
         Score bars -> do
+          currentVoice <- get
           if (not $ isEmptyStave bars) then
-            pure $ addAtLabel (scoreLabel bars) bp vmap
+            pure $ addAtLabel (scoreLabel currentVoice bars) bp vmap
           else
             pure vmap
   in
     foldM foldf (empty :: VoiceMap) b
-
-{-}
-voiceFoldf :: VoiceMap -> BodyPart -> VoiceM VoiceMap
-voiceFoldf vmap bp = do
-  case bp of
-    BodyInfo header -> 
-      case header of 
-        Voice voiceDescription ->
-          pure $ addAtLabel (VoiceLabel voiceDescription.id) bp vmap
-        _ -> 
-          pure $ addToAll bp vmap
-    Score bars -> do
-      if (not $ isEmptyStave bars) then
-        pure $ addAtLabel (scoreLabel bars) bp vmap
-      else
-        pure vmap
--}
 
 -- append a body part at the specified map label
 addAtLabel :: VoiceLabel -> BodyPart -> VoiceMap -> VoiceMap
@@ -111,18 +119,22 @@ addToAll :: BodyPart -> VoiceMap -> VoiceMap
 addToAll bp vmap =
   map (\v -> (snoc v bp)) vmap
 
-scoreLabel :: List Bar -> VoiceLabel
-scoreLabel bars =
+-- find the inline voice label from a score line (if it exists)
+-- otherwise fall back to the default voice
+scoreLabel :: VoiceLabel -> List Bar -> VoiceLabel
+scoreLabel currentVoice bars  =
   let
     firstBarMusic = join $ map (head <<< _.music) $ head bars
   in
     case firstBarMusic of
-      (Just (Inline header)) -> voiceLabel header
-      _ -> NoLabel
+      (Just (Inline header)) -> voiceLabel currentVoice header 
+      _ -> currentVoice
 
-voiceLabel :: Header -> VoiceLabel
-voiceLabel h =
+-- find the voice label from an inline header (if it defines a voice)
+-- otherwise fall back to the default voice
+voiceLabel :: VoiceLabel -> Header -> VoiceLabel
+voiceLabel currentVoice h =
   case h of
     (Voice description) -> VoiceLabel description.id
-    _ -> NoLabel
+    _ -> currentVoice
 

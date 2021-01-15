@@ -17,7 +17,7 @@ assertVoiceCount :: String -> Int -> Test
 assertVoiceCount s target =
   case (parse s) of
     Right tune ->
-      Assert.equal target (length (partitionTuneBody tune.body))
+      Assert.equal target (length (partitionTuneBody tune))
 
     Left err ->
       failure ("parse failed: " <> (show err))
@@ -27,7 +27,7 @@ assertVoice s canonical ix =
   case (parse s) of
     Right tune ->
       let
-        partitionedBody = partitionTuneBody tune.body
+        partitionedBody = partitionTuneBody tune
         firstBody = fromMaybe Nil $ index partitionedBody ix
         firstVoice = { headers: tune.headers, body: firstBody }
       in
