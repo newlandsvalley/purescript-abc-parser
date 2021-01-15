@@ -1,6 +1,6 @@
 module Test.Metadata (metadataSuite) where
 
-import Prelude (Unit, discard, show, ($), (<>), (==))
+import Prelude (Unit, discard, map, show, ($), (<>), (==))
 import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
@@ -12,7 +12,7 @@ import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..),
-                 BodyPart(..), NoteDuration, Pitch(..), KeySet, Mode(..),
+                 BodyPart(..), NoteDuration, Header(..), Pitch(..), KeySet, Mode(..),
                  AbcChord, AbcNote, AbcTune)
 import Data.Abc.Metadata
 import Data.Abc.Canonical (fromTune)
@@ -37,6 +37,26 @@ assertOkTitle source target =
 
     _ ->
       failure "parse error"
+
+assertAllTitles :: String -> List String  -> Test
+assertAllTitles source target =
+  case parse source of
+    Right tune ->
+      let
+        f :: Header -> String 
+        f header = 
+          case header of  
+            Title title -> title 
+            _ -> ""
+        titleHeaders =
+          getHeaders 'T' tune
+        titles = 
+          map f titleHeaders
+      in
+        Assert.equal target titles
+    _ ->
+      failure "parse error"
+
 
 assertOkKeySig :: String -> ModifiedKeySignature -> Test
 assertOkKeySig source target =
@@ -105,6 +125,7 @@ assertNoHeader source getf =
 
     _ ->
       failure "parse error"
+
 
 assertHeaderCount :: Int -> String ->  Test
 assertHeaderCount expectedCount source =
@@ -178,12 +199,14 @@ metadataSuite = do
 headerSuite :: Free TestF Unit
 headerSuite =
   suite "headers" do
-   test "getTitle" do
+   test "get title" do
      assertOkTitle titledTune "Gamal Reinlender"
    test "no title" do
      assertNoHeader keyedTune getTitle
-   test "doubly titled tune" do
+   test "get first of multiple titles" do
      assertOkTitle doublyTitledTune "Nancy Dawson"
+   test "get all titles" do
+     assertAllTitles doublyTitledTune ("Nancy Dawson" : "Piss Upon the Grass" : Nil)
    test "OK key header" do
      assertOkKeySig keyedTune fMajorM
    test "no key header" do
