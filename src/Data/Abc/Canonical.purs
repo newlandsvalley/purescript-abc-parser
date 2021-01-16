@@ -80,6 +80,8 @@ meter ms =
         Just (Tuple n d) ->
             show n <> "/" <> show d
 
+-- we optimise durations in tune bodies to the most compact form
+-- just use showRatio in headers
 duration :: Rational -> String
 duration r =
   case (Tuple (numerator r) (denominator r)) of
@@ -339,7 +341,7 @@ header h =
             "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
 
         UnitNoteLength d ->
-            "L: " <> (duration d)
+            "L: " <> (showRatio d)
 
         Meter m ->
             "M: " <> (meter m)

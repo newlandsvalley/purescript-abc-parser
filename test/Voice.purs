@@ -65,6 +65,8 @@ voiceSuite = do
       assertVoiceCount oneVoice 1
     test "two voices" do
       assertVoiceCount twoVoices 2
+    test "four voices" do
+      assertVoiceCount fourVoices 4
     test "two voices inline" do
       assertVoiceCount twoVoicesInline 2
     test "three voices" do
@@ -77,6 +79,8 @@ voiceSuite = do
       assertVoice' twoVoices secondVoiceOfTwo 1
     test "second voice of two inline" do
       assertVoice' twoVoicesInline secondVoiceOfTwoInline 1
+    test "fourth voice of four" do
+      assertVoice' fourVoices fourthVoiceOfFour 3
     test "three voices with empty stave" do
       assertVoiceCount (threeVoices <> "\x0D\n") 3
 
@@ -123,3 +127,56 @@ secondVoiceOfTwo =
 secondVoiceOfTwoInline :: String
 secondVoiceOfTwoInline =
     "K: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
+
+-- Modified four Voice example (from abcnotation.com)
+-- added the foo=bar property for a voice header to prepare for v2.2
+-- we use 4/4 meter instead of C, CMajor instead of C and spaces after 
+-- header colons to make it easier to test against the canonical form
+fourVoices :: String 
+fourVoices =
+    "X: 1\r\n" <>
+    "T: Grand Staff With Four Voices\r\n" <>
+    "M: 4/4\r\n" <>
+    "L: 1/2\r\n" <>
+    "K: CMajor\r\n" <>
+    "V: 1 clef=treble foo=bar\r\n" <>
+    "c/e/d/c/|c/B/B/c/|c2|]\r\n" <>
+    "V: 2 clef=treble\r\n" <>
+    "EF|ED|E2|]\r\n" <>
+    "V: 3 clef=bass\r\n" <>
+    "G,A,|G,G,|G,2|]\r\n" <>
+    "V: 4 clef=bass\r\n" <>
+    "C,F,|G,G,,|C,2|]\r\n" 
+
+{- This is the actual example and seems awkward and uses
+   a variety of volatile features which will be regularized
+   to some extent in release 2.2
+fourVoices :: String 
+fourVoices =
+    "X:1\r\n" <>
+    "T:Grand Staff With Four Voices\r\n" <>
+    "M:C\r\n" <>
+    "L:1/2\r\n" <>
+    "K:\r\n" <>
+    "%%staves {1 2 3 4}\r\n" <>
+    "K:C\r\n" <>
+    "V:1 [K:clef=treble]\r\n" <>
+    "c/e/d/c/|c/B/B/c/|c2|]\r\n" <>
+    "V:2 [K:clef=treble]\r\n" <>
+    "EF|ED|E2|]\r\n" <>
+    "V:3 [K:clef=bass]\r\n" <>
+    "G,A,|G,G,|G,2|]\r\n" <>
+    "V:4 [K:clef=bass]\r\n" <>
+    "C,F,|G,G,,|C,2|]\r\n" 
+-}
+
+fourthVoiceOfFour :: String 
+fourthVoiceOfFour =
+    "X: 1\r\n" <>
+    "T: Grand Staff With Four Voices\r\n" <>
+    "M: 4/4\r\n" <>
+    "L: 1/2\r\n" <>
+    "K: CMajor\r\n" <>
+    "V: 1 clef=treble foo=bar\r\n" <>
+    "V: 4 clef=bass\r\n" <>
+    "C,F,|G,G,,|C,2|]\r\n" 
