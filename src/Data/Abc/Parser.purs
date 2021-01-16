@@ -104,16 +104,14 @@ introBar =
 -- | an intro line as a full line of bars thus introduced
 introLine :: Parser (List Bar)
 introLine =
-  (:) <$> introBar <*> manyTill1 bar eol
+  (:) <$> introBar <*> manyTill bar eol
    <?> "intro line"
 
 -- | a fully barred line has bar lines both at begin and end
 fullyBarredLine :: Parser (List Bar)
 fullyBarredLine =
-  manyTill1 bar eol
+  manyTill bar eol
    <?> "fully barred line"
-
--- | and an intoLine is a line of bars started by an intro
 
 scoreItem :: Parser Music
 scoreItem =
@@ -146,7 +144,6 @@ abcChord =
         <$> (between (char '[') (char ']') (many1 abcNote))
         <*> optionMaybe noteDur
         <?> "ABC chord"
-
 
 inline :: Parser Music
 inline =
@@ -666,7 +663,7 @@ anywhereInfo isInline =
         , voice isInline
         , wordsAfter isInline
         , fieldContinuation
-        , comment
+        , commentLine
         ]
         <?> "anywhere info"
 
@@ -701,16 +698,17 @@ unsupportedHeaderCode :: Parser String
 unsupportedHeaderCode =
     regex "[a-qt-vx-zEJ]:" <* whiteSpace
 
-{- comments.  These are introduced with '%' and can occur anywhere.
-   The stylesheet directive '%%' is not recognized here and will
-   simply be treated as a comment.  We'll treat comments as Headers
-   so as not to pollute the parse tree overmuch
+{- Full comment lines.  Comments are introduced with '%' and can occur anywhere
+   and carry on thill the end of the line. We'll treat single line comments 
+   as Headers so as not to pollute the parse tree overmuch.
+   The stylesheet directive '%%' is not recognized here and will simply be
+   treated as a comment.  
 -}
-comment :: Parser Header
-comment =
+commentLine :: Parser Header
+commentLine =
     Comment
-        <$> (regex "%" *> strToEol)
-        <?> "comment"
+        <$> comment
+        <?> "comment line"
 
 {- parse an information item String - note that, because these can be used inline
    (bracketed by '[' and ']') it behoves us not to use the framing characters in the string
@@ -799,13 +797,11 @@ unitNoteLength =
         <$> ((headerCode 'L') *> noteDuration)
         <?> "L header"
 
-
 meter :: Parser Header
 meter =
     Meter
         <$> ((headerCode 'M') *> meterDefinition)
         <?> "M header"
-
 
 macro :: Boolean -> Parser Header
 macro isInline =
@@ -813,13 +809,11 @@ macro isInline =
         <$> ((headerCode 'm') *> (inlineInfo isInline))
         <?> "m header"
 
-
 notes :: Boolean -> Parser Header
 notes isInline =
     Notes
         <$> ((headerCode 'N') *> (inlineInfo isInline))
         <?> "N header"
-
 
 origin :: Parser Header
 origin =
@@ -827,13 +821,11 @@ origin =
         <$> ((headerCode 'O') *> strToEol)
         <?> "O header"
 
-
 parts :: Boolean -> Parser Header
 parts isInline =
     Parts
         <$> ((headerCode 'P') *> (inlineInfo isInline))
         <?> "P header"
-
 
 tempo :: Parser Header
 tempo =
@@ -841,13 +833,11 @@ tempo =
         <$> ((headerCode 'Q') *> tempoSignature)
         <?> "Q header"
 
-
 rhythm :: Boolean -> Parser Header
 rhythm isInline =
     Rhythm
         <$> ((headerCode 'R') *> (inlineInfo isInline))
         <?> "R header"
-
 
 remark :: Boolean -> Parser Header
 remark isInline =
@@ -855,13 +845,11 @@ remark isInline =
         <$> ((headerCode 'r') *> (inlineInfo isInline))
         <?> "r header"
 
-
 source :: Parser Header
 source =
     Source
         <$> ((headerCode 'S') *> strToEol)
         <?> "S header"
-
 
 symbolLine :: Boolean -> Parser Header
 symbolLine isInline =
@@ -869,13 +857,11 @@ symbolLine isInline =
         <$> ((headerCode 's') *> (inlineInfo isInline))
         <?> "s header"
 
-
 title :: Boolean -> Parser Header
 title isInline =
     Title
         <$> ((headerCode 'T') *> (inlineInfo isInline))
         <?> "T header"
-
 
 userDefined :: Boolean -> Parser Header
 userDefined isInline =
@@ -906,7 +892,7 @@ wordsAligned isInline =
 referenceNumber :: Parser Header
 referenceNumber =
     ReferenceNumber
-        <$> ((headerCode 'X') *> (optionMaybe int)) <* strToEol
+        <$> ((headerCode 'X') *> (optionMaybe int)) <* whiteSpace
         <?> "x header"
 
 transcription :: Parser Header
@@ -968,13 +954,10 @@ cutTime :: Parser (Maybe MeterSignature)
 cutTime =
     (Just (Tuple 2 2 )) <$ string "C|"
 
-
-
 -- can't use Rationals for these because they cancel
 meterSignature :: Parser (Maybe MeterSignature)
 meterSignature =
     Just <$> (Tuple <$> int <* char '/' <*> int <* whiteSpace)
-
 
 nometer :: Parser (Maybe MeterSignature)
 nometer =
@@ -1123,8 +1106,6 @@ locrian :: Parser Mode
 locrian =
     Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
 
-
-
 -- builders
 buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
@@ -1242,7 +1223,6 @@ buildNote macc pitchStr octave ml mt =
         Just a -> a
   in
     { pitchClass : pc, accidental : acc, octave : spn, duration : l, tied : tied }
-
 
 buildAccidental :: String -> Accidental
 buildAccidental s =
@@ -1395,7 +1375,6 @@ buildTempoSignature3 bpm  =
    , marking : Nothing
    }
 
-
 {- build a key signature -}
 buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
 buildKeySignature pStr ma mm =
@@ -1425,10 +1404,7 @@ lookupPitch p =
      "G" -> G
      _ -> C
 
-
-
-
--- regex parsers.  Place some at the top level so that we can precompile the regex
+-- regex parsers.  
 brokenRhythmOperator :: Parser String
 brokenRhythmOperator =
   regex "(<+|>+)"
@@ -1436,10 +1412,6 @@ brokenRhythmOperator =
 tupletLength :: Parser String
 tupletLength =
   regex "[2-9]"
-
-endOfLine :: Parser String
-endOfLine =
-  regex "\r\n"
 
 anyInt :: Parser String
 anyInt =
@@ -1456,38 +1428,42 @@ alphaNumString =
 newline :: Parser Char
 newline = satisfy ((==) '\n') <?> "expected newline"
 
-
 {-| Parse a `\r\n` sequence, returning a `\n` character. -}
 crlf :: Parser Char
-crlf = '\n' <$ endOfLine <?> "expected crlf"
+crlf = '\n' <$ regex "\r\n" <?> "expected crlf"
 
-
-{-| Parse an end of line character or sequence, returning a `\n` character. -}
+{-| Parse an end of line character or sequence, returning a `\n` character. 
+    Before the actual end of line, we can have comments, which are discarded
+-}
 eol :: Parser Char
-eol = newline <|> crlf
+eol = 
+   optional comment *>
+   crlf <|> newline
+
+{- Parse a comment.  These can only occur at the end of a line-}
+comment :: Parser String
+comment = 
+  char '%' *> commentStrToEol
 
 {- parse a remaining string up to but not including the end of line
-   was
-      strToEol = String.fromList <$> many (noneOf [ '\r', '\n' ])
+   here we intend to retain the string so we bar any comments
 -}
 strToEol :: Parser String
 strToEol =
-    regex "[^\x0D\n]*"
+    regex "[^\x0D\n%]*" 
 
+{- as above but with further comment characters allowed -}
+commentStrToEol :: Parser String
+commentStrToEol =
+    regex "[^\x0D\n]*" 
 
-
-manyTill1 :: forall a end. Parser a -> Parser end -> Parser (List a)
-manyTill1 = manyTill
-
-{-| Parse a positive integer (with no sign).
--}
+{-| Parse a positive integer (with no sign). -}
 int :: Parser Int
 int =
   fromMaybe 1 <$>  -- the anyInt regex will always provide an integer if it parses
     fromString <$>
     anyInt
     <?> "expected a positive integer"
-
 
 -- | literal quoted String retains the quotes surrounding the returned String
 literalQuotedString :: Parser String

@@ -185,10 +185,8 @@ headerSuite =
       assertRoundTrip "r: this is a remark [part 1]\x0D\n| ABC |\x0D\n"
     test "comment in reference number" do
       assertParses "X: 125 % start of header\x0D\n| ABC |\x0D\n"
-    {- this test currently fails - see https://github.com/newlandsvalley/purescript-abc-parser/issues/25
     test "comment in key" do
-      assertParses "K: C % scale: C major\x0D\n| ABC |\x0D\n"
-    -}
+      assertParses "K: C % scale: C major\x0D\n| ABC |\x0D\n"    
 
 noteSuite :: Free TestF Unit
 noteSuite =
@@ -386,7 +384,7 @@ structureSuite  =
     test "inline key" do
       assertRoundTrip "| ABC def g3 | [K: AMajor] g3 a3 |\x0D\n"
     test "inline comment" do
-      assertRoundTrip "| ABC z2 def z/ \x0D\n%% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
+      assertRoundTrip "| ABC z2 def z/ \x0D\n% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
 
 -- | the purescript version handles parsing differently from the elm version
 -- | when two different productions have the same initial lexeme.
