@@ -16,6 +16,7 @@ module Data.Abc ( AbcTune
 , BarType
 , Thickness(..)
 , Repeat(..)
+, Volta(..)
 , NoteDuration
 , KeySignature
 , ModifiedKeySignature
@@ -38,7 +39,7 @@ import Data.Either (Either)
 import Data.Enum (class Enum)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
-import Data.List (List)
+import Data.List (List, intercalate)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
@@ -46,7 +47,7 @@ import Data.Ordering (Ordering(..))
 import Data.Rational (Rational)
 import Data.String (toLower) as Str
 import Data.Tuple (Tuple)
-import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
+import Prelude (class Show, class Eq, class Ord, (<>), compare, map, show)
 
 -- | A Tune.
 type AbcTune =
@@ -177,6 +178,21 @@ instance showRepeat :: Show Repeat where
 
 derive instance eqRepeat :: Eq Repeat
 
+-- | a Volta - a repeated section
+-- | The ABC specification also requires a third option -
+-- |    VoltaRange Int Int   -- |1-3 etc
+-- | but we'll investigate this later
+data Volta 
+  = Volta Int                         -- |1  or |2 etc
+  | VoltaList (NonEmptyList Int)      -- |1,3 etc
+
+derive instance genericVolta  :: Generic Volta _
+instance showVolta :: Show Volta where
+  show (Volta v) = show v
+  show (VoltaList vs) = intercalate "," (map show vs)
+
+derive instance eqVolta :: Eq Volta
+
 {-| A Bar line type:
 
 *  thickness - the thickness of vertical lines in the bar
@@ -186,7 +202,7 @@ derive instance eqRepeat :: Eq Repeat
 type BarType =
     { thickness :: Thickness
     , repeat :: Maybe Repeat
-    , iteration :: Maybe Int
+    , iteration :: Maybe Volta
     }
 
 -- | A Mode.
@@ -285,7 +301,7 @@ type KeySignature =
     }
 
 -- | A Key Signature with modifications (possibly empty)
--- |    This is used for non-diatonic modes where intervals may be greater than two semitones
+-- |    This is used for non-diatonicrepeatS modes where intervals may be greater than two semitones
 -- |    (for example as found in Klezmer).
 type ModifiedKeySignature =
   { keySignature :: KeySignature

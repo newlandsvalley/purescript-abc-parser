@@ -17,9 +17,11 @@ import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
+import Data.NonEmpty as NonEmpty
 import Data.Map (Map)
 import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, (%))
 import Data.String (drop, toUpper, singleton)
 import Data.String.CodePoints (codePointFromChar, length)
@@ -30,7 +32,7 @@ import Data.Unfoldable1 (replicate1A)
 import Prelude (class Show, bind, flip, join, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
-import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, (<?>))
+import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
 
 -- import Debug.Trace (trace)
 
@@ -181,7 +183,7 @@ degenerateBarRepeat :: Parser BarType
 degenerateBarRepeat =
   (buildBarTypeRecord Thin Nothing
       <$> (Just
-           <$> (whiteSpace *> char '[' *> int)
+           <$> (whiteSpace *> char '[' *> repeatSection)
           )
   )
 
@@ -191,13 +193,15 @@ degenerateBarRepeat =
       | [1
    but is not allowed to be
       | 1
+  
+   repeats of the form 1,2,3 are also accepted
 
    associating the digit with the bracket bar number should remove ambiguity with respect to other productions that use the bracket
    (in particular, inline headers and chords).
 -}
-repeatSection :: Parser Int
-repeatSection =
-   int
+repeatSection :: Parser Volta
+repeatSection =   
+   buildVolta <$> (sepBy1 digit (char ','))   -- matches both 1,2,3 and 1
 
 
 {- written like this instead of a regex because it's all regex control character! -}
@@ -1117,9 +1121,9 @@ buildBar bt m =
   , music : m
   }
 
-buildBarTypeRecord :: Thickness -> Maybe Repeat -> Maybe Int -> BarType
-buildBarTypeRecord t r i =
-  { thickness : t, repeat : r, iteration : i}
+buildBarTypeRecord :: Thickness -> Maybe Repeat -> Maybe Volta -> BarType
+buildBarTypeRecord t r mv =
+  { thickness : t, repeat : r, iteration : mv}
 
 {- build a bar line
    this is a bit tricky because of the poor specification for the possible shapes of bar lines
@@ -1127,8 +1131,8 @@ buildBarTypeRecord t r i =
    Try to normalise to representations of basic shapes like (|, |:, :|, :||, ||:, ||, :|:, :||: )
 
 -}
-buildBarline :: String -> Maybe Int -> BarType
-buildBarline s i =
+buildBarline :: String -> Maybe Volta -> BarType
+buildBarline s mv =
     let
         -- estimate the bar separator thickness
         thickness =
@@ -1172,7 +1176,7 @@ buildBarline s i =
             else
                 Just BeginAndEnd
     in
-      { thickness : thickness, repeat : repeat, iteration : i }
+      { thickness : thickness, repeat : repeat, iteration : mv }
 
 -- | a bar type for an introductory 'bar' where there is no opening bar line
 invisibleBarType :: BarType
@@ -1390,6 +1394,12 @@ buildVoice :: String -> String -> Map String String -> Header
 buildVoice code id properties  =
     Voice { id, properties }
 
+buildVolta :: Nel.NonEmptyList Int -> Volta 
+buildVolta vs =  
+  case (Nel.length vs) of 
+    1 -> Volta (NonEmpty.head (unwrap vs))
+    _ -> VoltaList vs
+
 -- lookups
 
 lookupPitch :: String -> PitchClass
@@ -1416,6 +1426,10 @@ tupletLength =
 anyInt :: Parser String
 anyInt =
   regex "(0|[1-9][0-9]*)"
+
+anyDigit :: Parser String
+anyDigit =
+  regex "([0-9])"    
 
 -- low level
 
@@ -1464,6 +1478,15 @@ int =
     fromString <$>
     anyInt
     <?> "expected a positive integer"
+
+
+{-| Parse a digit (with no sign). -}  
+digit :: Parser Int
+digit =
+  fromMaybe 1 <$>  
+    fromString <$>
+    anyDigit
+    <?> "expected a digit"    
 
 -- | literal quoted String retains the quotes surrounding the returned String
 literalQuotedString :: Parser String

@@ -7,12 +7,16 @@ module Data.Abc.Midi
   , midiPitchOffset) where
 
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarType, Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), Grace, GraceableNote, MusicLine, Music(..), Mode(..), ModifiedKeySignature, TempoSignature, PitchClass(..))
+import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarType, 
+    Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), Grace, GraceableNote, 
+    MusicLine, Music(..), Mode(..), ModifiedKeySignature, 
+    TempoSignature, PitchClass(..), Volta)
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Canonical as Canonical
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
-import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, initialRepeatState, indexBar, finalBar)
+import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, 
+  initialRepeatState, indexBar, finalBar)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
@@ -94,7 +98,7 @@ toMidiAtBpm originalTune bpm =
 type MidiBar =
   { number :: Int                         -- sequential from zero
   , repeat :: Maybe Repeat                -- a repeat of some kind
-  , iteration :: Maybe Int                -- an iteration marker  (|1  or |2 etc)
+  , iteration :: Maybe Volta              -- an iteration volta marker  (|1  or |2 etc)
   , midiMessages :: List Midi.Message     -- the notes in the bar or any tempo changes
   }
 
@@ -308,7 +312,9 @@ coalesceBar tstate barType =
         Just x
      _ ->
         barType.repeat
-    bar' = tstate.currentBar { repeat = newRepeat, iteration = barType.iteration }
+    bar' = tstate.currentBar { repeat = newRepeat
+                             , iteration = barType.iteration 
+                             }
   in
     tstate { currentBar = bar' }
 

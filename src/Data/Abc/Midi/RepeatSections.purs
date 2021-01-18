@@ -13,15 +13,17 @@ module Data.Abc.Midi.RepeatSections
         , finalBar
         ) where
 
-import Data.Abc (Repeat(..))
 import Data.Generic.Rep
+
+import Data.Abc (Repeat(..), Volta(..))
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
+import Data.NonEmpty as NonEmpty
 import Data.Tuple (Tuple(..))
-import Prelude (class Eq, class Show, (==), (&&), not)
+import Prelude (class Eq, class Show, (==), (&&), map, not)
 
 -- | a section of the tune (possibly repeated)
 newtype Section = Section
@@ -51,16 +53,21 @@ initialRepeatState :: RepeatState
 initialRepeatState =
   { current : nullSection, sections : Nil }
 
--- | index a bar by identifying any repeat markings and saving the marking against the bar number
-indexBar :: (Maybe Int) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
+-- | index a bar by identifying any repeat markings and saving the marking against 
+-- | the bar number
+-- | WARNING  at the moment we don't properly handle complete volta lists here
+indexBar :: (Maybe Volta) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
 indexBar iteration repeat barNumber r =
   case (Tuple iteration repeat) of
     -- |1
-    Tuple (Just 1) _ ->
+    Tuple (Just (Volta 1)) _ ->
       r { current = firstRepeat barNumber r.current}
     -- |2  or :|2
-    Tuple (Just 2) _ ->
+    Tuple (Just (Volta 2)) _ ->
       r { current = secondRepeat barNumber r.current}
+    -- | 1,2 etc - this line does not do the job
+    Tuple (Just (VoltaList vs)) _ ->
+      r { current = firstRepeat barNumber r.current}
     -- |:
     Tuple _ (Just Begin) ->
       startSection barNumber r
@@ -74,7 +81,7 @@ indexBar iteration repeat barNumber r =
      r
 
 {-| accumulate any residual current state from the final bar in the tune -}
-finalBar :: (Maybe Int) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
+finalBar :: (Maybe Volta) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
 finalBar iteration repeat barNumber r =
   let
     isRepeatEnd = case repeat of
@@ -86,6 +93,8 @@ finalBar iteration repeat barNumber r =
       accumulateSection barNumber false repeatState
     else
       repeatState
+
+
 
 -- default sections i.e. no repeats yet
 defaultSections :: RepeatState
@@ -186,3 +195,21 @@ newSection pos isRepeated = Section
 nullSection :: Section
 nullSection =
   newSection 0 false
+
+
+-- | get the repeat number from the Volta 
+-- | This is a terrible hack!
+-- | WARNING this does not properly support complex volta lists 
+getVoltaNumber :: Maybe Volta -> Maybe Int 
+getVoltaNumber mvolta = 
+  let
+    toVoltaNumber :: Volta -> Int 
+    toVoltaNumber volta = 
+      case volta of 
+        Volta v -> v 
+        VoltaList vs -> 
+          -- satisfy ourselves with just the first in the list
+          NonEmpty.head (unwrap vs)
+  in 
+    map toVoltaNumber mvolta
+    
