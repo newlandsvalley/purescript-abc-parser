@@ -7,14 +7,31 @@ purescript-abc-parser
 
 This is a parser for version 2.1 of Chris Walshaw's [ABC Notation](http://abcnotation.com/) which is primarily designed as an interchange format for scores of traditional music.  Also included are functions to manipulate the parse tree in order to provide alteration of tempo, transposition, conversion to MIDI etc.
 
-Features
---------
+Motivation
+----------
 
-*  The parser is primarily aimed at web applications that deal with single voice traditional music.
-*  It is biased towards editor applications in that it attempts to be as lenient as possible whilst still honouring the intentions of the ABC specification. In particular, there is no requirement for any header to be present at all - sensible defaults are used instead.  This means that an editor application can allow the user (if she prefers) to concentrate on the notes and only add the headers at a later stage.
-*  It attempts to be helpful to score-engraving software.  For example, bars are first class entities in the ABC ADT; grace notes are directly attached to the notes that they 'grace'; line continuations do actually join the two lines in question.
-*  It attempts to be helpful to player applications in that it provides a translation to MIDI.
-*  There is limited support for polyphony.  The parser recognizes 'V' voice headers which may introduce each polyphonic voice.  The __Voices__ module allows the tune body to be partitioned into separate bodies for each voice if a score line is introduced by a Voice inline field (See section 7.3 of the ABC specification).  However, the MIDI module ignores these Voice headers and thus does not support polyphony
+The goal of this project is not to produce a general purpose parser for all forms of music in a wide variety of computational settings.  Rather, it is to provide a tool that will parse an individual traditional tune when presented to it in a browser - either from a file or from keyed input. In particular, the parser is designed to handle the majority of tunes housed in the major Western European collections - particularly [The Session](https://thesession.org/), [FolkWiki](http://www.folkwiki.se/), [Spillefolk](https://spillefolk.dk/nodesamlingen/) and [abcnotation.com](http://abcnotation.com/).
+
+ Consequently, aspects of the spec that apply to other settings or other musical forms will be ignored or curtailed.  In addition, parts of the specification marked as ```volatile``` will be treated as being non-normative and in some cases ignored. 
+
+It is assumed that it will work in cooperation with other modules which will be responsible for such aspects as editing, displaying or playing the score. It is a particular design aim to support editor applications such that a user may, if she prefers, edit the tune body before even thinking about the headers. 
+
+Version 2.2 ABC support
+-----------------------
+
+It is intended to support ABC version 2.2. Unfortunately, very many sections of this spec are still marked as ```volatile```.
+
+The main changes in this version of the spec are to do with multiple voices and in particular, the manner in which clefs for a variety of (possibly transposing) instruments may be represented. This is not a problem for most traditional music collections.  Accordingly, clef descriptions will be parsed, but left predominantly untyped.
+
+Deviations from the spec
+------------------------
+
+  * Tunebooks.  Only one tune is allowed per file containing text entirely dedicated to that tune. Comsequently the need for ```free text``` or ```embdedded fragments``` does not arise.
+  * Typeset text.  Not supported.  It is assumed that any associated score-engraving software will include its own typesetting strategy.
+  * Chord Descriptions.  Parsed but ignored (intentionally).  These tend to sound terrible and, in my opinion, tend to be too dictatorial.
+  * Mandatory information fields (headers).  In an editor application, it is important to allow the user the option of first entering the notes and only later the information fields, whilst parsing the input after each keystroke.  For this reason, mandatory headers are not enforced - it is assumed that later software modules will enforce them in many circumstances.  In particular, the ```X:(reference-number)``` header has no usefulness in a browser setting.
+  * Unicode escape sequences.  Browsers have full Unicode support and I would expect users to use fully unicode aware editors these days and so this feature is ignored.
+  
 
 Issues
 ------
