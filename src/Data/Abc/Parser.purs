@@ -157,35 +157,48 @@ barline :: Parser BarType
 barline =
     choice
         [
-          normalBarline
-        , degenerateBarRepeat
+          try normalBarline      -- ambiguity of :: caused by degenerateDoubleColon
+        , degenerateDoubleColon
+        , degenerateBarVolta
         ]
 
 {- a normal bar line (plus optional repeat iteration marker)
    see comments in 4.8 Repeat/bar symbols:
-   Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines may have
-   any shape, using a sequence of | (thin bar line), [| or |] (thick bar line), and : (dots), e.g. |[| or [|:::
+   Abc parsers should be quite liberal in recognizing bar lines. In the wild, bar lines 
+   may have any shape, using a sequence of | (thin bar line), [| or |] (thick bar line), 
+   and : (dots), e.g. |[| or [|:::
 -}
 normalBarline :: Parser BarType
 normalBarline =
-    buildBarline
-        <$> barSeparator
-        <*> optionMaybe repeatSection
-        <?> "bartype"
+  buildBarType
+     <$> repeatMarkers
+     <*> barlineThickness
+     <*> repeatMarkers
+     <*> optionMaybe repeatSection
+     <?> "bartype"          
 
-{- sometimes in the wild we get a degenerate repeat marker at the start of a line of music like this:
+{- sometimes in the wild we get a degenerate volta marker at the start of a line 
+   of music like this:
      [1 .....
    or
      _[1 ....
-   again we have to be careful about ambiguity between this and inline headers by making sure we parse '[' immediately followed by '1' etc.
+   again we have to be careful about ambiguity between this and inline headers by 
+   making sure we parse '[' immediately followed by '1' etc.
+
+   We treat this as a bar on its own
 -}
-degenerateBarRepeat :: Parser BarType
-degenerateBarRepeat =
-  (buildBarTypeRecord Thin Nothing
-      <$> (Just
-           <$> (whiteSpace *> char '[' *> repeatSection)
-          )
-  )
+degenerateBarVolta :: Parser BarType
+degenerateBarVolta =
+  buildBarType 0 Thin 0
+    <$> (Just <$> (whiteSpace *> char '[' *> repeatSection)  )
+ 
+{- Parse a degenerate barline with no bar line!  Just :: on its own -}
+degenerateDoubleColon :: Parser BarType
+degenerateDoubleColon = 
+  buildBarType 1 Thin 1 Nothing
+    <$ char ':'
+    <* char ':'     
+
 
 {- a repeat section at the start of a bar.  We have just parsed a bar marker (say |) and so the combination of this and the repeat may be:
       |1
@@ -203,28 +216,19 @@ repeatSection :: Parser Volta
 repeatSection =   
    buildVolta <$> (sepBy1 digit (char ','))   -- matches both 1,2,3 and 1
 
+barlineThickness :: Parser Thickness
+barlineThickness =
+  choice
+    [ ThickThin <$ string "[|"
+    , ThinThick <$ string "|]"
+    , ThickThin <$ string "]|"
+    , ThinThin <$ string "||"
+    , Thin <$ string "|"     
+    ]       
 
-{- written like this instead of a regex because it's all regex control character! -}
-barSeparator :: Parser String
-barSeparator =
-      choice
-          [ string "[|"
-          , string "|]:"  -- must come before |] otherwise it hides it
-          , string "|]"
-          , string "]|:"
-          , string "]|"
-          , string ":[|"
-          , string "|:"
-          , string ":|:"
-          , string ":||:"
-          , string ":|]"   -- must come before :| else it hides it
-          , string ":||"
-          , string ":|"
-          , string "::"
-          , string "||:"   -- must come before || else it hides it
-          , string "||"
-          , string "|"     -- must be last otherwise it hides |:
-          ]
+repeatMarkers :: Parser Int 
+repeatMarkers = 
+  L.length <$> many (char ':')   
 
 -- spec is unclear if spaces are allowed after a broken rhythm operator but it's easy to support, is more permissive and doesn't break anything
 brokenRhythmTie :: Parser Broken
@@ -1121,62 +1125,16 @@ buildBar bt m =
   , music : m
   }
 
-buildBarTypeRecord :: Thickness -> Maybe Repeat -> Maybe Volta -> BarType
-buildBarTypeRecord t r mv =
-  { thickness : t, repeat : r, iteration : mv}
-
-{- build a bar line
-   this is a bit tricky because of the poor specification for the possible shapes of bar lines
-   which may have multiple different types of bar line markers (|,[,]) and repeat markers (:)
-   Try to normalise to representations of basic shapes like (|, |:, :|, :||, ||:, ||, :|:, :||: )
-
--}
-buildBarline :: String -> Maybe Volta -> BarType
-buildBarline s mv =
-    let
-        -- estimate the bar separator thickness
-        thickness =
-            if (includes "|]" s) then
-                ThinThick
-            else if (includes "[|" s) then
-                ThickThin
-            else if (includes "||" s) then
-                ThinThin
-            else
-                Thin
-
-        -- now normalise all lines to '|'
-        f c =
-            case c of
-                '[' ->
-                    '|'
-
-                ']' ->
-                    '|'
-
-                _ ->
-                    c
-
-        normalised =
-            map f (toCharArray s)
-
-        -- count the repeat markers
-        repeatCount =
-            Array.length (Array.filter (\c -> c == ':') normalised)
-
-        -- set the repeat
-        repeat =
-            if (repeatCount == 0) then
-                Nothing
-            else if (repeatCount == 1) then
-                if includes ":|" (fromCharArray normalised) then
-                    Just End
-                else
-                    Just Begin
-            else
-                Just BeginAndEnd
-    in
-      { thickness : thickness, repeat : repeat, iteration : mv }
+buildBarType :: Int -> Thickness -> Int -> Maybe Volta -> BarType
+buildBarType endRepeats t startRepeats  mv =
+  let 
+    repeat = case endRepeats, startRepeats of 
+      0, 0 -> Nothing 
+      0, _ -> Just Begin 
+      _, 0 -> Just End 
+      _, _ -> Just BeginAndEnd
+  in
+    { thickness : t, repeat : repeat, iteration : mv}
 
 -- | a bar type for an introductory 'bar' where there is no opening bar line
 invisibleBarType :: BarType
@@ -1230,21 +1188,21 @@ buildNote macc pitchStr octave ml mt =
 
 buildAccidental :: String -> Accidental
 buildAccidental s =
-    case s of
-        "^^" ->
-            DoubleSharp
+  case s of
+    "^^" ->
+      DoubleSharp
 
-        "__" ->
-            DoubleFlat
+    "__" ->
+      DoubleFlat
 
-        "^" ->
-            Sharp
+    "^" ->
+      Sharp
 
-        "_" ->
-            Flat
+    "_" ->
+      Flat
 
-        _ ->
-            Natural
+    _ ->
+      Natural
 
 buildPitch :: Accidental -> String -> Pitch
 buildPitch a pitchStr =
@@ -1284,41 +1242,30 @@ buildRationalFromSlashList xs =
 -}
 buildTupletSignature :: String -> Maybe String -> Maybe String -> TupletSignature
 buildTupletSignature ps mq mr =
-    let
-        p =
-            toTupletInt ps
+  let
+    p =
+       toTupletInt ps
 
-        -- default values for q.  Not quite in accordance with spec where q varies
-        -- between 2 and 3 for odd values of p, dependent on the time signature
-        -- (but this would make the parser stateful which we don't want for such small
-        -- edge cases)
-        qdefault =
-            case p of
-                2 ->
-                    3
+    -- default values for q.  Not quite in accordance with spec where q varies
+    -- between 2 and 3 for odd values of p, dependent on the time signature
+    -- (but this would make the parser stateful which we don't want for such small
+    -- edge cases)
+    qdefault =
+      case p of
+        2 -> 3
+        3 -> 2
+        4 -> 3
+        6 -> 2
+        8 -> 3
+        _ -> 2
 
-                3 ->
-                    2
+    q =
+      fromMaybe qdefault (map toTupletInt mq)
 
-                4 ->
-                    3
-
-                6 ->
-                    2
-
-                8 ->
-                    3
-
-                _ ->
-                    2
-
-        q =
-            fromMaybe qdefault (map toTupletInt mq)
-
-        r =
-            fromMaybe p (map toTupletInt mr)
-    in
-      { p, q, r }
+    r =
+      fromMaybe p (map toTupletInt mr)
+  in
+    { p, q, r }
 
 toTupletInt :: String -> Int
 toTupletInt s =
