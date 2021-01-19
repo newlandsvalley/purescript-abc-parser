@@ -16,6 +16,7 @@ module Data.Abc.Midi.RepeatSections
 import Data.Generic.Rep
 
 import Data.Abc (Volta(..))
+import Data.Abc.Midi.Types (MidiBar)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.List (List(..), (:))
@@ -56,39 +57,39 @@ initialRepeatState =
 -- | the bar number
 -- | WARNING  at the moment we don't properly handle complete volta lists here
 -- | nor do we handle multiple 'normal' repeats (n > 1)
-indexBar :: (Maybe Volta) -> Int -> Int -> Int -> RepeatState -> RepeatState
-indexBar iteration endRepeats startRepeats barNumber r =
-  case iteration, endRepeats, startRepeats of
+indexBar :: MidiBar -> RepeatState -> RepeatState
+indexBar mb r =
+  case mb.iteration, mb.endRepeats, mb.startRepeats of
     -- |1
     Just (Volta 1), _ , _ ->
-      r { current = firstRepeat barNumber r.current}
+      r { current = firstRepeat mb.number r.current}
     -- |2  or :|2
     Just (Volta 2), _ , _ ->
-      r { current = secondRepeat barNumber r.current}
+      r { current = secondRepeat mb.number r.current}
     -- | 1,2 etc - this line does not do the job
     Just (VoltaList vs), _ , _ ->
-      r { current = firstRepeat barNumber r.current}
+      r { current = firstRepeat mb.number r.current}
     Nothing,  ends,  starts ->    
       if (ends > 0 && starts > 0) then
-        endAndStartSection barNumber true true r
+        endAndStartSection mb.number true true r
       else if (ends > 0 && starts <= 0) then
-        endSection barNumber true r
+        endSection mb.number true r
       else if (ends <= 0 && starts > 0) then
-        startSection barNumber r
+        startSection mb.number r
       else 
         r
     _, _, _ -> 
       r
 
 {-| accumulate any residual current state from the final bar in the tune -}
-finalBar :: (Maybe Volta) -> Int -> Int -> RepeatState -> RepeatState
-finalBar iteration endRepeats barNumber r =
+finalBar :: MidiBar -> RepeatState -> RepeatState
+finalBar mb r =
   let
-    isRepeatEnd = endRepeats > 0 
-    repeatState = endSection barNumber isRepeatEnd r
+    isRepeatEnd = mb.endRepeats > 0 
+    repeatState = endSection mb.number isRepeatEnd r
   in
     if not (isNullSection r.current) then
-      accumulateSection barNumber false repeatState
+      accumulateSection mb.number false repeatState
     else
       repeatState
 

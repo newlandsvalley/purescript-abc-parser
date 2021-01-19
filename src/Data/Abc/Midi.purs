@@ -10,11 +10,12 @@ import Control.Monad.State (State, get, put, evalState)
 import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarLine, 
     Broken(..), Header(..), TuneBody, BodyPart(..), Grace, GraceableNote, 
     MusicLine, Music(..), Mode(..), ModifiedKeySignature, 
-    TempoSignature, PitchClass(..), Volta)
+    TempoSignature, PitchClass(..))
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Canonical as Canonical
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
+import Data.Abc.Midi.Types (MidiBar)
 import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, 
   initialRepeatState, indexBar, finalBar)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
@@ -93,15 +94,6 @@ toMidiAtBpm originalTune bpm =
     tune = setBpm bpm originalTune
   in
     evalState (transformTune tune) (initialState tune)
-
--- | a bar of MIDI music
-type MidiBar =
-  { number :: Int                         -- sequential from zero
-  , endRepeats :: Int                     -- an end repeat (n > 0)
-  , startRepeats :: Int                   -- a start repeat (n > 0)
-  , iteration :: Maybe Volta              -- an iteration volta marker  (|1  or |2 etc)
-  , midiMessages :: List Midi.Message     -- the notes in the bar or any tempo changes
-  }
 
 -- | the state to thread through the computation
 type TState =
@@ -290,8 +282,7 @@ addBarToState tstate barLine =
     let
       currentBar = tstate.currentBar
       repeatState =
-        indexBar currentBar.iteration currentBar.endRepeats
-                 currentBar.startRepeats currentBar.number tstate.repeatState
+        indexBar currentBar tstate.repeatState
       -- ad this bar to the growing list of bars
       rawTrack =
         -- the current bar is not empty so we aggregate the new bar into the track
@@ -615,7 +606,7 @@ finaliseMelody =
       currentBar = tstate.currentBar
       -- index the final bar and finalise the repear state
       repeatState =
-        finalBar currentBar.iteration currentBar.endRepeats currentBar.number tstate.repeatState
+        finalBar currentBar tstate.repeatState
       -- ensure we incorporate the very last bar
       tstate' = tstate { rawTrack = tstate.currentBar : tstate.rawTrack
                        , repeatState = repeatState }
