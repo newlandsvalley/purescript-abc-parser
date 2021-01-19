@@ -19,6 +19,7 @@ import Data.Tuple (Tuple(..))
 import Data.Map (Map, size, toUnfoldable)
 import Data.String (trim, toLower, length, take) as Str
 import Data.String.CodeUnits (fromCharArray)
+import Data.String.Utils (repeat)
 import Data.Foldable (foldr, intercalate)
 import Data.Unfoldable (replicate)
 import Data.Either (Either(..))
@@ -232,33 +233,22 @@ bar b =
     f m acc =
       (music m) <> acc
   in
-    barType b.startLine <>
+    barLine b.startLine <>
     foldr f "" b.music
 
-barType :: BarType -> String
-barType b =
-    let
-        it =
-            fromMaybe "" (map show b.iteration)
-        lines = show b.thickness
-    in
-        case b.repeat of
-            Nothing ->
-                lines <> it
+barLine :: BarLine -> String
+barLine b =
+  let
+    lines = show b.thickness
+    endColons = fromMaybe "" $ repeat b.endRepeats ":"
+    startColons = fromMaybe "" $ repeat b.startRepeats ":"
+    iteration = fromMaybe "" $ map show b.iteration
+  in
+    endColons <> lines <> startColons <> iteration
 
-            Just Begin ->
-                lines <> ":"
-
-            Just End ->
-                ":" <> lines <> it
-
-            Just BeginAndEnd ->
-                ":" <> lines <> ":"
-
-
-mBarType :: Maybe BarType -> String
-mBarType mbt =
-  fromMaybe "" $ map barType mbt
+mBarLine :: Maybe BarLine -> String
+mBarLine mbl =
+  fromMaybe "" $ map barLine mbl
 
 
 broken :: Broken -> String

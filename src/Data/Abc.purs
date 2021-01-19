@@ -13,9 +13,8 @@ module Data.Abc ( AbcTune
 , AbcChord
 , RestOrNote
 , Bar
-, BarType
+, BarLine
 , Thickness(..)
-, Repeat(..)
 , Volta(..)
 , NoteDuration
 , KeySignature
@@ -71,7 +70,7 @@ data BodyPart
 -- | A music phrase is contained within a Bar which is a set of music items
 -- | introduced by a bar line
 type Bar =
-  { startLine :: BarType   -- we only consider the start line of each bar
+  { startLine :: BarLine   -- we only consider the start line of each bar
   , music :: List Music
   }
 
@@ -164,20 +163,6 @@ instance showThickness :: Show Thickness where
 
 derive instance eqThickness :: Eq Thickness
 
--- | A Repeat in a Bar line.
-data Repeat
-    = Begin
-    | End
-    | BeginAndEnd
-
-derive instance genericRepeat  :: Generic Repeat _
-instance showRepeat :: Show Repeat where
-  show Begin = "|:"
-  show End = ":|"
-  show BeginAndEnd = ":|:"
-
-derive instance eqRepeat :: Eq Repeat
-
 -- | a Volta - a repeated section
 -- | The ABC specification also requires a third option -
 -- |    VoltaRange Int Int   -- |1-3 etc
@@ -193,15 +178,16 @@ instance showVolta :: Show Volta where
 
 derive instance eqVolta :: Eq Volta
 
-{-| A Bar line type:
-
+{-| A Bar Line:
+*  endRepeats - any repeat of the previous section indicated by colon(s)
 *  thickness - the thickness of vertical lines in the bar
-*  repeat - the type (if any) of a repeat marker for the section
+*  startRepeats - any repeat of the section to follow indicated by colon(s)
 *  iteration - the section end may be iteration 1 or 2.
 -}
-type BarType =
-    { thickness :: Thickness
-    , repeat :: Maybe Repeat
+type BarLine =
+    { endRepeats :: Int
+    , thickness :: Thickness
+    , startRepeats :: Int
     , iteration :: Maybe Volta
     }
 

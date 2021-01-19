@@ -180,16 +180,17 @@ filterBars bars =
             then 3
             else 2
 
-    emptyBarType :: BarType
-    emptyBarType =
-      { thickness : Thin
-      , repeat : Nothing
+    emptyBarLine :: BarLine
+    emptyBarLine =    
+      { endRepeats : 0
+      , thickness : Thin
+      , startRepeats : 0
       , iteration : Nothing
       }
 
     emptyBar :: Bar
     emptyBar =
-      { startLine : emptyBarType
+      { startLine : emptyBarLine
       , music : Nil
       }
   in
@@ -222,7 +223,7 @@ removeRepeatMarkers abcTune =
     removeRepeat :: Bar -> Bar
     removeRepeat bar =
       let
-        newStartLine = bar.startLine { repeat = Nothing }
+        newStartLine = bar.startLine { startRepeats = 0, endRepeats = 0 }
       in
         bar { startLine = newStartLine }
 

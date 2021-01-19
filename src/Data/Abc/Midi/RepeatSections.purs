@@ -15,15 +15,14 @@ module Data.Abc.Midi.RepeatSections
 
 import Data.Generic.Rep
 
-import Data.Abc (Repeat(..), Volta(..))
+import Data.Abc (Volta(..))
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (class Newtype, unwrap)
 import Data.NonEmpty as NonEmpty
-import Data.Tuple (Tuple(..))
-import Prelude (class Eq, class Show, (==), (&&), map, not)
+import Prelude (class Eq, class Show, (==), (>), (<=), (&&), map, not)
 
 -- | a section of the tune (possibly repeated)
 newtype Section = Section
@@ -56,45 +55,42 @@ initialRepeatState =
 -- | index a bar by identifying any repeat markings and saving the marking against 
 -- | the bar number
 -- | WARNING  at the moment we don't properly handle complete volta lists here
-indexBar :: (Maybe Volta) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
-indexBar iteration repeat barNumber r =
-  case (Tuple iteration repeat) of
+-- | nor do we handle multiple 'normal' repeats (n > 1)
+indexBar :: (Maybe Volta) -> Int -> Int -> Int -> RepeatState -> RepeatState
+indexBar iteration endRepeats startRepeats barNumber r =
+  case iteration, endRepeats, startRepeats of
     -- |1
-    Tuple (Just (Volta 1)) _ ->
+    Just (Volta 1), _ , _ ->
       r { current = firstRepeat barNumber r.current}
     -- |2  or :|2
-    Tuple (Just (Volta 2)) _ ->
+    Just (Volta 2), _ , _ ->
       r { current = secondRepeat barNumber r.current}
     -- | 1,2 etc - this line does not do the job
-    Tuple (Just (VoltaList vs)) _ ->
+    Just (VoltaList vs), _ , _ ->
       r { current = firstRepeat barNumber r.current}
-    -- |:
-    Tuple _ (Just Begin) ->
-      startSection barNumber r
-    -- :|
-    Tuple _ (Just End) ->
-      endSection barNumber true r
-    -- :|:  or ::
-    Tuple _ (Just BeginAndEnd) ->
-      endAndStartSection barNumber true true r
-    _ ->
-     r
+    Nothing,  ends,  starts ->    
+      if (ends > 0 && starts > 0) then
+        endAndStartSection barNumber true true r
+      else if (ends > 0 && starts <= 0) then
+        endSection barNumber true r
+      else if (ends <= 0 && starts > 0) then
+        startSection barNumber r
+      else 
+        r
+    _, _, _ -> 
+      r
 
 {-| accumulate any residual current state from the final bar in the tune -}
-finalBar :: (Maybe Volta) -> (Maybe Repeat) -> Int -> RepeatState -> RepeatState
-finalBar iteration repeat barNumber r =
+finalBar :: (Maybe Volta) -> Int -> Int -> RepeatState -> RepeatState
+finalBar iteration endRepeats barNumber r =
   let
-    isRepeatEnd = case repeat of
-      Just End -> true
-      _ -> false
+    isRepeatEnd = endRepeats > 0 
     repeatState = endSection barNumber isRepeatEnd r
   in
     if not (isNullSection r.current) then
       accumulateSection barNumber false repeatState
     else
       repeatState
-
-
 
 -- default sections i.e. no repeats yet
 defaultSections :: RepeatState

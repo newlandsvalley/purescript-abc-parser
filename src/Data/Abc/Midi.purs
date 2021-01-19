@@ -7,8 +7,8 @@ module Data.Abc.Midi
   , midiPitchOffset) where
 
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarType, 
-    Broken(..), Header(..), TuneBody, Repeat(..), BodyPart(..), Grace, GraceableNote, 
+import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarLine, 
+    Broken(..), Header(..), TuneBody, BodyPart(..), Grace, GraceableNote, 
     MusicLine, Music(..), Mode(..), ModifiedKeySignature, 
     TempoSignature, PitchClass(..), Volta)
 import Data.Abc.Accidentals as Accidentals
@@ -97,7 +97,8 @@ toMidiAtBpm originalTune bpm =
 -- | a bar of MIDI music
 type MidiBar =
   { number :: Int                         -- sequential from zero
-  , repeat :: Maybe Repeat                -- a repeat of some kind
+  , endRepeats :: Int                     -- an end repeat (n > 0)
+  , startRepeats :: Int                   -- a start repeat (n > 0)
   , iteration :: Maybe Volta              -- an iteration volta marker  (|1  or |2 etc)
   , midiMessages :: List Midi.Message     -- the notes in the bar or any tempo changes
   }
@@ -135,17 +136,19 @@ skeletalRecording =
 initialBar :: Midi.Message -> MidiBar
 initialBar initialMsg =
   { number : 0
-  , repeat : Nothing
+  , endRepeats : 0
+  , startRepeats : 0
   , iteration : Nothing
   , midiMessages : (initialMsg : Nil)
   }
 
 -- | build a new bar from a bar number and an ABC bar
-buildNewBar :: Int -> BarType -> MidiBar
-buildNewBar i barType =
+buildNewBar :: Int -> BarLine -> MidiBar
+buildNewBar i barLine =
   {  number : i
-  ,  repeat : barType.repeat
-  ,  iteration : barType.iteration
+  ,  endRepeats : barLine.endRepeats
+  ,  startRepeats : barLine.startRepeats
+  ,  iteration : barLine.iteration
   ,  midiMessages : Nil
   }
 
@@ -277,23 +280,24 @@ transformMusic m =
         pure $ snd tpl
 
 -- | add a bar to the state.  index it and add it to the growing list of bars
-addBarToState :: TState -> BarType -> TState
-addBarToState tstate barType =
+addBarToState :: TState -> BarLine -> TState
+addBarToState tstate barLine =
   -- the current bar held in state is empty so we coalesce
   if (isBarEmpty tstate.currentBar) then
-    coalesceBar tstate barType
+    coalesceBar tstate barLine
   -- it's not emmpty so we initialise the new bar
   else
     let
       currentBar = tstate.currentBar
       repeatState =
-        indexBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
+        indexBar currentBar.iteration currentBar.endRepeats
+                 currentBar.startRepeats currentBar.number tstate.repeatState
       -- ad this bar to the growing list of bars
       rawTrack =
         -- the current bar is not empty so we aggregate the new bar into the track
         currentBar : tstate.rawTrack
     in
-      tstate { currentBar = buildNewBar (currentBar.number + 1) barType
+      tstate { currentBar = buildNewBar (currentBar.number + 1) barLine
              , currentBarAccidentals = Accidentals.empty
              , repeatState = repeatState
              , rawTrack = rawTrack
@@ -301,19 +305,14 @@ addBarToState tstate barType =
 
 -- | coalesce the new bar from ABC with the current one held in the state
 -- | (which has previously been tested for emptiness)
-coalesceBar :: TState -> BarType -> TState
-coalesceBar tstate barType =
+coalesceBar :: TState -> BarLine-> TState
+coalesceBar tstate barLine =
   let
-    barRepeats = Tuple tstate.currentBar.repeat barType.repeat
-    newRepeat = case barRepeats of
-     Tuple (Just End) (Just Begin) ->
-        Just BeginAndEnd
-     Tuple ( Just x) _  ->
-        Just x
-     _ ->
-        barType.repeat
-    bar' = tstate.currentBar { repeat = newRepeat
-                             , iteration = barType.iteration 
+    endRepeats = tstate.currentBar.endRepeats + barLine.endRepeats
+    startRepeats = tstate.currentBar.startRepeats + barLine.startRepeats
+    bar' = tstate.currentBar { endRepeats = endRepeats
+                             , startRepeats = startRepeats
+                             , iteration = barLine.iteration 
                              }
   in
     tstate { currentBar = bar' }
@@ -616,7 +615,7 @@ finaliseMelody =
       currentBar = tstate.currentBar
       -- index the final bar and finalise the repear state
       repeatState =
-        finalBar currentBar.iteration currentBar.repeat currentBar.number tstate.repeatState
+        finalBar currentBar.iteration currentBar.endRepeats currentBar.number tstate.repeatState
       -- ensure we incorporate the very last bar
       tstate' = tstate { rawTrack = tstate.currentBar : tstate.rawTrack
                        , repeatState = repeatState }

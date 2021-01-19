@@ -153,7 +153,7 @@ inline =
         <$> between (char '[') (char ']') (tuneBodyInfo true)
         <?> "inline header"
 
-barline :: Parser BarType
+barline :: Parser BarLine
 barline =
     choice
         [
@@ -168,9 +168,9 @@ barline =
    may have any shape, using a sequence of | (thin bar line), [| or |] (thick bar line), 
    and : (dots), e.g. |[| or [|:::
 -}
-normalBarline :: Parser BarType
+normalBarline :: Parser BarLine
 normalBarline =
-  buildBarType
+  buildBarLine
      <$> repeatMarkers
      <*> barlineThickness
      <*> repeatMarkers
@@ -187,15 +187,15 @@ normalBarline =
 
    We treat this as a bar on its own
 -}
-degenerateBarVolta :: Parser BarType
+degenerateBarVolta :: Parser BarLine
 degenerateBarVolta =
-  buildBarType 0 Thin 0
+  buildBarLine 0 Thin 0
     <$> (Just <$> (whiteSpace *> char '[' *> repeatSection)  )
  
 {- Parse a degenerate barline with no bar line!  Just :: on its own -}
-degenerateDoubleColon :: Parser BarType
+degenerateDoubleColon :: Parser BarLine
 degenerateDoubleColon = 
-  buildBarType 1 Thin 1 Nothing
+  buildBarLine 1 Thin 1 Nothing
     <$ char ':'
     <* char ':'     
 
@@ -1119,28 +1119,22 @@ buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
   { headers : hs, body : b}
 
-buildBar :: BarType -> List Music -> Bar
-buildBar bt m =
-  { startLine : bt
+buildBar :: BarLine -> List Music -> Bar
+buildBar bl m =
+  { startLine : bl
   , music : m
   }
 
-buildBarType :: Int -> Thickness -> Int -> Maybe Volta -> BarType
-buildBarType endRepeats t startRepeats  mv =
-  let 
-    repeat = case endRepeats, startRepeats of 
-      0, 0 -> Nothing 
-      0, _ -> Just Begin 
-      _, 0 -> Just End 
-      _, _ -> Just BeginAndEnd
-  in
-    { thickness : t, repeat : repeat, iteration : mv}
+buildBarLine :: Int -> Thickness -> Int -> Maybe Volta -> BarLine
+buildBarLine endRepeats thickness startRepeats iteration =
+  { endRepeats, thickness, startRepeats, iteration }
 
 -- | a bar type for an introductory 'bar' where there is no opening bar line
-invisibleBarType :: BarType
+invisibleBarType :: BarLine
 invisibleBarType =
-    { thickness : Invisible
-    , repeat : Nothing
+    { endRepeats : 0
+    , thickness : Invisible
+    , startRepeats : 0
     , iteration : Nothing
     }
 
