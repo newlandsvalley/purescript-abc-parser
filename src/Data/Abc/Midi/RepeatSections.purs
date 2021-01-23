@@ -11,17 +11,18 @@ module Data.Abc.Midi.RepeatSections
         ) where
 
 import Data.Abc (Volta(..))
-import Data.Abc.Midi.Types (MidiBar, RepeatState, Section(..))
+import Data.Abc.Midi.Types (MidiBar)
+import Data.Abc.Repeats.Types (Label(..), RepeatState, Section(..))
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), isJust)
 import Data.Newtype (unwrap)
 import Data.NonEmpty as NonEmpty
 import Prelude ((==), (>), (<=), (&&), map, not)
 
--- | initial repeats i.e. no repeats yet
+-- | initial repeats i.e. no repeats yet.  intro is not used in MIDI production
 initialRepeatState :: RepeatState
 initialRepeatState =
-  { current : nullSection, sections : Nil }
+  { current : nullSection, sections : Nil, intro : [] }
 
 -- | index a bar by identifying any repeat markings and saving the marking against 
 -- | the bar number
@@ -66,7 +67,7 @@ finalBar mb r =
 -- default sections i.e. no repeats yet
 defaultSections :: RepeatState
 defaultSections =
-  { current : nullSection, sections : Nil }
+  { current : nullSection, sections : Nil, intro : [] }
 
 -- accumulate the last section and start a new section  -}
 startSection :: Int -> RepeatState -> RepeatState
@@ -156,6 +157,7 @@ newSection pos isRepeated = Section
   , secondEnding : Nothing
   , end : Just 0
   , isRepeated : isRepeated
+  , label : OtherPart         -- not used
   }
 
 -- a 'null' section
