@@ -185,7 +185,8 @@ normalBarline =
    again we have to be careful about ambiguity between this and inline headers by 
    making sure we parse '[' immediately followed by '1' etc.
 
-   We treat this as a bar on its own
+   We treat this as a bar on its own.  If you try to treat it as a free-standing volta
+   then you are beset by the ambiguity issues.
 -}
 degenerateBarVolta :: Parser BarLine
 degenerateBarVolta =
