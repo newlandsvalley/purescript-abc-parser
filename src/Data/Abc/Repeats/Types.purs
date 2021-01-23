@@ -1,9 +1,12 @@
+-- | Data types representing tune sections as defined by bar 
+-- | number indexes and repeat indicators which are either
+-- | simple repeats or variant repeats (voltas)
+
 module Data.Abc.Repeats.Types 
   ( Label(..)
   , Section(..)
   , Sections
   , RepeatState) where
-
 
 import Prelude (class Eq, class Show)
 import Data.Generic.Rep
@@ -31,10 +34,9 @@ derive instance eqLabel :: Eq Label
 -- | with indices given by the bar number where the feature lives
 newtype Section = Section
     { start :: Maybe Int
-    , firstEnding :: Maybe Int
-    , secondEnding :: Maybe Int
+    , variantEndings :: Array (Maybe Int)
     , end :: Maybe Int
-    , isRepeated :: Boolean
+    , repeatCount :: Int 
     , label :: Label
     }
  
@@ -50,5 +52,5 @@ type Sections = List Section
 type RepeatState =
     { current :: Section
     , sections :: Sections
-    , intro :: Array Int    -- only used if we intend to support intros
+    , intro :: Array Int    -- only used whenever we intend to support intros
     }  

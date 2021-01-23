@@ -1,5 +1,6 @@
 module Data.Abc.Midi.Types 
-  ( MidiBar) where
+  ( MidiBar
+  , MidiBars) where
 
 import Data.Maybe (Maybe)
 import Data.List (List)
@@ -14,3 +15,5 @@ type MidiBar =
   , iteration :: Maybe Volta              -- an iteration volta marker  (|1  or |2 etc)
   , midiMessages :: List Midi.Message     -- the notes in the bar or any tempo changes
   }
+
+type MidiBars = List MidiBar  

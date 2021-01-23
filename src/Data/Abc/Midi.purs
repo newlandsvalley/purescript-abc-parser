@@ -15,21 +15,24 @@ import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Canonical as Canonical
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
-import Data.Abc.Midi.Types (MidiBar)
+import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Repeats.Types (RepeatState, Section(..), Sections)
+import Data.Abc.Repeats.Variant (activeVariants, variantEndingOf, variantCount, variantIndexMax)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
 import Data.Foldable (foldl, oneOf)
-import Data.List (List(..), (:), null, concatMap, foldr, filter, reverse, singleton)
+import Data.Unfoldable (replicate)
+import Data.Array as Array
+import Data.List (List(..), (:), null, concat, concatMap, foldr, filter, reverse, singleton)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
 import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, identity, map, pure, ($), (&&), (*), (+), (-), (<), (<>), (>=))
+import Prelude (bind, identity, map, pure, ($), (&&), (*), (+), (-), (<), (>), (<>), (<=), (>=), (||))
 
 -- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
@@ -131,7 +134,7 @@ initialBar initialMsg =
   , endRepeats : 0
   , startRepeats : 0
   , iteration : Nothing
-  , midiMessages : (initialMsg : Nil)
+  , midiMessages : initialMsg : Nil
   }
 
 -- | build a new bar from a bar number and an ABC bar
@@ -440,7 +443,7 @@ emitNoteOnOff tempoModifier tstate abcNote =
     ticks =
       noteTicks (abcNote.duration * tempoModifier)
     in
-      (midiNoteOff ticks pitch) : (midiNoteOn 0 pitch) : Nil
+      ((midiNoteOff ticks pitch) : (midiNoteOn 0 pitch) : Nil )
 
 -- | emit a sequence of on off MIDI messages from a sequence of ABC notes
 -- | used for grace notes
@@ -577,7 +580,7 @@ brokenTempo i isUp =
 -- | does the MIDI bar hold no notes (or any other MIDI messages)
 isBarEmpty :: MidiBar -> Boolean
 isBarEmpty mb =
-    null mb.midiMessages
+  null mb.midiMessages
 
 -- | generic function to update the State
 -- | a is an ABC value
@@ -635,36 +638,112 @@ barSelector :: Int -> Int -> MidiBar -> Boolean
 barSelector strt fin mb =
   mb.number >= strt && mb.number < fin
 
+
+-- | build a repeat section
+-- | this function is intended for use within foldl
+repeatedSection ::  MidiBars -> List Midi.Message -> Section -> List Midi.Message 
+repeatedSection mbs acc section = 
+  if (variantCount section > 1) then 
+    (variantSlices mbs section) <> acc
+  else 
+    simpleRepeatedSection mbs acc section    
+
+-- | simple repeated sections with no variants
+simpleRepeatedSection ::  MidiBars -> List Midi.Message -> Section -> List Midi.Message
+-- we could represent this with the next, but I think it's clearer having them separate
+simpleRepeatedSection mbs acc (Section { start: Just a, end: Just d, repeatCount : 0 }) =
+  (trackSlice a d mbs ) <> acc
+-- a repeated section
+simpleRepeatedSection mbs acc (Section { start: Just a,  end: Just d, repeatCount : n }) =
+  let 
+    slice = trackSlice a d mbs 
+    slices = replicate (n+1) slice
+  in 
+    (concat slices) <> acc
+-- something else (unexpected)
+simpleRepeatedSection _ acc _ =
+  acc
+
 -- | build the notes from a subsection of the track
 trackSlice :: Int -> Int -> List MidiBar -> List Midi.Message
 trackSlice start finish mbs =
   accumulateMessages $ filter (barSelector start finish) mbs
 
--- | take two variant slices of a melody line between start and finish
--- |    taking account of first repeat and second repeat sections
-variantSlice :: Int -> Int -> Int -> Int -> List MidiBar-> List Midi.Message
-variantSlice start firstRepeat secondRepeat end mbs =
+-- build a variant slice for the variant denoted by index and pos
+-- in the (active) variantEndings array
+-- index is the current index into the array of varianty endings 
+-- pos is the value at the current index
+-- we need to use indexed methods because we need to look up the next index position
+variantSlice :: Int -> Int -> Section -> MidiBars -> Int -> Int -> List Midi.Message 
+variantSlice start end section sectionBars index pos = 
   let
-    -- save the section of the tune we're interested in
-    section = filter (barSelector start end) mbs
-    -- |: ..... |2
-    firstSection = trackSlice start secondRepeat section
-    -- |: .... |1  + |2 ..... :|
-    secondSection = trackSlice start firstRepeat section <> trackSlice secondRepeat end section
+    -- the first slice is the main tune section which is always from the 
+    -- start to the first volta 
+    firstEnding :: Int
+    firstEnding = fromMaybe start $ variantEndingOf 0 section
+    -- this is the current volta we're looking at
+    thisEnding = pos
+    -- this next bit is tricky
+    --
+    -- In the case of 
+    --
+    --     ..|1 ..:|2 ..:|3 ..:|4 ....
+    --
+    -- then each variant takes as its ending the start of the next variant
+    -- except for the final one which must take the end of the enire section.
+    --
+    -- In the case of 
+    --
+    --     ..|1,3  :|2,4 ;|..
+    --
+    -- then this is true, except that also variant 2 must take its ending 
+    -- as the end of the entire section.
+    -- 
+    -- We thus find a candidate ending for the volta (which may not exist).
+    -- We'll use it for any variant other than the last, buut reject it in
+    -- favour of end if the resulting bar position falls before the start
+    -- position of the variant.
+    candidateNextEnding = 
+      fromMaybe start $ variantEndingOf (index + 1) section
+    nextEnding :: Int
+    nextEnding =     
+      if (index >= variantIndexMax section || candidateNextEnding <= pos)
+        then 
+          end
+        else 
+          candidateNextEnding
+    {-     
+    _ = spy "index" index
+    _ = spy "variant count" (variantCount section)
+    _ = spy "max variants" (variantIndexMax section)
+    _ = spy "veryfirstEnding" firstEnding
+    _ = spy "thisEnding" thisEnding
+    _ = spy "nextEnding" nextEnding
+    -}
   in
-    firstSection <> secondSection
+    trackSlice start firstEnding sectionBars 
+      <> trackSlice thisEnding nextEnding sectionBars 
 
--- | build a repeat section
--- | this function is intended for use within foldl
-repeatedSection ::  List MidiBar -> List Midi.Message -> Section -> List Midi.Message
-repeatedSection mbs acc (Section { start: Just a, firstEnding: Just b, secondEnding : Just c, end: Just d, isRepeated : _ }) =
-  (variantSlice a b c d mbs) <> acc
-repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : false }) =
-  (trackSlice a d mbs) <> acc
-repeatedSection mbs acc (Section { start: Just a, firstEnding: _, secondEnding : _, end: Just d, isRepeated : true }) =
-  (trackSlice a d mbs) <> (trackSlice a d mbs) <> acc
-repeatedSection mbs acc _ =
-  acc
+variantSlices :: MidiBars -> Section -> List Midi.Message
+variantSlices mbs section =
+  case section of 
+    Section { start: Just start, end: Just end } ->       
+      accumulateSlices mbs start end section
+    _ -> 
+      Nil
+
+-- accumulate all the slices for the variant endings
+accumulateSlices :: MidiBars -> Int -> Int -> Section ->  List Midi.Message
+accumulateSlices mbs start end section  = 
+  let 
+    sectionBars :: MidiBars
+    sectionBars = filter (barSelector start end) mbs
+    slices :: Array (List Midi.Message)
+    slices = Array.mapWithIndex
+              (variantSlice start end section sectionBars)
+              (activeVariants section)
+  in 
+    concat $ Array.toUnfoldable slices  
 
 -- | Curtail the duration of the note by taking account of any grace notes
 -- | that it may have
@@ -709,18 +788,6 @@ gracifyFirstNote maybeGrace restsOrNotes =
       bimap identity (\gn -> gn { maybeGrace = maybeGrace })
     in
       Cons (f hd) tl
-
--- temp Bar Stuff we should do away with
-{-}
-defaultBarType :: BarType
-defaultBarType =
-    { thickness : Thin
-    , repeat : Nothing
-    , iteration : Nothing
-    }
--}
-
-
 -- temp Debug
 {-
 showBar :: MidiBar -> String
