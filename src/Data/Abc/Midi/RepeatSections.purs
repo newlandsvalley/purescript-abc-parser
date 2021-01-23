@@ -5,48 +5,18 @@
 -- |    |: ABC |1 de :|2 fg |
 -- | the very first repeat start marker is optional and often absent
 module Data.Abc.Midi.RepeatSections
-        ( Section(..)
-        , Sections
-        , RepeatState
-        , initialRepeatState
+        ( initialRepeatState
         , indexBar
         , finalBar
         ) where
 
-import Data.Generic.Rep
-
 import Data.Abc (Volta(..))
-import Data.Abc.Midi.Types (MidiBar)
-import Data.Generic.Rep.Eq (genericEq)
-import Data.Generic.Rep.Show (genericShow)
+import Data.Abc.Midi.Types (MidiBar, RepeatState, Section(..))
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), isJust)
-import Data.Newtype (class Newtype, unwrap)
+import Data.Newtype (unwrap)
 import Data.NonEmpty as NonEmpty
-import Prelude (class Eq, class Show, (==), (>), (<=), (&&), map, not)
-
--- | a section of the tune (possibly repeated)
-newtype Section = Section
-    { start :: Maybe Int
-    , firstEnding :: Maybe Int
-    , secondEnding :: Maybe Int
-    , end :: Maybe Int
-    , isRepeated :: Boolean
-    }
-
-derive instance newtypeSection :: Newtype Section _
-derive instance genericSection :: Generic Section _
-instance eqSection :: Eq Section where  eq = genericEq
-instance showSection :: Show Section where show = genericShow
-
--- | a set of sections
-type Sections = List Section
-
--- | the current repeat state
-type RepeatState =
-    { current :: Section
-    , sections :: Sections
-    }
+import Prelude ((==), (>), (<=), (&&), map, not)
 
 -- | initial repeats i.e. no repeats yet
 initialRepeatState :: RepeatState

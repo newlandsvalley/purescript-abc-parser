@@ -15,9 +15,8 @@ import Data.Abc.Accidentals as Accidentals
 import Data.Abc.Canonical as Canonical
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
-import Data.Abc.Midi.Types (MidiBar)
-import Data.Abc.Midi.RepeatSections (RepeatState, Section(..), Sections, 
-  initialRepeatState, indexBar, finalBar)
+import Data.Abc.Midi.Types (MidiBar, RepeatState, Section(..), Sections)
+import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
