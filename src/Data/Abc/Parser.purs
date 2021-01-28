@@ -797,6 +797,7 @@ key =
         <$> (headerCode 'K')
         <*> keySignature
         <*> keyAccidentals
+        <*> amorphousProperties
         <?> "K header"
 
 
@@ -883,7 +884,7 @@ voice isInline =
     buildVoice
         <$> (headerCode 'V')
         <*> alphaNumString
-        <*> voiceProperties
+        <*> amorphousProperties
         <?> "V header"
 
 wordsAfter :: Boolean -> Parser Header
@@ -1042,9 +1043,9 @@ keyAccidentals :: Parser KeySet
 keyAccidentals =
     whiteSpace *> sepBy keyAccidental space
 
--- | (optional) properties for the Voice header
-voiceProperties :: Parser (Map String String)
-voiceProperties =
+-- | (optional) properties for the Voice or Key header
+amorphousProperties :: Parser (Map String String)
+amorphousProperties =
   Map.fromFoldable <$>
     many kvPair <* whiteSpace
 
@@ -1327,12 +1328,12 @@ buildKeySignature pStr ma mm =
     { pitchClass : lookupPitch pStr, accidental : ma, mode : fromMaybe Major mm }
 
 {- build a complete key designation (key signature plus modifying accidentals) -}
-buildKey :: String -> KeySignature -> List Pitch -> Header
-buildKey code ks pitches =
-    Key { keySignature: ks, modifications: pitches }
+buildKey :: String -> KeySignature -> List Pitch -> AmorphousProperties -> Header
+buildKey code ks pitches properties =
+    Key { keySignature: ks, modifications: pitches } properties
 
 
-buildVoice :: String -> String -> Map String String -> Header
+buildVoice :: String -> String -> AmorphousProperties -> Header
 buildVoice code id properties  =
     Voice { id, properties }
 

@@ -30,6 +30,7 @@ module Data.Abc ( AbcTune
 , PitchClass(..)
 , Broken(..)
 , VoiceDescription(..)
+, AmorphousProperties
 , middlecOctave
 ) where
 
@@ -365,7 +366,7 @@ data Broken
 -- | voice description
 type VoiceDescription =
   { id :: String
-  , properties :: Map String String
+  , properties :: AmorphousProperties
   }
 
 -- | An ABC Tune Header.
@@ -379,7 +380,7 @@ data Header
     | History String
     | Instruction String
       -- Directive
-    | Key ModifiedKeySignature
+    | Key ModifiedKeySignature AmorphousProperties
       -- a standard key signature possibly modified with accidentals
     | UnitNoteLength NoteDuration
     | Meter (Maybe MeterSignature)
@@ -407,6 +408,8 @@ data Header
     | Comment String
     | UnsupportedHeader
 
+-- | we stringly-type any header properties that we don't particularly care about
+type AmorphousProperties = Map String String
 
 -- | The octave number of middle C in MIDI parlance.
 middlecOctave :: Int

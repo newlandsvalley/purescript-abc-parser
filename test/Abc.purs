@@ -124,6 +124,8 @@ headerSuite =
       assertCanonical "K: C\x0D\n| ABC |\x0D\n" keyCMajor
     test "key trailing space" do
       assertCanonical "K: CMajor \x0D\n| ABC |\x0D\n" keyCMajor
+    test "key with properties" do
+      assertRoundTrip "K: GMinor shift=GD\x0D\n| ABC |\x0D\n" 
     test "note length" do
         assertRoundTrip "L: 1/8\x0D\n| ABC |\x0D\n"
     test "meter" do

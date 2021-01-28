@@ -19,9 +19,9 @@ It is assumed that it will work in cooperation with other modules which will be 
 Version 2.2 ABC support
 -----------------------
 
-It is intended to support ABC version 2.2. Unfortunately, very many sections of this spec are still marked as _volatile_.
+As far as I can tell, ABC version 2.2 is also suppoirted. Unfortunately, very many sections of this spec are still marked as _volatile_.
 
-The main changes in this version of the spec are to do with multiple voices and in particular, the manner in which clefs for a variety of (possibly transposing) instruments may be represented. This is not a problem for most traditional music collections.  Accordingly, clef descriptions are parsed, but left predominantly untyped.
+The main changes in the spec are to do with multiple voices and in particular, the manner in which clefs for a variety of (possibly transposing) instruments may be represented. This is not a problem for most traditional music collections.  In this parser, clef descriptions (and all other voice properties) are parsed, but left predominantly untyped.
 
 Deviations from the spec
 ------------------------

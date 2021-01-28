@@ -321,7 +321,7 @@ transformHeader h =
   case h of
     UnitNoteLength d ->
       updateState addUnitNoteLenToState d
-    Key mks ->
+    Key mks _ ->
       updateState addKeySigToState mks
     Tempo t ->
       updateState addTempoToState t

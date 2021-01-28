@@ -7,3 +7,4 @@ Breaking Changes in this branch
 * A new data type, __Volta__ has been introduced into the parse tree ADT.  
   This is so as to allow more comple voltas of the form |1,2 to be represented.
   This, therefore replaces the simpler Int data type we had before.
+* Optional properties (as key-value pairs) added to the __Key__ header.

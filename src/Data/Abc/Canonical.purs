@@ -16,7 +16,7 @@ import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, numerator, denominator)
 import Data.Tuple (Tuple(..))
-import Data.Map (Map, size, toUnfoldable)
+import Data.Map (size, toUnfoldable)
 import Data.String (trim, toLower, length, take) as Str
 import Data.String.CodeUnits (fromCharArray)
 import Data.String.Utils (repeat)
@@ -99,8 +99,9 @@ keyAccidentals :: List Pitch -> String
 keyAccidentals =
     concatenate <<< map (\ka -> " " <> (show ka))
 
-voiceProperties :: Map String String -> String
-voiceProperties properties =
+-- amorphous properties of either the Key or Voice header
+amorphousProperties :: AmorphousProperties -> String
+amorphousProperties properties =
   if (size properties == 0)
     then ""
   else
@@ -327,8 +328,9 @@ header h =
         Instruction s ->
             "I: " <> s
 
-        Key mks ->
+        Key mks props ->
             "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
+                  <> amorphousProperties props
 
         UnitNoteLength d ->
             "L: " <> (showRatio d)
@@ -368,7 +370,7 @@ header h =
 
         Voice voiceDescription ->
             "V: " <> voiceDescription.id
-                  <> voiceProperties voiceDescription.properties
+                  <> amorphousProperties voiceDescription.properties
 
         WordsAfter s ->
             "W: " <> s

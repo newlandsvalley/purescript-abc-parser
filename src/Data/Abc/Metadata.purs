@@ -5,6 +5,7 @@ module Data.Abc.Metadata
         , getHeader
         , getHeaders
         , getKeySig
+        , getKeyProps
         , getMeter
         , getTempoSig
         , getTitle
@@ -21,7 +22,7 @@ import Data.Abc
 import Data.Abc.KeySignature (modifiedKeySet)
 import Data.Foldable (all)
 import Data.List (List(..), head, null, reverse, singleton, snoc, take)
-import Data.Map (Map, fromFoldableWith, lookup)
+import Data.Map (Map, empty, fromFoldableWith, lookup)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, (%), toNumber)
 import Data.Tuple (Tuple(..))
@@ -52,10 +53,19 @@ getKeySet t =
 getKeySig :: AbcTune -> Maybe ModifiedKeySignature
 getKeySig tune =
   case (getHeader 'K' tune) of
-    Just (Key key) ->
+    Just (Key key _) ->
       Just key
     _ ->
       Nothing
+
+-- | Get the key signature properties (if any) from the tune.
+getKeyProps :: AbcTune -> AmorphousProperties
+getKeyProps tune =
+  case (getHeader 'K' tune) of
+    Just (Key key props) ->
+      props
+    _ ->
+      (empty :: AmorphousProperties)
 
 -- | Get the meter
 getMeter :: AbcTune -> Maybe MeterSignature
@@ -275,7 +285,7 @@ getHeaderMap t =
         Instruction _ ->
           Tuple 'I' (singleton h)
 
-        Key _ ->
+        Key _ _->
           Tuple 'K' (singleton h)
 
         UnitNoteLength _ ->

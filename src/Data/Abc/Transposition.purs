@@ -21,7 +21,7 @@ import Control.Monad.State (State, evalStateT, get, put)
 import Data.Either (Either(..))
 import Data.List (List(..), (:), filter, reverse)
 import Data.List.NonEmpty (NonEmptyList) as Nel
-import Data.Map (Map, fromFoldable, lookup)
+import Data.Map (Map, empty, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
 import Data.Tuple (Tuple(..), fst, snd)
 import Data.Newtype (unwrap)
@@ -29,13 +29,14 @@ import Data.Traversable (traverse)
 import Data.Foldable (oneOf)
 import Data.Abc
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.Metadata (getKeySig)
+import Data.Abc.Metadata (getKeySig, getKeyProps)
 import Data.Abc.KeySignature (diatonicScale, isCOrSharpKey, modifiedKeySet
     ,notesInChromaticScale, pitchNumbers, pitchNumber, inKeySet, transposeKeySignatureBy)
 
 type TranspositionState =
     { keyDistance :: Int  -- semitone distance between keys - may be positive or negative
     , sourcemks :: ModifiedKeySignature -- source key signature
+    , sourceKeyProps :: AmorphousProperties -- source key properties
     , sourceBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune source
     , targetmks :: ModifiedKeySignature   -- target key signature
     , targetKeySet :: KeySet -- the set of accidental keys in the target key signature
@@ -118,6 +119,7 @@ transposeNote targetmks srcKey note =
           transpositionState =
             { keyDistance: d
             , sourcemks: srcKey
+            , sourceKeyProps : empty::AmorphousProperties
             , sourceBarAccidentals: Accidentals.empty
             , targetmks: targetmks
             , targetKeySet: modifiedKeySet targetmks
@@ -135,6 +137,7 @@ transposeTo (Pitch targetP) t =
   let
     -- get the source key signature stuff
     mks = fromMaybe defaultKey $ getKeySig t
+    keyProps = getKeyProps t
     srcAcc = mks.keySignature.accidental
     srcPc = mks.keySignature.pitchClass
     -- get the target key signature stuff, retaining the mode
@@ -155,6 +158,7 @@ transposeTo (Pitch targetP) t =
         transpositionState =
           { keyDistance: d
           , sourcemks: mks
+          , sourceKeyProps : keyProps
           , sourceBarAccidentals: Accidentals.empty
           , targetmks: targetmks
           , targetKeySet: modifiedKeySet targetmks
@@ -171,8 +175,9 @@ transposeTune t =
   do
     state <- get
     let
+      newHeaders :: TuneHeaders
       newHeaders =
-        replaceKeyHeader state.targetmks t.headers
+        replaceKeyHeader state.targetmks state.sourceKeyProps t.headers
     newTuneBody <- transposeTuneBody t.body
     pure { headers: newHeaders, body: newTuneBody }
 
@@ -184,7 +189,7 @@ transposeTuneBody body =
 processHeader :: Header -> Transposition Header
 processHeader h =
   case h of
-    Key mks ->
+    Key mks props ->
       do
         state <- get
         let
@@ -194,6 +199,7 @@ processHeader h =
           newState =
             state
               { sourcemks = mks
+              , sourceKeyProps = props
               , sourceBarAccidentals = Accidentals.empty
               , targetmks = newmks
               , targetKeySet = modifiedKeySet newmks
@@ -202,7 +208,7 @@ processHeader h =
               }
 
         _ <- put newState
-        pure $ (Key newmks)
+        pure $ (Key newmks props)
     _ ->
       pure h
 
@@ -546,12 +552,12 @@ transpositionDistance target source =
 
 -- | replace a Key header (if it exists)
 -- | and place last in the list of headers, retaining the order of the other headers
-replaceKeyHeader :: ModifiedKeySignature -> TuneHeaders -> TuneHeaders
-replaceKeyHeader newmks hs =
+replaceKeyHeader :: ModifiedKeySignature -> AmorphousProperties -> TuneHeaders -> TuneHeaders
+replaceKeyHeader newmks props hs =
   let
     f h =
       case h of
-        Key mks ->
+        Key _ _ ->
           false
 
         _ ->
@@ -559,4 +565,4 @@ replaceKeyHeader newmks hs =
     newhs =
       filter f hs
   in
-    reverse $ ( Key newmks ) : (reverse newhs)
+    reverse $ ( Key newmks props) : (reverse newhs)
