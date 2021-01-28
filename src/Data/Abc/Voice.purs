@@ -31,20 +31,22 @@
 -- | The current voice is this unless over-ridden by an inline voice.  
 -- | The fold builds up a Map of Voices to partitioned ABC tune bodies
 module Data.Abc.Voice 
-  ( partitionVoices
+  ( getVoiceLabels
+  , partitionVoices
   , partitionTuneBody) where
 
-import Prelude (class Eq, class Ord, ($), (<<<), bind, join, map, not, pure)
+import Control.Monad.State.Class (get, put, modify)
+import Control.Monad.State.Trans (StateT, evalStateT)
 import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody)
 import Data.Abc.Metadata (getHeaders, isEmptyStave)
-import Data.List (List, head, last, singleton, snoc)
-import Data.Maybe (Maybe(..))
-import Data.Map (Map, empty, lookup, insert, toUnfoldable)
-import Data.Tuple (Tuple(..))
 import Data.Foldable (foldM)
 import Data.Identity (Identity(..))
-import Control.Monad.State.Trans (StateT, evalStateT)
-import Control.Monad.State.Class (get, put)
+import Data.List (List, head, last, singleton, snoc)
+import Data.Map (Map, empty, lookup, insert, toUnfoldable)
+import Data.Maybe (Maybe(..))
+import Data.Set (Set, empty, insert, toUnfoldable) as Set
+import Data.Tuple (Tuple(..))
+import Prelude (class Eq, class Ord, ($), (<<<), bind, join, map, not, pure)
 
 data VoiceLabel = 
     VoiceLabel String
@@ -57,6 +59,30 @@ type VoiceMap = Map VoiceLabel TuneBody
 
 type VoiceM = StateT VoiceLabel Identity
 
+type Labels = Set.Set VoiceLabel
+
+type LabelM = StateT Labels Identity
+
+-- | given a tune, find all the different voice names (labels)
+-- | no matter where they might be hiding
+getVoiceLabels :: AbcTune -> Array String
+getVoiceLabels tune =
+  let 
+    initialLabels :: Set.Set VoiceLabel
+    initialLabels =
+      case (initialVoiceLabel tune) of 
+        NoLabel -> (Set.empty :: Labels)
+        label -> Set.insert label (Set.empty :: Labels)
+    voiceLabels = 
+      runLabelM initialLabels (labelFold tune.body) 
+    f :: VoiceLabel -> String 
+    f vl = 
+      case vl of 
+        VoiceLabel l -> l 
+        NoLabel -> "no label"  -- this can't happen
+  in
+    map f $ Set.toUnfoldable voiceLabels
+
 -- | given a tune, partition it into multiple such tunes
 -- | one for each voice
 partitionVoices :: AbcTune -> Array AbcTune 
@@ -68,17 +94,22 @@ partitionVoices tune =
 partitionTuneBody :: AbcTune -> Array TuneBody
 partitionTuneBody tune =    
   let
-    initialVoiceLabel = case (last $ getHeaders 'V' tune) of
-      Just (Voice description) -> VoiceLabel description.id 
-      _ -> NoLabel
-    voiceMap = runVoiceM initialVoiceLabel (voiceFold tune.body) 
+    initialLabel = initialVoiceLabel tune
+    voiceMap = runVoiceM initialLabel (voiceFold tune.body) 
   in 
     map (\(Tuple k v) -> v) $ toUnfoldable voiceMap
 
 runVoiceM :: forall a. VoiceLabel -> VoiceM a -> a
-runVoiceM initialVoiceLabel v =
+runVoiceM initialLabel v =
   let
-    (Identity a) = evalStateT v initialVoiceLabel
+    (Identity a) = evalStateT v initialLabel
+  in 
+    a
+
+runLabelM :: forall a. Set.Set VoiceLabel -> LabelM a -> a
+runLabelM initialLabels v =
+  let
+    (Identity a) = evalStateT v initialLabels
   in 
     a
 
@@ -102,11 +133,38 @@ voiceFold b =
         Score bars -> do
           currentVoice <- get
           if (not $ isEmptyStave bars) then
-            pure $ addAtLabel (scoreLabel currentVoice bars) bp vmap
+            pure $ addAtLabel (scoreLabelOrDefault currentVoice bars) bp vmap
           else
             pure vmap
   in
     foldM foldf (empty :: VoiceMap) b
+
+-- as above but just retrieve the set of voice labels
+labelFold :: TuneBody -> LabelM Labels
+labelFold b = 
+  let  
+    foldf :: Labels -> BodyPart -> LabelM Labels
+    foldf labels bp = do
+      case bp of
+        BodyInfo header -> 
+          case header of 
+            Voice voiceDescription -> do
+              newLabels <- modify (Set.insert (VoiceLabel voiceDescription.id))
+              pure newLabels
+            _ -> 
+              pure labels
+        Score bars -> do
+          if (not $ isEmptyStave bars) then do
+            case (inlineLabel bars) of
+              Just label -> do
+                newLabels <- modify (Set.insert label)
+                pure newLabels
+              _ ->           
+                pure labels
+          else
+            pure labels
+  in
+    foldM foldf (Set.empty :: Labels) b    
 
 -- append a body part at the specified map label
 addAtLabel :: VoiceLabel -> BodyPart -> VoiceMap -> VoiceMap
@@ -122,14 +180,11 @@ addToAll bp vmap =
 
 -- find the inline voice label from a score line (if it exists)
 -- otherwise fall back to the default voice
-scoreLabel :: VoiceLabel -> List Bar -> VoiceLabel
-scoreLabel currentVoice bars  =
-  let
-    firstBarMusic = join $ map (head <<< _.music) $ head bars
-  in
-    case firstBarMusic of
-      (Just (Inline header)) -> voiceLabel currentVoice header 
-      _ -> currentVoice
+scoreLabelOrDefault :: VoiceLabel -> List Bar -> VoiceLabel
+scoreLabelOrDefault currentVoiceLabel bars  =
+  case (inlineLabel bars) of 
+    Just label -> label 
+    _ -> currentVoiceLabel
 
 -- find the voice label from an inline header (if it defines a voice)
 -- otherwise fall back to the default voice
@@ -138,4 +193,25 @@ voiceLabel currentVoice h =
   case h of
     (Voice description) -> VoiceLabel description.id
     _ -> currentVoice
+
+-- if the line of music starts with an inLine voice header, return the voice
+-- label, otherwise Nothing
+inlineLabel :: List Bar -> Maybe VoiceLabel
+inlineLabel bars = 
+  let
+    mFirstBarMusic = join $ map (head <<< _.music) $ head bars
+  in 
+    case mFirstBarMusic of
+      (Just (Inline header)) ->
+        case header of 
+          (Voice description) -> Just (VoiceLabel description.id)
+          _ -> Nothing
+      _ -> Nothing
+
+-- get the voice label from the initial headers if it exists
+initialVoiceLabel :: AbcTune -> VoiceLabel
+initialVoiceLabel tune = 
+  case (last $ getHeaders 'V' tune) of
+     Just (Voice description) -> VoiceLabel description.id 
+     _ -> NoLabel      
 

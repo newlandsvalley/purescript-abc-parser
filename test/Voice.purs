@@ -6,7 +6,7 @@ import Control.Monad.Free (Free)
 import Data.Abc (AbcTune)
 import Data.Abc.Canonical (fromTune)
 import Data.Abc.Parser (parse)
-import Data.Abc.Voice (partitionTuneBody, partitionVoices)
+import Data.Abc.Voice (getVoiceLabels, partitionTuneBody, partitionVoices)
 import Data.Array (index, length)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..))
@@ -56,6 +56,16 @@ assertVoice' s canonical ix =
     Left err ->
       failure ("parse failed: " <> (show err))      
 
+assertVoiceLabels :: String -> Array String -> Test
+assertVoiceLabels s target = 
+  case (parse s) of
+    Right tune ->
+      Assert.equal target (getVoiceLabels tune)
+
+    Left err ->
+      failure ("parse failed: " <> (show err))      
+
+
 voiceSuite :: Free TestF Unit
 voiceSuite = do
   suite "voice" do
@@ -83,6 +93,14 @@ voiceSuite = do
       assertVoice' fourVoices fourthVoiceOfFour 3
     test "three voices with empty stave" do
       assertVoiceCount (threeVoices <> "\x0D\n") 3
+    test "labels - no voice" do
+      assertVoiceLabels noVoice []
+    test "labels - one voice" do
+      assertVoiceLabels oneVoice ["T1"]
+    test "labels - two voice inline" do
+      assertVoiceLabels twoVoicesInline ["T1", "T2"]
+    test "labels - four voices" do
+      assertVoiceLabels fourVoices ["1", "2", "3", "4"]
 
 noVoice :: String
 noVoice =
