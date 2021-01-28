@@ -59,7 +59,7 @@ type VoiceMap = Map VoiceLabel TuneBody
 
 type VoiceM = StateT VoiceLabel Identity
 
-type Labels = Set.Set VoiceLabel
+type Labels = Set.Set String
 
 type LabelM = StateT Labels Identity
 
@@ -68,20 +68,15 @@ type LabelM = StateT Labels Identity
 getVoiceLabels :: AbcTune -> Array String
 getVoiceLabels tune =
   let 
-    initialLabels :: Set.Set VoiceLabel
+    initialLabels :: Set.Set String
     initialLabels =
       case (initialVoiceLabel tune) of 
         NoLabel -> (Set.empty :: Labels)
-        label -> Set.insert label (Set.empty :: Labels)
+        VoiceLabel label -> Set.insert label (Set.empty :: Labels)
     voiceLabels = 
       runLabelM initialLabels (labelFold tune.body) 
-    f :: VoiceLabel -> String 
-    f vl = 
-      case vl of 
-        VoiceLabel l -> l 
-        NoLabel -> "no label"  -- this can't happen
   in
-    map f $ Set.toUnfoldable voiceLabels
+    Set.toUnfoldable voiceLabels
 
 -- | given a tune, partition it into multiple such tunes
 -- | one for each voice
@@ -106,7 +101,7 @@ runVoiceM initialLabel v =
   in 
     a
 
-runLabelM :: forall a. Set.Set VoiceLabel -> LabelM a -> a
+runLabelM :: forall a. Set.Set String -> LabelM a -> a
 runLabelM initialLabels v =
   let
     (Identity a) = evalStateT v initialLabels
@@ -149,14 +144,14 @@ labelFold b =
         BodyInfo header -> 
           case header of 
             Voice voiceDescription -> do
-              newLabels <- modify (Set.insert (VoiceLabel voiceDescription.id))
+              newLabels <- modify (Set.insert (voiceDescription.id))
               pure newLabels
             _ -> 
               pure labels
         Score bars -> do
           if (not $ isEmptyStave bars) then do
             case (inlineLabel bars) of
-              Just label -> do
+              Just (VoiceLabel label) -> do
                 newLabels <- modify (Set.insert label)
                 pure newLabels
               _ ->           
