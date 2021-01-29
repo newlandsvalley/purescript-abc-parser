@@ -6,11 +6,13 @@ import Control.Monad.Free (Free)
 import Data.Abc (AbcTune)
 import Data.Abc.Canonical (fromTune)
 import Data.Abc.Parser (parse)
-import Data.Abc.Voice (getVoiceLabels, partitionTuneBody, partitionVoices)
+import Data.Abc.Voice (getVoiceLabels, getVoiceMap, partitionTuneBody, partitionVoices)
 import Data.Array (index, length)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..))
 import Data.Either (Either(..))
+import Data.Set (Set, fromFoldable)
+import Data.Map (keys)
 import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
@@ -22,7 +24,6 @@ assertVoiceCount s target =
 
     Left err ->
       failure ("parse failed: " <> (show err))
-
 
 -- | assert that a canonical tune is equal to the partitioned tune 
 -- | in the array of voice-partitioned tunes at the stated index
@@ -56,11 +57,25 @@ assertVoice' s canonical ix =
     Left err ->
       failure ("parse failed: " <> (show err))      
 
+-- assert the set of voice names found in the tune after asking for just the labels
 assertVoiceLabels :: String -> Array String -> Test
 assertVoiceLabels s target = 
   case (parse s) of
     Right tune ->
       Assert.equal target (getVoiceLabels tune)
+
+    Left err ->
+      failure ("parse failed: " <> (show err))      
+
+-- ditto after asking for the entire voice map
+assertVoiceMapLabels :: String -> Set String -> Test
+assertVoiceMapLabels s target = 
+  case (parse s) of
+    Right tune ->
+      let 
+        voiceMap = getVoiceMap tune
+      in
+        Assert.equal target (keys voiceMap)
 
     Left err ->
       failure ("parse failed: " <> (show err))      
@@ -101,6 +116,8 @@ voiceSuite = do
       assertVoiceLabels twoVoicesInline ["T1", "T2"]
     test "labels - four voices" do
       assertVoiceLabels fourVoices ["1", "2", "3", "4"]
+    test "labels from voice map - four voices" do
+      assertVoiceMapLabels fourVoices (fromFoldable ["1", "2", "3", "4"])
 
 noVoice :: String
 noVoice =

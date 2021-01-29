@@ -32,6 +32,7 @@
 -- | The fold builds up a Map of Voices to partitioned ABC tune bodies
 module Data.Abc.Voice 
   ( getVoiceLabels
+  , getVoiceMap
   , partitionVoices
   , partitionTuneBody) where
 
@@ -42,7 +43,7 @@ import Data.Abc.Metadata (getHeaders, isEmptyStave)
 import Data.Foldable (foldM)
 import Data.Identity (Identity(..))
 import Data.List (List, head, last, singleton, snoc)
-import Data.Map (Map, empty, lookup, insert, toUnfoldable)
+import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set, empty, insert, toUnfoldable) as Set
 import Data.Tuple (Tuple(..))
@@ -78,21 +79,42 @@ getVoiceLabels tune =
   in
     Set.toUnfoldable voiceLabels
 
+-- | get a map of voice name to tune (filtering the body for just that tune voice)
+-- | if there is no voice header, then the voice name is "unnamed"
+getVoiceMap :: AbcTune -> Map String AbcTune 
+getVoiceMap tune = 
+  let 
+    tuples :: Array (Tuple VoiceLabel TuneBody)
+    tuples = toUnfoldable $ voiceMap tune
+    -- map the keys to String and the values to AbcTune
+    f :: Tuple VoiceLabel TuneBody -> Tuple String AbcTune
+    f (Tuple k body) = 
+      case k of 
+        VoiceLabel name -> Tuple name {headers : tune.headers, body}
+        NoLabel -> Tuple "unnamed" {headers : tune.headers, body}
+  in 
+    fromFoldable $ map f tuples
+
 -- | given a tune, partition it into multiple such tunes
 -- | one for each voice
 partitionVoices :: AbcTune -> Array AbcTune 
 partitionVoices tune = 
   map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
 
+
 -- | given a tune, partition its body into multiple such bodies 
 -- | with a separate body for each distinct voice
 partitionTuneBody :: AbcTune -> Array TuneBody
 partitionTuneBody tune =    
+  map (\(Tuple k v) -> v) $ toUnfoldable (voiceMap tune)
+
+-- produce a map of voice label to tune (filtered for that voice only)
+voiceMap :: AbcTune -> VoiceMap 
+voiceMap tune =     
   let
     initialLabel = initialVoiceLabel tune
-    voiceMap = runVoiceM initialLabel (voiceFold tune.body) 
-  in 
-    map (\(Tuple k v) -> v) $ toUnfoldable voiceMap
+  in
+    runVoiceM initialLabel (voiceFold tune.body) 
 
 runVoiceM :: forall a. VoiceLabel -> VoiceM a -> a
 runVoiceM initialLabel v =
