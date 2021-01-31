@@ -1,5 +1,5 @@
-Breaking Changes in this branch
-===============================
+Breaking Changes in v1.9.0
+==========================
 
 * The __Repeat__ sum type in the parse tree ADT has been removed.  The __BarType__ record type has been replaced by the (simpler) __BarLine__.
 * The representation of begin and end repeats at a bar line has therefore changed.
