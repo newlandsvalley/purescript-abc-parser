@@ -21,7 +21,7 @@ import Data.Set (findMax)
 import Data.Tuple (Tuple)
 import Data.Maybe (Maybe, fromMaybe)
 
--- | the active variants returned as an array of tuples (variant - position)
+-- | the active variants returned as an array of tuples (variant no - position)
 activeVariants :: Section -> Array (Tuple Int Int)
 activeVariants (Section s) =
   toUnfoldable s.variantPositions
