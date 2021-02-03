@@ -14,7 +14,7 @@ module Data.Abc.Midi.RepeatSections
 
 import Data.Abc (Volta(..))
 import Data.Abc.Repeats.Types (RepeatState, Section)
-import Data.Abc.Repeats.Variant (setVariantList, setVariantOf)
+import Data.Abc.Repeats.Variant (addVariantList, addVariantOf)
 import Data.Abc.Repeats.Section (hasFirstEnding, isDeadSection, isUnrepeated, newSection, 
          nullSection, setEndPos, setMissingRepeatCount, toOffsetZero)
 import Data.Array (fromFoldable)
@@ -44,13 +44,13 @@ indexBar bar r =
   case bar.iteration, bar.endRepeats, bar.startRepeats of
     -- |1 or |2 etc
     Just (Volta n), _ , _ ->    
-      r { current = setVariantOf (toOffsetZero n) bar.number r.current}
+      r { current = addVariantOf (toOffsetZero n) bar.number r.current}
     -- | 1,2 etc 
     Just (VoltaList vs), _ , _ ->
       let 
         vsArray = map toOffsetZero $ fromFoldable vs
       in
-        r { current = setVariantList vsArray bar.number r.current}
+        r { current = addVariantList vsArray bar.number r.current}
     -- |: or :| or |
     Nothing,  ends,  starts ->    
       if (ends > 0 && starts > 0) then

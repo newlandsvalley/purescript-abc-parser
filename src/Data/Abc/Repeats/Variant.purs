@@ -7,8 +7,8 @@
 module Data.Abc.Repeats.Variant
   ( activeVariants
   , secondVariantPosition
-  , setVariantOf
-  , setVariantList
+  , addVariantOf
+  , addVariantList
   , variantPositionOf
   , variantIndexMax
   , variantCount) where
@@ -36,19 +36,19 @@ secondVariantPosition :: Section -> Maybe Int
 secondVariantPosition s = 
   variantPositionOf 1 s
 
--- set a repeat variant of a section
--- variantNo is the number of the variant
--- barNo is the bar in which this variant marking is found
-setVariantOf :: Int -> Int -> Section -> Section
-setVariantOf variantNo barNo (Section s) =
+-- | add a repeat variant of a section to the existing variants
+-- | variantNo is the number of the variant
+-- | barNo is the bar in which this variant marking is found
+addVariantOf :: Int -> Int -> Section -> Section
+addVariantOf variantNo barNo (Section s) =
   let  
     variantPositions = insert variantNo barNo s.variantPositions
   in
   Section s { variantPositions = variantPositions, repeatCount = 1  }
 
- -- set the list of variants having this bar number position
-setVariantList :: Array Int -> Int -> Section -> Section
-setVariantList variants barNo (Section s) =   
+ -- | add the list of variants having this bar number position to the existing variants
+addVariantList :: Array Int -> Int -> Section -> Section
+addVariantList variants barNo (Section s) =   
   let 
     -- the update defintions sets each variant to be associated with the barNo
     variantPositions :: VariantPositions
