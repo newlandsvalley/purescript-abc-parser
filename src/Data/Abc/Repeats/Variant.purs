@@ -1,46 +1,40 @@
 -- | Variant Repeats
 -- |
 -- | support for the ABC volta construction:
--- |    ..|1 ... :|2 ...:|3 ....  etc 
+-- |    ..|1 ..... :|2 ...:|3 ....  
+-- | or ..|1,2,3.. :|4.... |    etc 
 -- |
--- | Up to 8 such variant endings are allowed in any section
 module Data.Abc.Repeats.Variant
   ( activeVariants
-  , initialVariantEndings
-  , secondEnding
+  , secondVariantPosition
   , setVariantOf
   , setVariantList
-  , variantEndingOf
+  , variantPositionOf
   , variantIndexMax
   , variantCount) where
 
-import Prelude (($), (-), map, join)
-import Data.Abc.Repeats.Types (Section(..))
+import Prelude (($))
+import Data.Abc.Repeats.Types (Section(..), VariantPositions)
 import Data.Array as Array
-import Data.Tuple (Tuple(..))
-import Data.Maybe (Maybe(..), isJust, fromJust)
-import Partial.Unsafe (unsafePartial)
+import Data.Map (insert, keys, lookup, size, toUnfoldable)
+import Data.Set (findMax)
+import Data.Tuple (Tuple)
+import Data.Maybe (Maybe, fromMaybe)
 
--- | the active variants - i.e. those non-Nothing entries at the start of the array
-activeVariants :: Section -> Array Int
+-- | the active variants returned as an array of tuples (variant - position)
+activeVariants :: Section -> Array (Tuple Int Int)
 activeVariants (Section s) =
-  map (unsafePartial fromJust) $
-    Array.takeWhile isJust s.variantEndings
+  toUnfoldable s.variantPositions
 
--- | initialise the variant endings to none - 8 allowed
-initialVariantEndings :: Array (Maybe Int)
-initialVariantEndings = 
-  [ Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing, Nothing]
+-- | the variant position of the specified variant number 
+variantPositionOf :: Int -> Section -> Maybe Int
+variantPositionOf n (Section s) =   
+  lookup n s.variantPositions
 
--- | the variant ending of the specified variant number 
-variantEndingOf :: Int -> Section -> Maybe Int
-variantEndingOf n (Section s) =   
-  join $ Array.index s.variantEndings n  
-
--- | the second variant ending
-secondEnding :: Section -> Maybe Int
-secondEnding s = 
-  variantEndingOf 1 s
+-- | the position of the second variant 
+secondVariantPosition :: Section -> Maybe Int
+secondVariantPosition s = 
+  variantPositionOf 1 s
 
 -- set a repeat variant of a section
 -- variantNo is the number of the variant
@@ -48,42 +42,41 @@ secondEnding s =
 setVariantOf :: Int -> Int -> Section -> Section
 setVariantOf variantNo barNo (Section s) =
   let  
-    variantEndings = updateVariantBarPos s.variantEndings barNo variantNo
+    variantPositions = insert variantNo barNo s.variantPositions
   in
-  Section s { variantEndings = variantEndings, repeatCount = 1  }
+  Section s { variantPositions = variantPositions, repeatCount = 1  }
 
  -- set the list of variants having this bar number position
 setVariantList :: Array Int -> Int -> Section -> Section
 setVariantList variants barNo (Section s) =   
   let 
     -- the update defintions sets each variant to be associated with the barNo
-    updateDefinition = map (\variantNo -> Tuple variantNo (Just barNo)) variants
-    variantEndings :: Array (Maybe Int)
-    variantEndings = updateAllVariantIndices updateDefinition s.variantEndings
+    variantPositions :: VariantPositions
+    variantPositions = insertAllVariantIndices variants barNo s.variantPositions
   in    
-    Section s { variantEndings = variantEndings, repeatCount = 1 }
+    Section s { variantPositions = variantPositions, repeatCount = 1 }
     
--- | i.e. ABC variant numberings must be consecutive)
+-- | the number of variants in the ending
 variantCount :: Section -> Int
 variantCount (Section s) =
-  Array.length $ Array.takeWhile isJust s.variantEndings
+  size s.variantPositions
 
 -- | the maximum index we can use of the active variants
 variantIndexMax :: Section -> Int
-variantIndexMax section = 
-  variantCount section - 1
+variantIndexMax (Section s) = 
+  let 
+    variantIndices = keys s.variantPositions
+  in 
+    fromMaybe 0 $ findMax variantIndices
 
--- update the variant ending for the nominated variant and its bar number position
--- if it fails for any reason, return the original array of variant positions
-updateVariantBarPos :: Array (Maybe Int) -> Int -> Int -> Array (Maybe Int)
-updateVariantBarPos variantEndings barNo variantNo  = 
-  case Array.updateAt variantNo (Just barNo) variantEndings of 
-    Nothing -> variantEndings 
-    Just updatedEndings -> updatedEndings
-
--- update a bunch of variant endings with the same bar number position
-updateAllVariantIndices :: Array (Tuple Int (Maybe Int)) -> Array (Maybe Int) -> Array (Maybe Int)
-updateAllVariantIndices barNoUpdates variantEndings =     
-  Array.updateAtIndices barNoUpdates variantEndings 
+-- set a bunch of variant positions with the same bar number position
+insertAllVariantIndices :: Array Int -> Int -> VariantPositions -> VariantPositions
+insertAllVariantIndices variants barNo variantPositions =     
+  let 
+    f :: Int -> VariantPositions -> VariantPositions
+    f v positions = 
+      insert v barNo positions
+  in
+    Array.foldr f variantPositions variants
 
 

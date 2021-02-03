@@ -6,12 +6,14 @@ module Data.Abc.Repeats.Types
   ( Label(..)
   , Section(..)
   , Sections
-  , RepeatState) where
+  , RepeatState
+  , VariantPositions ) where
 
 import Prelude (class Eq, class Show)
 import Data.Generic.Rep
 import Data.Maybe (Maybe)
 import Data.List (List)
+import Data.Map (Map)
 import Data.Newtype (class Newtype)
 import Data.Generic.Rep.Eq (genericEq)
 import Data.Generic.Rep.Show (genericShow)
@@ -30,11 +32,15 @@ instance showLabel :: Show Label where
 
 derive instance eqLabel :: Eq Label      
 
+-- | a map of variant number (wrt offest zero - i.e. |1 becomes 0)
+-- | to the bar number where that variant is found
+type VariantPositions = Map Int Int 
+
 -- | a section of the tune (possibly repeated)
 -- | with indices given by the bar number where the feature lives
 newtype Section = Section
     { start :: Maybe Int
-    , variantEndings :: Array (Maybe Int)
+    , variantPositions :: VariantPositions
     , end :: Maybe Int
     , repeatCount :: Int 
     , label :: Label

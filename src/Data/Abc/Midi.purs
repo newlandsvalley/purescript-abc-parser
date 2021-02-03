@@ -18,7 +18,7 @@ import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Repeats.Types (RepeatState, Section(..), Sections)
-import Data.Abc.Repeats.Variant (activeVariants, variantEndingOf, variantCount, variantIndexMax)
+import Data.Abc.Repeats.Variant (activeVariants, variantPositionOf, variantCount, variantIndexMax)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
@@ -674,13 +674,13 @@ trackSlice start finish mbs =
 -- index is the current index into the array of varianty endings 
 -- pos is the value at the current index
 -- we need to use indexed methods because we need to look up the next index position
-variantSlice :: Int -> Int -> Section -> MidiBars -> Int -> Int -> List Midi.Message 
-variantSlice start end section sectionBars index pos = 
+variantSlice :: Int -> Int -> Section -> MidiBars -> Tuple Int Int -> List Midi.Message 
+variantSlice start end section sectionBars (Tuple index pos) = 
   let
     -- the first slice is the main tune section which is always from the 
     -- start to the first volta 
     firstEnding :: Int
-    firstEnding = fromMaybe start $ variantEndingOf 0 section
+    firstEnding = fromMaybe start $ variantPositionOf 0 section
     -- this is the current volta we're looking at
     thisEnding = pos
     -- this next bit is tricky
@@ -704,7 +704,7 @@ variantSlice start end section sectionBars index pos =
     -- favour of end if the resulting bar position falls before the start
     -- position of the variant.
     candidateNextEnding = 
-      fromMaybe start $ variantEndingOf (index + 1) section
+      fromMaybe start $ variantPositionOf (index + 1) section
     nextEnding :: Int
     nextEnding =     
       if (index >= variantIndexMax section || candidateNextEnding <= pos)
@@ -739,7 +739,7 @@ accumulateSlices mbs start end section  =
     sectionBars :: MidiBars
     sectionBars = filter (barSelector start end) mbs
     slices :: Array (List Midi.Message)
-    slices = Array.mapWithIndex
+    slices = map
               (variantSlice start end section sectionBars)
               (activeVariants section)
   in 

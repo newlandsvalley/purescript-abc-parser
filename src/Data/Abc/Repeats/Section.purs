@@ -11,7 +11,8 @@ module Data.Abc.Repeats.Section
         ) where
 
 import Data.Abc.Repeats.Types (Label(..), Section(..))
-import Data.Abc.Repeats.Variant (initialVariantEndings, variantEndingOf)
+import Data.Abc.Repeats.Variant (variantPositionOf)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..), isJust)
 import Prelude ((==), (<=), (-))
 
@@ -25,7 +26,7 @@ newSection :: Int -> Int -> Section
 newSection pos repeatCount = 
   Section
     { start : Just pos
-    , variantEndings : initialVariantEndings
+    , variantPositions : empty
     , end : Just 0
     , repeatCount : repeatCount
     , label : OtherPart   -- not used here
@@ -49,7 +50,7 @@ isUnrepeated (Section s) =
 -- return true if the first (variant) ending is set
 hasFirstEnding :: Section -> Boolean
 hasFirstEnding s =
-  isJust (variantEndingOf 0 s)
+  isJust (variantPositionOf 0 s)
 
 -- set the repeatedCount status of a section if it is missing
 -- (in the wild we get   |......|.....:| etc. with no start colon)
