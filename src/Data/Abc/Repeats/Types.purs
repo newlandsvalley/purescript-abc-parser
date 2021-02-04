@@ -3,7 +3,8 @@
 -- | simple repeats or variant repeats (voltas)
 
 module Data.Abc.Repeats.Types 
-  ( Label(..)
+  ( BarNo
+  , Label(..)
   , Section(..)
   , Sections
   , RepeatState
@@ -32,16 +33,19 @@ instance showLabel :: Show Label where
 
 derive instance eqLabel :: Eq Label      
 
+-- a bar number in the melody
+type BarNo = Int
+
 -- | a map of variant number (wrt offest zero - i.e. |1 becomes 0)
 -- | to the bar number where that variant is found
-type VariantPositions = Map Int Int 
+type VariantPositions = Map Int BarNo
 
 -- | a section of the tune (possibly repeated)
 -- | with indices given by the bar number where the feature lives
 newtype Section = Section
-    { start :: Maybe Int
+    { start :: Maybe BarNo
     , variantPositions :: VariantPositions
-    , end :: Maybe Int
+    , end :: Maybe BarNo
     , repeatCount :: Int 
     , label :: Label
     }

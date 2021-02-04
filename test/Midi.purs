@@ -1,18 +1,20 @@
 module Test.Midi (midiSuite) where
 
-import Prelude (Unit, discard, show, (<>), (*), (<<<))
 import Control.Monad.Free (Free)
-import Data.List (List(..), head, (:))
-import Data.Either (Either(..))
-import Data.Maybe (fromMaybe)
-import Data.Rational (Rational, fromInt, toNumber, (%))
-import Data.Int (round)
-
-import Data.Abc.Parser (parse)
 import Data.Abc.Midi (toMidi, toMidiAtBpm)
-import Data.Midi as Midi
+import Data.Abc.Parser (parse)
+import Data.Abc.Repeats.Types (VariantPositions)
+import Data.Abc.Repeats.Variant (findEndingPosition)
 import Data.Abc.Tempo (standardMidiTick)
-
+import Data.Either (Either(..))
+import Data.Int (round)
+import Data.List (List(..), head, (:))
+import Data.Map (fromFoldable)
+import Data.Maybe (fromMaybe)
+import Data.Midi as Midi
+import Data.Rational (Rational, fromInt, toNumber, (%))
+import Data.Tuple (Tuple(..))
+import Prelude (Unit, discard, show, ($), (<>), (*), (<<<))
 import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
@@ -46,6 +48,7 @@ midiSuite :: Free TestF Unit
 midiSuite = do
   transformationSuite
   repeatSuite
+  variantSuite
   graceSuite
   atTempoSuite
 
@@ -190,6 +193,27 @@ repeatSuite =
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
         ))
 
+-- different types of variants (voltas) in repeated sections
+variantSuite :: Free TestF Unit
+variantSuite =
+  suite "next position" do
+    test "sample1 at 1,2,3 and 4" do
+       Assert.equal 8 $ findEndingPosition variant1 1 end
+       Assert.equal 8 $ findEndingPosition variant1 2 end
+       Assert.equal 8 $ findEndingPosition variant1 3 end
+       Assert.equal end $ findEndingPosition variant1 4 end
+    test "sample2 at 1,2,3 and 4" do
+       Assert.equal 8 $ findEndingPosition variant2 1 end
+       Assert.equal end $ findEndingPosition variant2 2 end
+       Assert.equal 8 $ findEndingPosition variant2 3 end
+       Assert.equal end $ findEndingPosition variant2 4 end
+    test "sample3 at 1,2,3 and 4" do
+       Assert.equal 4 $ findEndingPosition variant3 1 end
+       Assert.equal 6 $ findEndingPosition variant3 2 end
+       Assert.equal 8 $ findEndingPosition variant3 3 end
+       Assert.equal end $ findEndingPosition variant3 4 end
+
+
 -- each grace note 'steals' 10% of the note it graces
 graceSuite :: Free TestF Unit
 graceSuite =
@@ -297,6 +321,27 @@ chordC abcDuration =
   : Midi.Message 0 (Midi.NoteOff 0 64 80)
   : Midi.Message 0 (Midi.NoteOff 0 67 80)
   : Nil
+
+
+
+--  |1,2,3 ...:|4.....|
+variant1 :: VariantPositions 
+variant1 =
+  fromFoldable [Tuple 1 5, Tuple 2 5, Tuple 3 5, Tuple 4 8]
+
+-- |1,3....:|2,4.....|
+variant2 :: VariantPositions 
+variant2 =
+  fromFoldable [Tuple 1 5, Tuple 3 5, Tuple 2 8, Tuple 4 8]
+
+-- |1....:|2....:|3....:|4.....|
+variant3 :: VariantPositions 
+variant3 =
+  fromFoldable [Tuple 1 2, Tuple 2 4, Tuple 3 6, Tuple 4 8]  
+
+-- the end of a section with variants
+end :: Int 
+end = 10
 
 
 midiTicks :: Rational -> Int

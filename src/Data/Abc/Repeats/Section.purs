@@ -10,7 +10,7 @@ module Data.Abc.Repeats.Section
         , toOffsetZero
         ) where
 
-import Data.Abc.Repeats.Types (Label(..), Section(..))
+import Data.Abc.Repeats.Types (BarNo, Label(..), Section(..))
 import Data.Abc.Repeats.Variant (variantPositionOf)
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), isJust)
@@ -22,7 +22,7 @@ toOffsetZero i =
   if i <= 0 then 0 else i -1  
 
 -- start a new section
-newSection :: Int -> Int -> Section
+newSection :: BarNo -> Int -> Section
 newSection pos repeatCount = 
   Section
     { start : Just pos
@@ -58,8 +58,8 @@ setMissingRepeatCount :: Section -> Section
 setMissingRepeatCount (Section s) =
   Section s { repeatCount = 1 }
 
--- set the end position of a section
-setEndPos :: Int -> Section -> Section
+-- set the end BarNo position of a section
+setEndPos :: BarNo -> Section -> Section
 setEndPos pos (Section s) =
   Section s { end = Just pos }
 

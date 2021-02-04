@@ -18,7 +18,7 @@ import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Repeats.Types (RepeatState, Section(..), Sections)
-import Data.Abc.Repeats.Variant (activeVariants, variantPositionOf, variantCount, variantIndexMax)
+import Data.Abc.Repeats.Variant (activeVariants, findEndingPosition, variantPositionOf, variantCount)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
@@ -30,9 +30,10 @@ import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
+import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..), fst, snd)
-import Prelude (bind, identity, map, pure, ($), (&&), (*), (+), (-), (<), (>), (<>), (<=), (>=), (||))
+import Prelude (bind, identity, map, pure, ($), (&&), (*), (+), (-), (<), (>), (<>), (>=))
 
 -- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
@@ -703,15 +704,9 @@ variantSlice start end section sectionBars (Tuple index pos) =
     -- We'll use it for any variant other than the last, buut reject it in
     -- favour of end if the resulting bar position falls before the start
     -- position of the variant.
-    candidateNextEnding = 
-      fromMaybe start $ variantPositionOf (index + 1) section
-    nextEnding :: Int
-    nextEnding =     
-      if (index >= variantIndexMax section || candidateNextEnding <= pos)
-        then 
-          end
-        else 
-          candidateNextEnding
+
+    -- find the end bar number position of the repeat at this index
+    nextEnding = findEndingPosition (unwrap section).variantPositions index end
     {-     
     _ = spy "index" index
     _ = spy "variant count" (variantCount section)
