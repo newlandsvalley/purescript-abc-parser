@@ -17,6 +17,7 @@ import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, numerator, denominator)
 import Data.Tuple (Tuple(..))
 import Data.Map (size, toUnfoldable)
+import Data.Semigroup.Foldable (intercalateMap)
 import Data.String (trim, toLower, length, take) as Str
 import Data.String.CodeUnits (fromCharArray)
 import Data.String.Utils (repeat)
@@ -243,7 +244,7 @@ barLine b =
     lines = show b.thickness
     endColons = fromMaybe "" $ repeat b.endRepeats ":"
     startColons = fromMaybe "" $ repeat b.startRepeats ":"
-    iteration = fromMaybe "" $ map show b.iteration
+    iteration = fromMaybe "" $ map voltas b.iteration
   in
     endColons <> lines <> startColons <> iteration
 
@@ -251,6 +252,9 @@ mBarLine :: Maybe BarLine -> String
 mBarLine mbl =
   fromMaybe "" $ map barLine mbl
 
+voltas :: NonEmptyList Volta -> String 
+voltas vs =
+  intercalateMap "," show vs
 
 broken :: Broken -> String
 broken b =

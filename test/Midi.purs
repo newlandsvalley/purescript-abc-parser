@@ -189,9 +189,23 @@ repeatSuite =
       assertMidi "|: CD |1 E :|2 F |: CDE :|\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
-          <>noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+        )) 
+    test "alternate endings list" do
+      assertMidi "|: CD |1,3 E :|2 F |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
           <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
         ))
+    test "alternate endings range" do
+      assertMidi "|: CD |1-3 E :|4 F |\r\n"
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
+        ))
+
 
 -- different types of variants (voltas) in repeated sections
 variantSuite :: Free TestF Unit

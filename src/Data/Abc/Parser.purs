@@ -17,11 +17,9 @@ import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
-import Data.NonEmpty as NonEmpty
 import Data.Map (Map)
 import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, (%))
 import Data.String (drop, toUpper, singleton)
 import Data.String.CodePoints (codePointFromChar, length)
@@ -213,9 +211,24 @@ degenerateDoubleColon =
    associating the digit with the bracket bar number should remove ambiguity with respect to other productions that use the bracket
    (in particular, inline headers and chords).
 -}
-repeatSection :: Parser Volta
+repeatSection :: Parser (Nel.NonEmptyList Volta)
 repeatSection =   
-   buildVolta <$> (sepBy1 digit (char ','))   -- matches both 1,2,3 and 1
+   sepBy1 volta (char ',')
+
+volta :: Parser Volta 
+volta = 
+  try voltaRange 
+      <|> simpleVolta
+
+voltaRange :: Parser Volta 
+voltaRange = 
+  VoltaRange <$> digit <*> (char '-' *> digit)
+             <?> "volta range"          
+
+simpleVolta :: Parser Volta 
+simpleVolta =
+  Volta <$> digit
+        <?> "simple volta"          
 
 barlineThickness :: Parser Thickness
 barlineThickness =
@@ -1127,7 +1140,7 @@ buildBar bl m =
   , music : m
   }
 
-buildBarLine :: Int -> Thickness -> Int -> Maybe Volta -> BarLine
+buildBarLine :: Int -> Thickness -> Int -> Maybe (Nel.NonEmptyList Volta) -> BarLine
 buildBarLine endRepeats thickness startRepeats iteration =
   { endRepeats, thickness, startRepeats, iteration }
 
@@ -1336,12 +1349,6 @@ buildKey code ks pitches properties =
 buildVoice :: String -> String -> AmorphousProperties -> Header
 buildVoice code id properties  =
     Voice { id, properties }
-
-buildVolta :: Nel.NonEmptyList Int -> Volta 
-buildVolta vs =  
-  case (Nel.length vs) of 
-    1 -> Volta (NonEmpty.head (unwrap vs))
-    _ -> VoltaList vs
 
 -- lookups
 

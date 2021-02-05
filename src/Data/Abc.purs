@@ -39,7 +39,7 @@ import Data.Either (Either)
 import Data.Enum (class Enum)
 import Data.Generic.Rep (class Generic)
 import Data.Generic.Rep.Eq (genericEq)
-import Data.List (List, intercalate)
+import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
@@ -47,7 +47,7 @@ import Data.Ordering (Ordering(..))
 import Data.Rational (Rational)
 import Data.String (toLower) as Str
 import Data.Tuple (Tuple)
-import Prelude (class Show, class Eq, class Ord, (<>), compare, map, show)
+import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
 
 -- | A Tune.
 type AbcTune =
@@ -165,17 +165,14 @@ instance showThickness :: Show Thickness where
 derive instance eqThickness :: Eq Thickness
 
 -- | a Volta - a repeated section
--- | The ABC specification also requires a third option -
--- |    VoltaRange Int Int   -- |1-3 etc
--- | but we'll investigate this later
 data Volta 
   = Volta Int                         -- |1  or |2 etc
-  | VoltaList (NonEmptyList Int)      -- |1,3 etc
+  | VoltaRange Int Int                -- |1-3 etc
 
 derive instance genericVolta  :: Generic Volta _
 instance showVolta :: Show Volta where
   show (Volta v) = show v
-  show (VoltaList vs) = intercalate "," (map show vs)
+  show (VoltaRange v1 v2) = (show v1) <> "-" <> (show v2)  
 
 derive instance eqVolta :: Eq Volta
 
@@ -183,13 +180,13 @@ derive instance eqVolta :: Eq Volta
 *  endRepeats - any repeat of the previous section indicated by colon(s)
 *  thickness - the thickness of vertical lines in the bar
 *  startRepeats - any repeat of the section to follow indicated by colon(s)
-*  iteration - the section end may be iteration 1 or 2.
+*  iteration - the section end may be an iteration defined by volta markings
 -}
 type BarLine =
     { endRepeats :: Int
     , thickness :: Thickness
     , startRepeats :: Int
-    , iteration :: Maybe Volta
+    , iteration :: Maybe (NonEmptyList Volta)
     }
 
 -- | A Mode.

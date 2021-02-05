@@ -282,6 +282,10 @@ barSuite =
       assertRoundTrip "| A |1 B :|2 c||\r\n"
     test "alternate endings - list" do
       assertRoundTrip "| A |1,3 B :|2 c||\r\n"
+    test "alternate endings - range" do
+      assertRoundTrip "| A |1-3 B :|4 c||\r\n"
+    test "alternate endings - combo" do
+      assertRoundTrip "| A |1-3,5 B :|4 c||\r\n"
     test "repeat 0" do
       assertRoundTrip  "|: ABCD EFGa |1 D4 C4 :|2 c8 |\x0D\n"
     test "repeat 1" do

@@ -12,13 +12,13 @@ module Data.Abc.Midi.RepeatSections
         , finalBar
         ) where
 
-import Data.Abc (Volta(..))
+import Data.Abc (Volta)
 import Data.Abc.Repeats.Types (BarNo, RepeatState, Section)
-import Data.Abc.Repeats.Variant (addVariantList, addVariantOf)
+import Data.Abc.Repeats.Variant (addVariants, normaliseVoltas)
 import Data.Abc.Repeats.Section (hasFirstEnding, isDeadSection, isUnrepeated, newSection, 
          nullSection, setEndPos, setMissingRepeatCount, toOffsetZero)
-import Data.Array (fromFoldable)
 import Data.List (List(..), (:))
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..))
 import Data.Newtype (unwrap)
 import Prelude ((==), (>), (<=), (&&), ($), map, not)
@@ -28,7 +28,7 @@ type IndexedBar rest =
     { number :: BarNo
     , endRepeats :: Int
     , startRepeats :: Int
-    , iteration :: Maybe Volta | rest }
+    , iteration :: Maybe (NonEmptyList Volta) | rest }
 
 -- | initial repeats i.e. no repeats yet.  intro is not used in MIDI production
 initialRepeatState :: RepeatState
@@ -43,14 +43,12 @@ indexBar :: forall melody. IndexedBar melody
 indexBar bar r =
   case bar.iteration, bar.endRepeats, bar.startRepeats of
     -- |1 or |2 etc
-    Just (Volta n), _ , _ ->    
-      r { current = addVariantOf (toOffsetZero n) bar.number r.current}
-    -- | 1,2 etc 
-    Just (VoltaList vs), _ , _ ->
+    Just voltas, _ , _ ->  
       let 
-        vsArray = map toOffsetZero $ fromFoldable vs
+        vsList = map toOffsetZero $ normaliseVoltas voltas
+        {- _ = spy "normalised volta numbers" vsList -}
       in
-        r { current = addVariantList vsArray bar.number r.current}
+        r { current = addVariants vsList bar.number r.current}    
     -- |: or :| or |
     Nothing,  ends,  starts ->    
       if (ends > 0 && starts > 0) then

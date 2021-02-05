@@ -707,10 +707,9 @@ variantSlice start end section sectionBars (Tuple index pos) =
 
     -- find the end bar number position of the repeat at this index
     nextEnding = findEndingPosition (unwrap section).variantPositions index end
-    {-     
+    {- 
     _ = spy "index" index
     _ = spy "variant count" (variantCount section)
-    _ = spy "max variants" (variantIndexMax section)
     _ = spy "veryfirstEnding" firstEnding
     _ = spy "thisEnding" thisEnding
     _ = spy "nextEnding" nextEnding

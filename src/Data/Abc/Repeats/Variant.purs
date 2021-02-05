@@ -7,22 +7,25 @@
 module Data.Abc.Repeats.Variant
   ( activeVariants
   , secondVariantPosition
-  , addVariantOf
-  , addVariantList
+  , addVariants
   , findEndingPosition
+  , normaliseVoltas
   , variantPositionOf
   , variantIndexMax
   , variantCount) where
 
-import Prelude (($), (>))
+import Prelude (($), (>), (<>))
+import Data.Abc (Volta(..))
 import Data.Abc.Repeats.Types (BarNo, Section(..), VariantPositions)
 import Data.Array as Array
+import Data.Foldable (foldr)
+import Data.List (List(..), (:), range)
+import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (filter, insert, keys, lookup, size, toUnfoldable)
 import Data.Set (findMin, findMax)
 import Data.Tuple (Tuple)
 import Data.Maybe (Maybe(..), fromJust, fromMaybe)
-import Partial.Unsafe (unsafePartial)
-  
+import Partial.Unsafe (unsafePartial)  
 
 -- | the active variants returned as an array of tuples (variant no - bar no)
 activeVariants :: Section -> Array (Tuple Int BarNo)
@@ -39,25 +42,15 @@ secondVariantPosition :: Section -> Maybe BarNo
 secondVariantPosition s = 
   variantPositionOf 1 s
 
--- | add a repeat variant of a section to the existing variants
--- | variantNo is the number of the variant
--- | barNo is the bar in which this variant marking is found
-addVariantOf :: Int -> BarNo -> Section -> Section
-addVariantOf variantNo barNo (Section s) =
-  let  
-    variantPositions = insert variantNo barNo s.variantPositions
-  in
-  Section s { variantPositions = variantPositions, repeatCount = 1  }
-
- -- | add the list of variants having this bar number position to the existing variants
-addVariantList :: Array Int -> BarNo -> Section -> Section
-addVariantList variants barNo (Section s) =   
+-- | add the list of variants having this bar number position to the existing variants
+addVariants :: List Int -> BarNo -> Section -> Section
+addVariants variants barNo (Section s) =   
   let 
     -- the update defintions sets each variant to be associated with the barNo
     variantPositions :: VariantPositions
-    variantPositions = insertAllVariantIndices variants barNo s.variantPositions
+    variantPositions = insertAllVariantIndices' variants barNo s.variantPositions
   in    
-    Section s { variantPositions = variantPositions, repeatCount = 1 }
+    Section s { variantPositions = variantPositions, repeatCount = 1 }        
     
 -- | the number of variants in the ending
 variantCount :: Section -> Int
@@ -81,6 +74,16 @@ insertAllVariantIndices variants barNo variantPositions =
       insert v barNo positions
   in
     Array.foldr f variantPositions variants
+
+-- set a bunch of variant positions with the same bar number position
+insertAllVariantIndices' :: List Int -> BarNo -> VariantPositions -> VariantPositions
+insertAllVariantIndices' variants barNo variantPositions =     
+  let 
+    f :: Int -> VariantPositions -> VariantPositions
+    f v positions = 
+      insert v barNo positions
+  in
+    foldr f variantPositions variants    
 
 -- | When supplied with:
 -- | the variant positions (map of index to BarNo)
@@ -109,4 +112,16 @@ findEndingPosition variantPositions index end =
             -- look it up - it will never fail because we know the key exists
             unsafePartial $ fromJust $ lookup next candidates    
 
-
+-- | Normalise a list of Voltas to a simple list of volta repeat numbers
+normaliseVoltas :: NonEmptyList Volta -> List Int 
+normaliseVoltas vs = 
+  let 
+    f :: Volta -> List Int -> List Int
+    f volta acc = 
+      case volta of 
+        Volta i -> 
+          i : acc
+        VoltaRange start end ->
+          (range start end) <> acc
+  in
+   foldr f Nil vs
