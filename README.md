@@ -16,12 +16,17 @@ The goal of this project is not to produce a general purpose parser for all form
 
 It is assumed that it will work in cooperation with other modules which will be responsible for such aspects as editing, displaying or playing the score. It is a particular design aim to support editor applications such that a user may, if she prefers, edit the tune body before even thinking about the headers. 
 
-Version 2.2 ABC support
------------------------
+Support for ABC Version 2.2
+---------------------------
 
-As far as I can tell, ABC version 2.2 is also suppoirted. Unfortunately, very many sections of this spec are still marked as _volatile_.
+As far as I can tell, ABC version 2.2 is also supported. Unfortunately, very many sections of this spec are still marked as _volatile_.
 
 The main changes in the spec are to do with multiple voices and in particular, the manner in which clefs for a variety of (possibly transposing) instruments may be represented. This is not a problem for most traditional music collections.  In this parser, clef descriptions (and all other voice properties) are parsed, but left predominantly untyped.
+
+Support for Polyphony
+---------------------
+
+There is a degree of support for polyphony in the ```Voice``` module.  If the ABC contains multiple ```V:``` (voice) headers, then it gives a separate ABC tune for each voice.  These can then be passed to a suitable [polyphonic player](https://github.com/newlandsvalley/purescript-school-of-music/tree/master/polyphonic-player). However, the ```Midi``` module remains monophonic.
 
 Deviations from the spec
 ------------------------
