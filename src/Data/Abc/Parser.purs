@@ -141,8 +141,10 @@ chord =
 abcChord :: Parser AbcChord
 abcChord =
     buildChord
-        <$> (between (char '[') (char ']') (many1 abcNote))
+        <$> leftSlurBrackets
+        <*> (between (char '[') (char ']') (many1 abcNote))
         <*> optionMaybe noteDur
+        <*> rightSlurBrackets
         <?> "ABC chord"
 
 inline :: Parser Music
@@ -1217,13 +1219,11 @@ buildPitch :: Accidental -> String -> Pitch
 buildPitch a pitchStr =
     Pitch { pitchClass : lookupPitch pitchStr, accidental : a }
 
-buildChord :: Nel.NonEmptyList AbcNote -> Maybe Rational -> AbcChord
-buildChord ns ml =
+buildChord :: Int -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
+buildChord leftSlurs ns ml rightSlurs =
   let
     l =
       fromMaybe (fromInt 1) ml
-    leftSlurs = 0
-    rightSlurs = 0
   in
     { leftSlurs, notes : ns, duration : l, rightSlurs }
 

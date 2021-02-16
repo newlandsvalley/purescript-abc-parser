@@ -324,6 +324,10 @@ slurSuite =
       assertRoundTrip  "| (BC)>A |\x0D\n"
     test "grace note with slur" do
       assertRoundTrip "| {d^f}(GA) |\x0D\n"
+    test "chord with leading slur" do
+      assertRoundTrip "| ([GB] d) |\x0D\n"
+    test "chord with trailing slur" do
+      assertRoundTrip "| (d [GB]) |\x0D\n"
     test "degenerate slurred tuplet" do
       assertParses "| ((3def) |\x0D\n"
     -- we throw away the slur if it mistakenly encompasses the operator
@@ -331,7 +335,7 @@ slurSuite =
       assertCanonical "| A(>BC) |\x0D\n" "| A>BC) |\x0D\n"
     test "degenerate slurred broken rhythm finish" do
       assertCanonical "| (BC>)A |\x0D\n" "| (BC>A |\x0D\n"
-    {- this test would fail.  We dom't allow slurs to span mote sequences
+    {- this test would fail.  We don't allow slurs to span mote sequences
        starting with a grace note.  Instead, users should start the slur at
        the first full note
     test "degenerate slurred grace" do

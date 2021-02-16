@@ -180,8 +180,8 @@ abcNote a =
 -- | Pretty-print a chord.
 abcChord :: AbcChord -> String
 abcChord c =
-  "["
-   <> leftSlurs c.leftSlurs
+   leftSlurs c.leftSlurs
+   <> "["
    <> (notes c.notes)
    <> "]"
    <> duration c.duration
