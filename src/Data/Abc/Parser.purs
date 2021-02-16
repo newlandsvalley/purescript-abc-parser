@@ -117,7 +117,7 @@ scoreItem :: Parser Music
 scoreItem =
   choice
     [
-      try chord -- potential ambiguity with (inline) in-score headers
+      try chord -- potential ambiguity with (inline) in-score headers and slur brackets
     , try inline
     , continuation
     , try decoratedSpace  -- potential ambiguity with a decorated note
@@ -1219,11 +1219,13 @@ buildPitch a pitchStr =
 
 buildChord :: Nel.NonEmptyList AbcNote -> Maybe Rational -> AbcChord
 buildChord ns ml =
-    let
-        l =
-            fromMaybe (fromInt 1) ml
-    in
-        { notes : ns, duration : l }
+  let
+    l =
+      fromMaybe (fromInt 1) ml
+    leftSlurs = 0
+    rightSlurs = 0
+  in
+    { leftSlurs, notes : ns, duration : l, rightSlurs }
 
 {- investigate a note/octave pair and return the octave
    in scientific pitch notation relative to MIDI pitches

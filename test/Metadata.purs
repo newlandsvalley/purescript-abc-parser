@@ -244,22 +244,27 @@ utilsSuite =
       Assert.equal normalisedChord $ normaliseChord denormalisedChord
 
 -- headers in sample ABC tunes
+keyedTune :: String
 keyedTune =
     "K: FMajor\x0D\n| ABC |\x0D\n"
 
+titledTune :: String
 titledTune =
     "T: Gamal Reinlender\x0D\n| ABC |\x0D\n"
 
+doublyTitledTune :: String
 doublyTitledTune =
     "T: Nancy Dawson\x0D\nT: Piss Upon the Grass\x0D\n| ABC |\x0D\n"
 
+manyHeaders :: String
 manyHeaders =
     "X: 1\r\nT: Skänklåt efter Brittas Hans\r\nR: Skänklåt\r\nZ: Brian O'Connor, 11/7/2016\r\nL: 1/16\r\nO: Bjorsa\r\nM: 4/4\r\nK:Gmaj\r\n| ABC |\r\n"
 
+emptyScore :: String
 emptyScore =
     "| @ # | \\r\n|  |\r\n"
 
-
+gMajor :: KeySignature
 gMajor =
     { pitchClass: G, accidental: Natural, mode: Major }
 
@@ -356,8 +361,8 @@ normalisedChordNotes =
 
 normalisedChord :: AbcChord
 normalisedChord =
-  { notes : normalisedChordNotes, duration : (1 % 1) }
+  { leftSlurs : 0, notes : normalisedChordNotes, duration : (1 % 1), rightSlurs : 0 }
 
 denormalisedChord :: AbcChord
 denormalisedChord =
-  { notes : denormalisedChordNotes, duration : (3 % 1) }
+  { leftSlurs : 0, notes : denormalisedChordNotes, duration : (3 % 1), rightSlurs : 0 }

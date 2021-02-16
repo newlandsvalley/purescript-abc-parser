@@ -179,11 +179,13 @@ abcNote a =
 
 -- | Pretty-print a chord.
 abcChord :: AbcChord -> String
-abcChord a =
-    "["
-        <> (notes a.notes)
-        <> "]"
-        <> duration a.duration
+abcChord c =
+  "["
+   <> leftSlurs c.leftSlurs
+   <> (notes c.notes)
+   <> "]"
+   <> duration c.duration
+   <> rightSlurs c.rightSlurs
 
 notes :: NonEmptyList AbcNote -> String
 notes ns =
