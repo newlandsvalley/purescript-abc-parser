@@ -898,7 +898,7 @@ voice :: Boolean -> Parser Header
 voice isInline =
     buildVoice
         <$> (headerCode 'V')
-        <*> alphaNumString
+        <*> alphaNumPlusString
         <*> amorphousProperties
         <?> "V header"
 
@@ -1068,9 +1068,9 @@ amorphousProperties =
 kvPair :: Parser (Tuple String String)
 kvPair =
   Tuple <$>
-    alphaNumString
+    alphaNumPlusString
       <*> ((char '=')
-        *> (spacedQuotedString <|> alphaNumString))
+        *> (spacedQuotedString <|> alphaNumPlusString))
 
 mode :: Parser Mode
 mode =
@@ -1385,10 +1385,11 @@ anyDigit =
 
 -- low level
 
-alphaNumString :: Parser String
-alphaNumString =
+{- an alphnumeric string with added +,- and _ -}
+alphaNumPlusString :: Parser String
+alphaNumPlusString =
   (fromCharArray <<< Array.fromFoldable <<< Nel.toList)
-    <$> (many1 (alphaNum <|> char '-' <|> char '+') <* whiteSpace)
+    <$> (many1 (alphaNum <|> char '-' <|> char '+' <|> char '_' ) <* whiteSpace)
 
 {-| Parse a `\n` character. -}
 newline :: Parser Char
