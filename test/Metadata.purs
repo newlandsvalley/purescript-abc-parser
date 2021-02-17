@@ -361,8 +361,8 @@ normalisedChordNotes =
 
 normalisedChord :: AbcChord
 normalisedChord =
-  { leftSlurs : 0, notes : normalisedChordNotes, duration : (1 % 1), rightSlurs : 0 }
+  { leftSlurs : 0, decorations : Nil, notes : normalisedChordNotes, duration : (1 % 1), rightSlurs : 0 }
 
 denormalisedChord :: AbcChord
 denormalisedChord =
-  { leftSlurs : 0, notes : denormalisedChordNotes, duration : (3 % 1), rightSlurs : 0 }
+  { leftSlurs : 0, decorations : Nil, notes : denormalisedChordNotes, duration : (3 % 1), rightSlurs : 0 }

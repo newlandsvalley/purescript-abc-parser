@@ -181,6 +181,7 @@ abcNote a =
 abcChord :: AbcChord -> String
 abcChord c =
    leftSlurs c.leftSlurs
+   <> decorate c.decorations
    <> "["
    <> (notes c.notes)
    <> "]"

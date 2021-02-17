@@ -312,8 +312,6 @@ barSuite =
       assertCanonical  "[1 ABCD |\x0D\n" "|1 ABCD |\x0D\n"
     test "degenerate repeat 2" do
       assertCanonical  "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
-    test "decorated bar" do 
-      assertRoundTrip "| A B C | D E F !dacapo! |\r\n"
 
 slurSuite :: Free TestF Unit
 slurSuite =
@@ -355,6 +353,10 @@ phrasingSuite  =
       assertRoundTrip  "| !uppermordent! !trill! C |\x0D\n"
     test "decorated space" do
       assertRoundTrip  "| ABc !coda! y |\x0D\n"
+    test "decorated chord" do 
+      assertRoundTrip "| A B C | !uppermordent! [DE] |\r\n"
+    test "decorated bar" do 
+      assertRoundTrip "| A B C | D E F !dacapo! |\r\n"
 
 structureSuite :: Free TestF Unit
 structureSuite  =

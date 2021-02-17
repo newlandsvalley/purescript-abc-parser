@@ -172,10 +172,11 @@ normaliseChord abcChord =
     _ ->
       let
         notes = map (\n -> n { duration = n.duration * abcChord.duration} ) abcChord.notes
+        decorations = abcChord.decorations
         leftSlurs = abcChord.leftSlurs
         rightSlurs = abcChord.rightSlurs
       in
-        { leftSlurs, notes, duration : (1 % 1), rightSlurs }
+        { leftSlurs, decorations, notes, duration : (1 % 1), rightSlurs }
 
 -- filter the bars we need for the thumbnail and terminate properly with
 -- an empty bar.

@@ -145,6 +145,7 @@ abcChord :: Parser AbcChord
 abcChord =
     buildChord
         <$> leftSlurBrackets
+        <*> decorations
         <*> (between (char '[') (char ']') (many1 abcNote))
         <*> optionMaybe noteDur
         <*> rightSlurBrackets
@@ -1223,13 +1224,13 @@ buildPitch :: Accidental -> String -> Pitch
 buildPitch a pitchStr =
     Pitch { pitchClass : lookupPitch pitchStr, accidental : a }
 
-buildChord :: Int -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
-buildChord leftSlurs ns ml rightSlurs =
+buildChord :: Int -> List String -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
+buildChord leftSlurs decs ns ml rightSlurs =
   let
     l =
       fromMaybe (fromInt 1) ml
   in
-    { leftSlurs, notes : ns, duration : l, rightSlurs }
+    { leftSlurs, decorations : decs, notes : ns, duration : l, rightSlurs }
 
 {- investigate a note/octave pair and return the octave
    in scientific pitch notation relative to MIDI pitches

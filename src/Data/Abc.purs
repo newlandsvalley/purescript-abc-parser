@@ -111,6 +111,7 @@ type GraceableNote =
 -- | A Chord.
 type AbcChord =
     { leftSlurs :: Int
+    , decorations :: List String
     , notes :: NonEmptyList AbcNote
     , duration :: NoteDuration
     , rightSlurs :: Int
