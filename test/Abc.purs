@@ -312,6 +312,8 @@ barSuite =
       assertCanonical  "[1 ABCD |\x0D\n" "|1 ABCD |\x0D\n"
     test "degenerate repeat 2" do
       assertCanonical  "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
+    test "decorated bar" do 
+      assertRoundTrip "| A B C | D E F !dacapo! |\r\n"
 
 slurSuite :: Free TestF Unit
 slurSuite =

@@ -92,13 +92,16 @@ score =
 
 bar :: Parser Bar
 bar =
-  buildBar <$> barline <*> (many scoreItem)
-   <?> "bar"
+  buildBar 
+    <$> decorations
+    <*> barline 
+    <*> (many scoreItem)
+    <?> "bar"
 
 -- | an intro bar is a bar at the beginning of a line which has no starting bar line
 introBar :: Parser Bar
 introBar =
-  buildBar invisibleBarType <$> many scoreItem
+  buildBar Nil invisibleBarType <$> many scoreItem
    <?> "intro bar"
 
 -- | an intro line as a full line of bars thus introduced
@@ -120,15 +123,15 @@ scoreItem =
       try chord -- potential ambiguity with (inline) in-score headers and slur brackets
     , try inline
     , continuation
-    , try decoratedSpace  -- potential ambiguity with a decorated note
+    , try decoratedSpace   -- potential ambiguity with a decorated note
     , ignore
     , spacer
-    , try annotation  -- potential ambiguity with chordSymbol
+    , try annotation       -- potential ambiguity with chordSymbol
     , chordSymbol
-    , try tuplet  -- potential ambiguity with slurs inside a note
+    , try tuplet           -- potential ambiguity with slurs inside a note
     , rest
     , try brokenRhythmPair -- potential ambiguity with note
-    , note
+    , try note             -- potential ambiguity with decorations on bars
     ]
       <?> "score item"
 
@@ -1136,9 +1139,10 @@ buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
   { headers : hs, body : b}
 
-buildBar :: BarLine -> List Music -> Bar
-buildBar bl m =
-  { startLine : bl
+buildBar :: List String -> BarLine -> List Music -> Bar
+buildBar decs bl m =
+  { decorations : decs
+  , startLine : bl
   , music : m
   }
 

@@ -237,6 +237,7 @@ bar b =
     f m acc =
       (music m) <> acc
   in
+    decorate b.decorations <>
     barLine b.startLine <>
     foldr f "" b.music
 

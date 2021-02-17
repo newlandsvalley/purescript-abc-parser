@@ -202,7 +202,8 @@ filterBars bars =
 
     emptyBar :: Bar
     emptyBar =
-      { startLine : emptyBarLine
+      { decorations : Nil
+      , startLine : emptyBarLine
       , music : Nil
       }
   in

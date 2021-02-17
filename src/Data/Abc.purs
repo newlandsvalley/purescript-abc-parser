@@ -71,7 +71,8 @@ data BodyPart
 -- | A music phrase is contained within a Bar which is a set of music items
 -- | introduced by a bar line
 type Bar =
-  { startLine :: BarLine   -- we only consider the start line of each bar
+  { decorations :: List String
+  , startLine :: BarLine   -- we only consider the start line of each bar
   , music :: List Music
   }
 
