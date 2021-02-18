@@ -328,8 +328,8 @@ slurSuite =
       assertRoundTrip "| ([GB] d) |\x0D\n"
     test "chord with trailing slur" do
       assertRoundTrip "| (d [GB]) |\x0D\n"
-    test "degenerate slurred tuplet" do
-      assertParses "| ((3def) |\x0D\n"
+    test "slurred tuplet" do
+      assertRoundTrip "| ((3def) |\x0D\n"
     -- we throw away the slur if it mistakenly encompasses the operator
     test "degenerate slurred broken rhythm start" do
       assertCanonical "| A(>BC) |\x0D\n" "| A>BC) |\x0D\n"

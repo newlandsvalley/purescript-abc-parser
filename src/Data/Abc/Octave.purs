@@ -62,8 +62,8 @@ moveOctave i m =
         BrokenRhythmPair n1 b n2 ->
             BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
 
-        Tuplet maybeGrace ts ns ->
-            Tuplet (moveMaybeGraceBy i maybeGrace) ts (moveRestOrNoteList i ns)
+        Tuplet maybeGrace leftSlurs ts ns ->
+            Tuplet (moveMaybeGraceBy i maybeGrace) leftSlurs ts (moveRestOrNoteList i ns)
 
         Chord c ->
             Chord (moveChord i c)

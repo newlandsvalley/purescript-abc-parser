@@ -141,7 +141,7 @@ data Music
     = Note GraceableNote
     | BrokenRhythmPair GraceableNote Broken GraceableNote
     | Rest AbcRest
-    | Tuplet (Maybe Grace) TupletSignature (NonEmptyList RestOrNote)
+    | Tuplet (Maybe Grace) Int TupletSignature (NonEmptyList RestOrNote)
     | DecoratedSpace (List String)
     | Annotation AnnotationPlacement String
     | ChordSymbol String

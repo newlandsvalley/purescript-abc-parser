@@ -27,7 +27,7 @@ import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable1 (replicate1A)
-import Prelude (class Show, bind, flip, join, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
+import Prelude (class Show, bind, flip, join, max, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
@@ -402,23 +402,20 @@ abcRest =
 tuplet :: Parser Music
 tuplet = do
   maybeGrace <- optionMaybe graceBracket
-  signature <- degenerateTupletBracket *> tupletSignature
+  leftBracketCount <- tupletBrackets
+  -- calculate the number of slurs by subtracting the tuplet bracket
+  let 
+    leftSlurs = max 0 (leftBracketCount -1)
+  signature <- tupletSignature
   -- ensure that the contents match the signature count
   contents <- counted signature.r restOrNote
-  pure $ Tuplet maybeGrace signature contents
+  pure $ Tuplet maybeGrace leftSlurs signature contents
 
 -- | tuplets may now contain either a (Left) rest or a (Right) Note
 restOrNote :: Parser RestOrNote
 restOrNote =
   (Left <$> abcRest) <|> (Right <$> graceableNote)
     <* whiteSpace
-
--- | we require a single open bracket as in (3abc but need to recover from a
--- | slurred tuplet as in ((3abc) where currently we just throw away the
--- | opening slur.
-degenerateTupletBracket :: Parser String
-degenerateTupletBracket =
-  try $ string "((" <|> string "("
 
 {- possible tuplet signatures
    (3             --> {3,2,3}
@@ -452,6 +449,13 @@ leftSlurBrackets =
   L.length
     <$> many leftBracket
     <?> "left slurs"
+
+-- | ditto for tuplets - a mandatory left bracket possibly preceded by slurs 
+tupletBrackets :: Parser Int
+tupletBrackets =
+  Nel.length
+    <$> many1 leftBracket
+    <?> "tuplet + slurs"      
 
 leftBracket :: Parser Char
 leftBracket =
