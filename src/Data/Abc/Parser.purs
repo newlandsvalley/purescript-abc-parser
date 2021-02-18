@@ -408,8 +408,8 @@ tuplet = do
     leftSlurs = max 0 (leftBracketCount -1)
   signature <- tupletSignature
   -- ensure that the contents match the signature count
-  contents <- counted signature.r restOrNote
-  pure $ Tuplet maybeGrace leftSlurs signature contents
+  restsOrNotes <- counted signature.r restOrNote
+  pure $ Tuplet { maybeGrace, leftSlurs, signature, restsOrNotes }
 
 -- | tuplets may now contain either a (Left) rest or a (Right) Note
 restOrNote :: Parser RestOrNote

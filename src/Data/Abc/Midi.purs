@@ -237,8 +237,8 @@ transformMusic m =
     Rest r ->
       updateState addRestToState r.duration
 
-    Tuplet maybeGrace leftSlurs signature restsOrNotes ->
-      updateState (addTupletContentsToState maybeGrace (signature.q % signature.p)) restsOrNotes
+    Tuplet t ->
+      updateState (addTupletContentsToState t.maybeGrace (t.signature.q % t.signature.p)) t.restsOrNotes
 
     Chord abcChord ->
       let

@@ -12,6 +12,7 @@ module Data.Abc ( AbcTune
 , GraceableNote
 , AbcChord
 , RestOrNote
+, AbcTuplet
 , Bar
 , BarLine
 , Thickness(..)
@@ -117,6 +118,23 @@ type AbcChord =
     , rightSlurs :: Int
     }
 
+
+-- | A tuplet signature:
+-- |    put p notes into the time of q the next r notes.
+type TupletSignature =
+    { p :: Int
+    , q :: Int
+    , r :: Int
+    }
+
+-- | A Tuplet
+type AbcTuplet =
+  { maybeGrace :: Maybe Grace 
+  , leftSlurs :: Int
+  , signature :: TupletSignature 
+  , restsOrNotes :: NonEmptyList RestOrNote
+  }    
+
 -- | An Annotation placement.
 data AnnotationPlacement
     = AboveNextSymbol
@@ -141,7 +159,7 @@ data Music
     = Note GraceableNote
     | BrokenRhythmPair GraceableNote Broken GraceableNote
     | Rest AbcRest
-    | Tuplet (Maybe Grace) Int TupletSignature (NonEmptyList RestOrNote)
+    | Tuplet AbcTuplet
     | DecoratedSpace (List String)
     | Annotation AnnotationPlacement String
     | ChordSymbol String
@@ -351,13 +369,6 @@ type TempoSignature =
 type NoteDuration = Rational
 
 
--- | A tuplet signature:
--- |    put p notes into the time of q the next r notes.
-type TupletSignature =
-    { p :: Int
-    , q :: Int
-    , r :: Int
-    }
 
 -- | A broken rhythm operator - one or more < or >.-}
 data Broken

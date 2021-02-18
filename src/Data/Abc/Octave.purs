@@ -55,21 +55,27 @@ moveBodyPart i bp =
 
 moveOctave :: Int -> Music -> Music
 moveOctave i m =
-    case m of
-        Note n ->
-            Note (moveGraceableNoteBy i n)
+  case m of
+    Note n ->
+      Note (moveGraceableNoteBy i n)
 
-        BrokenRhythmPair n1 b n2 ->
-            BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
+    BrokenRhythmPair n1 b n2 ->
+      BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
 
-        Tuplet maybeGrace leftSlurs ts ns ->
-            Tuplet (moveMaybeGraceBy i maybeGrace) leftSlurs ts (moveRestOrNoteList i ns)
+    Tuplet tuplet ->
+      let 
+        maybeGrace = moveMaybeGraceBy i tuplet.maybeGrace
+        leftSlurs = tuplet.leftSlurs
+        signature = tuplet.signature
+        restsOrNotes = moveRestOrNoteList i tuplet.restsOrNotes 
+      in          
+       Tuplet { maybeGrace, leftSlurs, signature, restsOrNotes }
 
-        Chord c ->
-            Chord (moveChord i c)
+    Chord c ->
+      Chord (moveChord i c)
 
-        _ ->
-            m
+    _ ->
+      m
 
 moveGraceableNoteBy :: Int -> GraceableNote -> GraceableNote
 moveGraceableNoteBy i gn =

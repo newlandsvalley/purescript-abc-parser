@@ -4,7 +4,7 @@ module Data.Abc.Canonical
         , fromEither
         , abcNote
         , abcChord
-        , tuplet
+        , tupletSignature
         , bars
         , keySignatureAccidental
         ) where
@@ -37,12 +37,12 @@ keySignatureAccidental a =
     _ ->
       ""
 
--- | Pretty-print a tuplet.
-tuplet :: TupletSignature -> String
-tuplet { p: 2, q: 3, r: 2 } = "(2"
-tuplet { p: 3, q: 2, r: 3 } = "(3"
-tuplet { p: 4, q: 3, r: 4 } = "(4"
-tuplet { p: p, q: q, r: r } =
+-- | Pretty-print a tuplet signature.
+tupletSignature :: TupletSignature -> String
+tupletSignature { p: 2, q: 3, r: 2 } = "(2"
+tupletSignature { p: 3, q: 2, r: 3 } = "(3"
+tupletSignature { p: 4, q: 3, r: 4 } = "(4"
+tupletSignature { p: p, q: q, r: r } =
     "("
         <> (show p)
         <> ":"
@@ -282,11 +282,11 @@ music m =
         Rest r ->
             abcRest r
 
-        Tuplet mGrace bracks tup rns ->
-            (maybeGrace mGrace) 
-            <> leftSlurs bracks
-            <> tuplet tup 
-            <> restsOrNotes rns 
+        Tuplet t {- mGrace bracks tup rns -} ->
+            (maybeGrace t.maybeGrace) 
+            <> leftSlurs t.leftSlurs
+            <> tupletSignature t.signature
+            <> restsOrNotes t.restsOrNotes
             <> " "
 
         DecoratedSpace decorations ->
