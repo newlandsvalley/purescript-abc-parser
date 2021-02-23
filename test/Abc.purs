@@ -401,6 +401,8 @@ structureSuite  =
       assertRoundTrip "| ABC def g3 | [K: AMajor] g3 a3 |\x0D\n"
     test "inline comment" do
       assertRoundTrip "| ABC z2 def z/ \x0D\n% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
+    test "outmoded line-break" do
+      assertParses"| ABc | def |!\x0D\n"
 
 -- | the purescript version handles parsing differently from the elm version
 -- | when two different productions have the same initial lexeme.

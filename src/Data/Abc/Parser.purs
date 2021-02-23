@@ -540,8 +540,8 @@ shortDecoration =
 
 longDecoration :: Parser String
 longDecoration =
-    between (char '!') (char '!') (regex "[^\x0D\n!]*")
-        <?> "long decoration"
+    between (char '!') (char '!') (regex "[^\x0D\n!]+")
+      <?> "long decoration"
 
 -- | our whiteSpace differs from that of the string parser we do NOT want to
 -- |consume carriage returns or newlines
@@ -1400,13 +1400,18 @@ alphaNumPlusString =
   (fromCharArray <<< Array.fromFoldable <<< Nel.toList)
     <$> (many1 (alphaNum <|> char '-' <|> char '+' <|> char '_' ) <* whiteSpace)
 
-{-| Parse a `\n` character. -}
+{-| Parse a `\n` character which may terminate a line in some systems. -}
 newline :: Parser Char
 newline = satisfy ((==) '\n') <?> "expected newline"
 
-{-| Parse a `\r\n` sequence, returning a `\n` character. -}
+-- | Parse a conventional carriage return, linefeedsequence, returning a `\n` character. 
+-- | However, also accommodate the non-standard and deprecated exclamation mark which 
+-- | is used to indicate line-breaks in older systems. See 10.2.1 Outdated line-breaking.
+-- | Note that this brings ambiguity with respect to long decorations which are also introuduced
+-- | by exclamation marks, but incorporating it into a regex means we don't need to protect
+-- | it with a try, because the whole regex match is either consumed or not.
 crlf :: Parser Char
-crlf = '\n' <$ regex "\r\n" <?> "expected crlf"
+crlf = '\n' <$ regex "!?\r\n" <?> "expected crlf"
 
 {-| Parse an end of line character or sequence, returning a `\n` character. 
     Before the actual end of line, we can have comments, which are discarded
