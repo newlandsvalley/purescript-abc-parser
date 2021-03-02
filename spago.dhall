@@ -8,7 +8,6 @@ You can edit this file as you like.
   , "effect"
   , "either"
   , "foldable-traversable"
-  , "generics-rep"
   , "maybe"
   , "midi"
   , "ordered-collections"

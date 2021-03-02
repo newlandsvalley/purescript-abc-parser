@@ -1,5 +1,17 @@
+Breaking Changes in v1.9.3
+--------------------------
+
+* The definition of __Chord__ has been altered to allow for decorations and slurs 
+* A __Tuplet__ type has been introduced
+
+Breaking Changes in v1.9.2
+--------------------------
+
+* The definition of __Volta__ has changed in order to allow for volta ranges
+
+
 Breaking Changes in v1.9.0
-==========================
+--------------------------
 
 * The __Repeat__ sum type in the parse tree ADT has been removed.  The __BarType__ record type has been replaced by the (simpler) __BarLine__.
 * The representation of begin and end repeats at a bar line has therefore changed.

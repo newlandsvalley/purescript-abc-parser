@@ -39,7 +39,7 @@ module Data.Abc ( AbcTune
 import Data.Either (Either)
 import Data.Enum (class Enum)
 import Data.Generic.Rep (class Generic)
-import Data.Generic.Rep.Eq (genericEq)
+import Data.Eq.Generic (genericEq)
 import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (Map)

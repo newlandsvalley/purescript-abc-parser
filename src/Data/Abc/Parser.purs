@@ -1,7 +1,6 @@
 -- | An ABC Parser.
 module Data.Abc.Parser
-        ( PositionedParseError(..)
-        , parse
+        ( parse
         , parseKeySignature
         ) where
 
@@ -28,12 +27,11 @@ import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable1 (replicate1A)
 import Prelude (class Show, bind, flip, join, max, pure, show, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
-import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, try)
+import Text.Parsing.StringParser (Parser(..), ParseError(..), Pos, runParser, try)
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
 
 -- import Debug.Trace (trace)
-
 
 {- transient data type just used for parsing the awkward Tempo syntax
   a list of time signatures expressed as rationals and a bpm expressed as an Int
@@ -52,15 +50,6 @@ traceParse :: forall a. String -> a -> a
 traceParse s p =
   trace s (\_ -> p)
 -}
-
--- | a parse error and its accompanying position in the text
-newtype PositionedParseError = PositionedParseError
-  { pos :: Int
-  , error :: String
-  }
-
-instance showKeyPositionedParseError :: Show PositionedParseError where
-  show (PositionedParseError e) = e.error <> " at position " <> show e.pos
 
 abc :: Parser AbcTune
 abc =
@@ -1493,6 +1482,7 @@ invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
 
+{-
 -- | Run a parser for an input string, returning either a positioned error or a result.
 runParser1 :: forall a. Parser a -> String -> Either PositionedParseError a
 runParser1 (Parser p) s =
@@ -1502,20 +1492,21 @@ runParser1 (Parser p) s =
       PositionedParseError { pos : pos, error : e}
   in
     bimap formatErr _.result (p { str: s, pos: 0 })
+-}
 
 -- | Entry point - Parse an ABC tune image.
-parse :: String -> Either PositionedParseError AbcTune
+parse :: String -> Either ParseError AbcTune
 parse s =
-    case runParser1 abc s of
+    case runParser abc s of
         Right n ->
             Right n
 
         Left e ->
             Left e
 
-parseKeySignature :: String -> Either PositionedParseError ModifiedKeySignature
+parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
-    case runParser1 keySignature s of
+    case runParser keySignature s of
         Right ks ->
           let
              emptyList = Nil :: List Pitch

@@ -104,8 +104,34 @@ in  upstream
       }
 -------------------------------
 -}
-
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.13.8-20201125/packages.dhall sha256:ef58d9afae22d1bc9d83db8c72d0a4eca30ce052ab49bbc44ced2da0bc5cad1a
+      https://github.com/purescript/package-sets/releases/download/psc-0.14.0/packages.dhall sha256:710b53c085a18aa1263474659daa0ae15b7a4f453158c4f60ab448a6b3ed494e
 
 in  upstream
+  with midi =
+    { dependencies =
+      [ "effect", "integers", "lists", "prelude", "signal", "string-parsers" ]
+    , repo = "https://github.com/newlandsvalley/purescript-midi.git"
+    , version = "a1163811f68be57c48ab553d3a9e366ccca92986"
+    }
+  with stringutils =
+    { dependencies =
+      [ "arrays"
+      , "assert"
+      , "console"
+      , "effect"
+      , "either"
+      , "functions"
+      , "integers"
+      , "lists"
+      , "maybe"
+      , "partial"
+      , "prelude"
+      , "psci-support"
+      , "quickcheck"
+      , "strings"
+      , "unsafe-coerce"
+      ]
+    , repo = "https://github.com/menelaos/purescript-stringutils.git"
+    , version = "e149d04cd5bcc25222c1807f2e1edafb36b5f70e"
+    }
