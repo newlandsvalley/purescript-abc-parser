@@ -782,7 +782,8 @@ gracifyFirstNote maybeGrace restsOrNotes =
       bimap identity (\gn -> gn { maybeGrace = maybeGrace })
     in
       Cons (f hd) tl
--- temp Debug
+
+-- temp debug
 {-
 showBar :: MidiBar -> String
 showBar mb =

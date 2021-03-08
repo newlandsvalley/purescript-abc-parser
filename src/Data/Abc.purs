@@ -245,7 +245,6 @@ data Accidental
     | Natural
     | Implicit       -- accidental determoined by context of the note
 
--- import Debug exposing (..)
 {- as shown in the body of the tune but not in headers -}
 instance showAccidental :: Show Accidental where
     show Sharp = "^"
