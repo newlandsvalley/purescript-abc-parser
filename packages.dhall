@@ -105,27 +105,6 @@ in  upstream
 -------------------------------
 -}
 let upstream =
-      https://github.com/purescript/package-sets/releases/download/psc-0.14.0-20210302/packages.dhall sha256:20cc5b89cf15433623ad6f250f112bf7a6bd82b5972363ecff4abf1febb02c50
+      https://github.com/purescript/package-sets/releases/download/psc-0.14.0-20210307/packages.dhall sha256:5f9e009bf539a4d1fa2be3ea340aeca4e3ca69515f5e351473d722619906d0b0
 
 in  upstream
-  with stringutils =
-    { dependencies =
-      [ "arrays"
-      , "assert"
-      , "console"
-      , "effect"
-      , "either"
-      , "functions"
-      , "integers"
-      , "lists"
-      , "maybe"
-      , "partial"
-      , "prelude"
-      , "psci-support"
-      , "quickcheck"
-      , "strings"
-      , "unsafe-coerce"
-      ]
-    , repo = "https://github.com/menelaos/purescript-stringutils.git"
-    , version = "e149d04cd5bcc25222c1807f2e1edafb36b5f70e"
-    }
