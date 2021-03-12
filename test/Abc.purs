@@ -402,9 +402,11 @@ structureSuite  =
     test "inline comment" do
       assertRoundTrip "| ABC z2 def z/ \x0D\n% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
     test "outmoded line-break" do
-      assertParses"| ABc | def |!\x0D\n"
+      assertParses"| ABc | def |!\x0D\n| ABC|\x0D\n"
+    test "workaround missing line feed line terminator" do
+      assertParses"| ABc | def |\x0D| ABC|\x0D\n"
 
--- | the purescript version handles parsing differently from the elm version
+-- | the purescript version handles parsing differently from the elm version 
 -- | when two different productions have the same initial lexeme.
 -- | The purescript parser requires you to use 'try' to resolve the parse
 ambiguitySuite :: Free TestF Unit

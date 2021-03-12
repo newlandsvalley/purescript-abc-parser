@@ -1397,8 +1397,9 @@ newline = satisfy ((==) '\n') <?> "expected newline"
 -- | Note that this brings ambiguity with respect to long decorations which are also introuduced
 -- | by exclamation marks, but incorporating it into a regex means we don't need to protect
 -- | it with a try, because the whole regex match is either consumed or not.
+-- | Also accommodate a carriage return but without the terminating newline
 crlf :: Parser Char
-crlf = '\n' <$ regex "!?\r\n" <?> "expected crlf"
+crlf = '\n' <$ regex "!?\r(\n)?" <?> "expected crlf"
 
 {-| Parse an end of line character or sequence, returning a `\n` character. 
     Before the actual end of line, we can have comments, which are discarded

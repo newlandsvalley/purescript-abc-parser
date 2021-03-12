@@ -1,10 +1,12 @@
--- | Handle any repeated sections when interpreting an ABC tune
+-- | Handle any repeated sections when interpreting an ABC tune.
 -- | Repeats are optional and can take the form:
--- |    |: ABC :|
--- |    |:: ABC :|
--- |    |: ABC :: DEF :|
--- |    |: ABC |1 de :|2 fg |
--- |    |: ABC |1,3 de :|2,4 fg |
+-- |
+-- |  -  '|: ABC :|'
+-- |  -  '|:: ABC :|'
+-- |  -  '|: ABC :: DEF :|'
+-- |  -  '|: ABC |1 de :|2 fg |'
+-- |  -  '|: ABC |1,3 def :|2,4 efg |'
+-- |
 -- | the very first repeat start marker is optional and often absent
 module Data.Abc.Midi.RepeatSections
         ( initialRepeatState
