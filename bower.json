@@ -16,7 +16,7 @@
     "url": "https://github.com/newlandsvalley/purescript-abc-parser.git"
   },
   "dependencies": {
-    "purescript-rationals": "^5.0.0",
+    "purescript-rationals": "https://github.com/anttih/purescript-rationals.git#master",
     "purescript-tuples": "^6.0.0",
     "purescript-maybe": "^5.0.0",
     "purescript-strings": "^5.0.0",
@@ -29,6 +29,6 @@
   },
   "devDependencies": {
     "purescript-psci-support": "^5.0.0",
-    "purescript-test-unit": "^15.0.0"
+    "purescript-test-unit": "^16.0.0"
   }
 }

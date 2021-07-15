@@ -4,19 +4,28 @@ You can edit this file as you like.
 -}
 { name = "abc-parser"
 , dependencies =
-  [ "bifunctors"
-  , "effect"
+  [ "arrays"
+  , "bifunctors"
+  , "control"
   , "either"
+  , "enums"
   , "foldable-traversable"
+  , "identity"
+  , "integers"
+  , "lists"
   , "maybe"
   , "midi"
+  , "newtype"
   , "ordered-collections"
+  , "partial"
+  , "prelude"
   , "rationals"
+  , "string-parsers"
   , "strings"
   , "stringutils"
-  , "string-parsers"
   , "transformers"
   , "tuples"
+  , "unfoldable"
   ]
 , packages = ./packages.dhall
 , sources = [ "src/**/*.purs" ]
