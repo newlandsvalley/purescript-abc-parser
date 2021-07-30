@@ -118,7 +118,7 @@ assertNoHeader source getf =
           getf tune
       in
         case mtitle of
-          Just title ->
+          Just _ ->
             failure "no title expected"
           _ ->
             success
@@ -184,10 +184,11 @@ buildThumbnailNoRepeats s =
    so for testing purposes just collapse tp a string
 
    Type class instances for type synonyms are disallowed
--}
+
 showKeySig :: KeySignature -> String
 showKeySig ks =
   show ks.pitchClass <> show ks.accidental <> show ks.mode
+-}
 
 metadataSuite :: Free TestF Unit
 metadataSuite = do

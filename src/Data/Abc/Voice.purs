@@ -38,16 +38,16 @@ module Data.Abc.Voice
 
 import Control.Monad.State.Class (get, put, modify)
 import Control.Monad.State.Trans (StateT, evalStateT)
-import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody)
+import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody, TuneHeaders)
 import Data.Abc.Metadata (getHeaders, isEmptyStave)
 import Data.Foldable (foldM)
 import Data.Identity (Identity(..))
-import Data.List (List, head, last, singleton, snoc)
+import Data.List (List, (:), head, filter, last, singleton, snoc)
 import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set, empty, insert, toUnfoldable) as Set
 import Data.Tuple (Tuple(..))
-import Prelude (class Eq, class Ord, ($), (<<<), bind, join, map, not, pure)
+import Prelude (class Eq, class Ord, ($), (<<<), (<>), bind, join, map, not, pure)
 
 data VoiceLabel = 
     VoiceLabel String
@@ -81,6 +81,8 @@ getVoiceLabels tune =
 
 -- | get a map of voice name to tune (filtering the body for just that tune voice)
 -- | if there is no voice header, then the voice name is "unnamed"
+-- | If voices are found, then the title of the partitioned voice tune is set to
+-- | 'Voice voice-name'
 getVoiceMap :: AbcTune -> Map String AbcTune 
 getVoiceMap tune = 
   let 
@@ -90,8 +92,12 @@ getVoiceMap tune =
     f :: Tuple VoiceLabel TuneBody -> Tuple String AbcTune
     f (Tuple k body) = 
       case k of 
-        VoiceLabel name -> Tuple name {headers : tune.headers, body}
-        NoLabel -> Tuple "unnamed" {headers : tune.headers, body}
+        VoiceLabel name -> 
+          Tuple name {headers : newHeaders, body}
+            where 
+              newHeaders = retitle name tune.headers
+        NoLabel -> 
+          Tuple "unnamed" {headers : tune.headers, body}
   in 
     fromFoldable $ map f tuples
 
@@ -106,7 +112,7 @@ partitionVoices tune =
 -- | with a separate body for each distinct voice
 partitionTuneBody :: AbcTune -> Array TuneBody
 partitionTuneBody tune =    
-  map (\(Tuple k v) -> v) $ toUnfoldable (voiceMap tune)
+  map (\(Tuple _ v) -> v) $ toUnfoldable (voiceMap tune)
 
 -- produce a map of voice label to tune (filtered for that voice only)
 voiceMap :: AbcTune -> VoiceMap 
@@ -203,6 +209,8 @@ scoreLabelOrDefault currentVoiceLabel bars  =
     Just label -> label 
     _ -> currentVoiceLabel
 
+
+{-
 -- find the voice label from an inline header (if it defines a voice)
 -- otherwise fall back to the default voice
 voiceLabel :: VoiceLabel -> Header -> VoiceLabel
@@ -210,6 +218,7 @@ voiceLabel currentVoice h =
   case h of
     (Voice description) -> VoiceLabel description.id
     _ -> currentVoice
+-}
 
 -- if the line of music starts with an inLine voice header, return the voice
 -- label, otherwise Nothing
@@ -230,5 +239,19 @@ initialVoiceLabel :: AbcTune -> VoiceLabel
 initialVoiceLabel tune = 
   case (last $ getHeaders 'V' tune) of
      Just (Voice description) -> VoiceLabel description.id 
-     _ -> NoLabel      
+     _ -> NoLabel    
 
+-- retitle the headers by replacing any original tune title 
+-- with the voice name (and normalising the Ref No to 1)
+retitle :: String -> TuneHeaders -> TuneHeaders 
+retitle voiceName headers = 
+  ReferenceNumber (Just 1) : Title ("Voice " <> voiceName) : filteredHeaders
+
+  where 
+    predicate :: Header -> Boolean 
+    predicate h =
+      case h of 
+        ReferenceNumber _ -> false 
+        Title _ -> false 
+        _ -> true
+    filteredHeaders = filter predicate headers

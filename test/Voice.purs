@@ -5,14 +5,18 @@ import Prelude
 import Control.Monad.Free (Free)
 import Data.Abc (AbcTune)
 import Data.Abc.Canonical (fromTune)
+import Data.Abc.Metadata (getTitle)
 import Data.Abc.Parser (parse)
 import Data.Abc.Voice (getVoiceLabels, getVoiceMap, partitionTuneBody, partitionVoices)
 import Data.Array (index, length)
+import Data.Map (keys, size, values)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..))
+import Data.List (fromFoldable, length) as List
 import Data.Either (Either(..))
-import Data.Set (Set, fromFoldable)
-import Data.Map (keys)
+import Data.Set (Set)
+import Data.Set (fromFoldable) as Set
+import Data.Unfoldable (replicate)
 import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
@@ -80,6 +84,34 @@ assertVoiceMapLabels s target =
     Left err ->
       failure ("parse failed: " <> (show err))      
 
+-- check that the partitioned voice has a title representing the voice name
+assertVoiceTitles :: String -> List (Maybe String) -> Test
+assertVoiceTitles s target = 
+  case (parse s) of
+    Right tune ->
+      let 
+        voiceMap = getVoiceMap tune
+        titles = map getTitle (values voiceMap)
+      in
+        Assert.equal target titles
+
+    Left err ->
+      failure ("parse failed: " <> (show err))      
+
+assertRetitlingPreservesHeaders :: String -> Test
+assertRetitlingPreservesHeaders s =
+  case (parse s) of
+    Right tune ->
+      let 
+        tuneHeaderLength = List.length (tune.headers)
+        voiceMap = getVoiceMap tune
+        voiceHeaderLengths = map (List.length <<< _.headers) (values voiceMap)
+      in
+        Assert.equal (replicate (size voiceMap) tuneHeaderLength) voiceHeaderLengths
+
+    Left err ->
+      failure ("parse failed: " <> (show err))      
+
 
 voiceSuite :: Free TestF Unit
 voiceSuite = do
@@ -117,7 +149,13 @@ voiceSuite = do
     test "labels - four voices" do
       assertVoiceLabels fourVoices ["1", "2", "3", "4"]
     test "labels from voice map - four voices" do
-      assertVoiceMapLabels fourVoices (fromFoldable ["1", "2", "3", "4"])
+      assertVoiceMapLabels fourVoices (Set.fromFoldable ["1", "2", "3", "4"])
+    test "retitling the voice header - two voices" do 
+      assertVoiceTitles twoVoices (List.fromFoldable [Just "Voice T1", Just "Voice T2"])
+    test "retitling the voice header - three voices" do 
+      assertVoiceTitles threeVoices (List.fromFoldable [Just "Voice T1", Just "Voice T2", Just "Voice T3"])
+    test "retitling preserves other headers" do
+      assertRetitlingPreservesHeaders threeVoices
 
 noVoice :: String
 noVoice =
@@ -125,6 +163,7 @@ noVoice =
 
 oneVoice :: String
 oneVoice =
+    "X: 1\x0D\nT: One Voice\x0D\n" <>
     "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T1]| CD EF FG |\x0D\n[V:T1]| AB EF FG |\x0D\n"
 
 twoVoicesInline :: String
@@ -139,6 +178,7 @@ twoVoices =
 
 threeVoices :: String
 threeVoices =
+    "X: 1\x0D\nT: Three Voices\x0D\n" <>
     "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T2]| CD EF FG |\x0D\n" <>
     "[V:T1]| AB EF FG |\x0D\n[V:T3]| AB (3zde [fg] |\x0D\n"
 
