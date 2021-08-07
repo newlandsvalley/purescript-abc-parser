@@ -252,9 +252,11 @@ barLine b =
   in
     endColons <> lines <> startColons <> iteration
 
+{-}
 mBarLine :: Maybe BarLine -> String
 mBarLine mbl =
   fromMaybe "" $ map barLine mbl
+-}
 
 voltas :: NonEmptyList Volta -> String 
 voltas vs =
@@ -304,7 +306,7 @@ music m =
         Inline h ->
             "[" <> header h <> "]"
 
-        Spacer i ->
+        Spacer _ ->
             " "
 
         Ignore ->
@@ -340,9 +342,9 @@ header h =
         Instruction s ->
             "I: " <> s
 
-        Key mks props ->
+        Key mks ->
             "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
-                  <> amorphousProperties props
+                  <> amorphousProperties mks.properties
 
         UnitNoteLength d ->
             "L: " <> (showRatio d)
@@ -423,12 +425,14 @@ bodyPart bp =
         BodyInfo h ->
             header h
 
+{-}
 continuation :: Boolean -> String
 continuation c =
     if c then
         "\\"
     else
         ""
+-}
 
 tuneBody :: TuneBody -> String
 tuneBody b =

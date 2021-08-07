@@ -3,6 +3,7 @@ module Test.KeySignature (keySignatureSuite) where
 import Prelude (Unit, discard, negate, show, ($), (<>), (==))
 import Control.Monad.Free (Free)
 import Data.Maybe (fromMaybe)
+import Data.Map (empty)
 import Data.List (List(..), head, length, sort, (:))
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), Pitch(..), KeySet, Mode(..))
 import Data.Abc.KeySignature
@@ -27,10 +28,10 @@ assertEquivalentKeys actual expected =
    so for testing purposes just collapse tp a string
 
    Type class instances for type synonyms are disallowed
--}
 showKeySig :: KeySignature -> String
 showKeySig ks =
   show ks.pitchClass <> show ks.accidental <> show ks.mode
+-}
 
 keySignatureSuite :: Free TestF Unit
 keySignatureSuite = do
@@ -390,7 +391,7 @@ gMajor =
 
 gMajorM :: ModifiedKeySignature
 gMajorM =
-    { keySignature : gMajor, modifications : Nil }
+    { keySignature : gMajor, modifications : Nil, properties: empty }
 
 gMinor :: KeySignature
 gMinor =
@@ -398,7 +399,7 @@ gMinor =
 
 gMinorM :: ModifiedKeySignature
 gMinorM =
-    { keySignature : gMinor, modifications : Nil }
+    { keySignature : gMinor, modifications : Nil, properties: empty }
 
 cMajor :: KeySignature
 cMajor =
@@ -410,7 +411,7 @@ cSharp mode =
 
 cSharpM :: Mode -> ModifiedKeySignature
 cSharpM mode =
-    { keySignature : cSharp mode, modifications : Nil }
+    { keySignature : cSharp mode, modifications : Nil, properties: empty }
 
 dMajor :: KeySignature
 dMajor =
@@ -430,14 +431,18 @@ fMajor =
 
 fMajorM :: ModifiedKeySignature
 fMajorM =
-    { keySignature: fMajor, modifications: Nil }
+    { keySignature: fMajor, modifications: Nil, properties: empty }
 
 dPhrygianSharpenedF :: ModifiedKeySignature
 dPhrygianSharpenedF =
-  { keySignature: { pitchClass: D, accidental: Natural, mode: Phrygian },
-     modifications: ( Pitch  { pitchClass: F, accidental: Sharp } : Nil ) }
+  { keySignature: { pitchClass: D, accidental: Natural, mode: Phrygian }
+  , modifications: ( Pitch  { pitchClass: F, accidental: Sharp } : Nil )
+  , properties: empty
+  } 
 
 ePhrygianSharpenedG :: ModifiedKeySignature
 ePhrygianSharpenedG =
-  { keySignature: { pitchClass: E, accidental: Natural, mode: Phrygian },
-     modifications: ( Pitch  { pitchClass: G, accidental: Sharp } : Nil ) }
+  { keySignature: { pitchClass: E, accidental: Natural, mode: Phrygian }
+  , modifications: ( Pitch  { pitchClass: G, accidental: Sharp } : Nil ) 
+  , properties: empty
+  }

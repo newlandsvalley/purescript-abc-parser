@@ -1,12 +1,10 @@
--- | A Ragbag of convenience functions for getting Metadata from ABC headers
+-- | A Ragbag of convenience functions for getting Metadata from ABC
 module Data.Abc.Metadata
-        ( HeaderMap
-        , getKeySet
-        , getHeader
-        , getHeaders
+        ( getKeySet
         , getKeySig
         , getKeyProps
         , getMeter
+        , getDefaultedMeter
         , getTempoSig
         , getTitle
         , getUnitNoteLength
@@ -20,89 +18,133 @@ module Data.Abc.Metadata
 import Data.Abc
 
 import Data.Abc.KeySignature (modifiedKeySet)
+import Data.Abc.Optics (_headers, _properties, _Meter, _ModifiedKeySignature, _Tempo, _Title, _UnitNoteLength)
 import Data.Foldable (all)
-import Data.List (List(..), head, null, reverse, singleton, snoc, take)
-import Data.Map (Map, empty, fromFoldableWith, lookup)
+import Data.Lens.Fold (firstOf)
+import Data.Lens.Traversal (traversed)
+import Data.List (List(..), head, null, singleton, snoc, take)
+import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
 import Data.Rational (Rational, (%), toNumber)
 import Data.Tuple (Tuple(..))
-import Prelude (map, ($), (||), (==), (*), (<>))
+import Prelude (join, map, ($), (||), (==), (*), (<<<))
 
+{-}
 -- | A representation of the ABC headers as a Map, taking each definition
 -- | of any header in presentation order where multiple definitions are 
 -- | present in the ABC.
 type HeaderMap =
     Map Char (List Header)
+-}
 
 -- EXPORTED FUNCTIONS
 
 -- | Get the set of key accidentals from the (possibly modified) key (if there is one in the tune).
 getKeySet :: AbcTune -> KeySet
 getKeySet t =
-  let
-    mksig =
-      getKeySig t
-  in
-    case mksig of
-      Just ksig ->
-        modifiedKeySet ksig
-      Nothing ->
-        Nil
+  case (getKeySig t) of
+    Just ksig ->
+      modifiedKeySet ksig
+    Nothing ->
+      Nil
 
 -- | Get the key signature (if any) from the tune.
+-- | @deprecated in favour of the optics
 getKeySig :: AbcTune -> Maybe ModifiedKeySignature
 getKeySig tune =
+  firstOf (_headers <<< traversed <<< _ModifiedKeySignature) tune
+
+{-}
   case (getHeader 'K' tune) of
     Just (Key key _) ->
       Just key
     _ ->
       Nothing
+-}
+
+{-}
+getDefaultedKeyProps :: AbcTune -> AmorphousProperties
+getDefaultedKeyProps tune =
+  fromMaybe (empty :: AmorphousProperties) $ (_headers <<< traversed <<< (_KeySignatureProperties mks)) tune
+-}
 
 -- | Get the key signature properties (if any) from the tune.
 getKeyProps :: AbcTune -> AmorphousProperties
 getKeyProps tune =
+  case (firstOf (_headers <<< traversed <<< _ModifiedKeySignature <<< _properties) tune) of
+    Just props -> props 
+    _ -> (empty :: AmorphousProperties)
+
+{-
   case (getHeader 'K' tune) of
     Just (Key key props) ->
       props
     _ ->
       (empty :: AmorphousProperties)
+-}
 
--- | Get the meter
+-- | Get the meter defaulting to 4/4
+getDefaultedMeter :: AbcTune -> MeterSignature
+getDefaultedMeter tune =
+  fromMaybe (Tuple 4 4) $ getMeter tune
+
+-- | @deprecated in favour of getDefaultedMeter
 getMeter :: AbcTune -> Maybe MeterSignature
 getMeter tune =
+  join $ (firstOf (_headers <<< traversed <<< _Meter) tune) 
+    
+  
+  {-}
   case (getHeader 'M' tune) of
     Just (Meter maybeMeter) ->
       Just (fromMaybe (Tuple 4 4) $ maybeMeter)
     _ ->
       Nothing
+-}
+
 
 -- | get the tempo
+-- | @deprecated in favour of the optics
 getTempoSig :: AbcTune -> Maybe TempoSignature
 getTempoSig tune =
+  firstOf (_headers <<< traversed <<< _Tempo) tune
+{-}
   case (getHeader 'Q' tune) of
     Just (Tempo tempo) ->
       Just tempo
     _ ->
       Nothing
+-}
 
 -- | Get the first Title (if any) from the tune.
+-- | @deprecated in favour of the optics
 getTitle :: AbcTune -> Maybe String
 getTitle tune =
+  firstOf (_headers <<< traversed <<< _Title) tune
+
+{-}
   case (getHeader 'T' tune) of
     Just (Title title) ->
       Just title
     _ ->
       Nothing
+-}
 
 -- | Get the unit note length
+-- | @deprecated in favour of the optics
 getUnitNoteLength :: AbcTune -> Maybe NoteDuration
 getUnitNoteLength tune =
+  firstOf (_headers <<< traversed <<< _UnitNoteLength) tune
+
+  {-}
   case (getHeader 'L' tune) of
     Just (UnitNoteLength duration) ->
       Just duration
     _ ->
       Nothing
+  -}
 
+{-}
 -- | Get the first header (in presentation order) from the header code
 getHeader :: Char -> AbcTune -> Maybe Header
 getHeader code t =
@@ -116,6 +158,7 @@ getHeaders code t =
   case (lookup code (getHeaderMap t)) of 
     Nothing -> Nil
     Just headers -> headers
+-}
 
 -- | The amount by which you increase or decrease the duration of a (possibly multiply) dotted note.
 -- |    For example A > B increases the duration of A and proportionally reduces that of B.
@@ -257,6 +300,8 @@ removeRepeatMarkers abcTune =
 
 -- IMPLEMENTATION
   
+
+{-
 -- | A map (Header code => List Header) for each instance of 
 -- | each Header code  (in order of presentation)
 getHeaderMap :: AbcTune -> HeaderMap
@@ -289,7 +334,7 @@ getHeaderMap t =
         Instruction _ ->
           Tuple 'I' (singleton h)
 
-        Key _ _->
+        Key _ ->
           Tuple 'K' (singleton h)
 
         UnitNoteLength _ ->
@@ -359,3 +404,4 @@ getHeaderMap t =
       map f $ reverse t.headers
   in
     fromFoldableWith (<>) annotatedHeaders   
+-}

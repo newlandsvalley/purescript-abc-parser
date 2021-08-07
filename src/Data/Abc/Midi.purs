@@ -12,7 +12,6 @@ import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), B
     MusicLine, Music(..), Mode(..), ModifiedKeySignature, 
     TempoSignature, PitchClass(..))
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.Canonical as Canonical
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
@@ -28,6 +27,7 @@ import Data.Array as Array
 import Data.List (List(..), (:), null, concat, concatMap, foldr, filter, reverse, singleton)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
+import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
 import Data.Newtype (unwrap)
@@ -75,9 +75,11 @@ midiPitchOffset n mks barAccidentals =
         _ ->  -- explict
           n.accidental
 
+    {-}
     -- the lookup pattern just uses sharps or flats (if there) or the empty String if not
     accidentalPattern =
       Canonical.keySignatureAccidental accidental
+    -}
 
     pattern =
       Pitch { pitchClass : n.pitchClass, accidental : accidental }
@@ -148,10 +150,13 @@ buildNewBar i barLine =
   ,  midiMessages : Nil
   }
 
--- | default to C Major (i.e. no accidental modifiers)
+-- | default to C Major (i.e. no accidental modifiers or other properties)
 defaultKey :: ModifiedKeySignature
 defaultKey =
-  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }, modifications: Nil }
+  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }
+    , modifications: Nil 
+    , properties: empty
+  }
 
 -- the default MIDI volume (velocity)
 defaultVolume :: Int
@@ -163,6 +168,7 @@ initialState :: AbcTune -> TransformationState
 initialState tune =
   let
     abcTempo = getAbcTempo tune
+    keySignature :: ModifiedKeySignature
     keySignature = fromMaybe defaultKey (getKeySig tune)
     initialMsg = midiTempoMsg abcTempo
     -- we must have a tempo indication at the very start
@@ -322,7 +328,7 @@ transformHeader h =
   case h of
     UnitNoteLength d ->
       updateState addUnitNoteLenToState d
-    Key mks _ ->
+    Key mks ->
       updateState addKeySigToState mks
     Tempo t ->
       updateState addTempoToState t
@@ -628,11 +634,13 @@ accumulateMessages :: List MidiBar -> List Midi.Message
 accumulateMessages mbs =
   reverse $ concatMap _.midiMessages mbs
 
+{-}
 -- | turn a list of bars (with repeats removed) into a track
 -- | temporary measure until we integrate repeats
 buildSimpleTrack :: List MidiBar -> Midi.Track
 buildSimpleTrack mbs =
     Midi.Track $ accumulateMessages mbs
+-}
 
 -- | select a subset of MIDI bars
 barSelector :: Int -> Int -> MidiBar -> Boolean

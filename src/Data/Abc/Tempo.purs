@@ -15,16 +15,21 @@ module Data.Abc.Tempo
         , chordalNoteTicks
         ) where
 
-import Prelude (($), (+), (/), (*))
-import Data.Maybe (Maybe(..), fromMaybe)
-import Data.Int (round)
-import Data.List (List(..), (:), filter, reverse)
-import Data.List.NonEmpty (singleton)
-import Data.Foldable (foldl)
-import Data.Rational (Rational, (%), fromInt, toNumber)
 import Data.Abc
-import Data.Abc.Metadata (getMeter, getUnitNoteLength, getTempoSig, getHeader)
+
+import Data.Abc.Metadata (getDefaultedMeter, getUnitNoteLength, getTempoSig)
+import Data.Abc.Optics (_bpm, _headers, _Tempo)
 import Data.Abc.UnitNote (defaultUnitNoteLength)
+import Data.Foldable (foldl)
+import Data.Int (round)
+import Data.Lens.Fold (firstOf)
+import Data.Lens.Setter (set)
+import Data.Lens.Traversal (traversed)
+import Data.List ( (:), List(..), filter, reverse)
+import Data.List.NonEmpty (singleton)
+import Data.Maybe (Maybe(..), fromMaybe)
+import Data.Rational (Rational, (%), fromInt, toNumber)
+import Prelude (($), (+), (/), (*), (<<<))
 
 -- Exposed API
 
@@ -78,8 +83,8 @@ getAbcTempo :: AbcTune -> AbcTempo
 getAbcTempo tune =
   let
     tempoSig = fromMaybe defaultTempo $ getTempoSig tune
-    mMeterSig = getMeter tune
-    unitNoteLength = fromMaybe (defaultUnitNoteLength mMeterSig) $ getUnitNoteLength tune
+    meterSig = getDefaultedMeter tune 
+    unitNoteLength = fromMaybe (defaultUnitNoteLength meterSig) $ getUnitNoteLength tune
   in
     { tempoNoteLength : foldl (+) (fromInt 0) tempoSig.noteLengths
     , bpm : tempoSig.bpm
@@ -121,33 +126,27 @@ beatsPerSecond t =
 -- |    (if it exists) or the default of 120 if it does not.
 getBpm :: AbcTune -> Int
 getBpm tune =
-  case (tempoHeader tune) of
-    Tempo t ->
-      t.bpm
+  case (firstOf (_headers <<< traversed <<< _Tempo <<< _bpm) tune) of 
+    Just bpm -> bpm 
+    _ -> defaultTempo.bpm
 
-    _ ->
-      defaultTempo.bpm
 
 -- | Change the tempo of the tune by altering the beats per minute (bpm)
 -- | in the tune's tempo header (if it exists) or by altering a newly incorporated
 -- | default tempo if not.
 setBpm :: Int -> AbcTune -> AbcTune
 setBpm bpm tune =
-  let
-    newTempoHeader =
-      case (tempoHeader tune) of
-        Tempo t ->
-          Tempo t { bpm = bpm }
-
-        -- can't happen but type-checker can't know
-        x ->
-          x
-
-    newHeaders =
-      replaceTempoHeader newTempoHeader tune.headers
-  in
-    { headers: newHeaders, body: tune.body }
-
+  case (firstOf (_headers <<< traversed <<< _Tempo) tune) of 
+    Just tempo -> 
+      set (_headers <<< traversed <<< _Tempo <<< _bpm) bpm tune
+    _ -> 
+      let  
+        t = defaultTempo { bpm = bpm }
+        newTempoHeader = (Tempo t)
+        newHeaders = replaceTempoHeader newTempoHeader tune.headers
+      in
+        { headers: newHeaders, body: tune.body }
+      
 -- MIDI support
 
 -- | A standard MIDI tick - we use 1/4 note = 480 ticks.
@@ -171,10 +170,6 @@ chordalNoteTicks note chord =
   round $ toNumber $ note * chord * (fromInt standardMidiTick)
 
 -- implementation
--- | get the tempo header
-tempoHeader :: AbcTune -> Header
-tempoHeader tune =
-  fromMaybe (Tempo defaultTempo) $  getHeader 'Q' tune
 
 -- | replace a tempo header (if it exists)
 replaceTempoHeader :: Header -> TuneHeaders -> TuneHeaders
@@ -192,6 +187,7 @@ replaceTempoHeader newTempoHeader hs =
   in
     placeHeaderPenultimately newTempoHeader newhs
 
+
 -- | the last ABC header should always be the key signature so we'll
 -- | choose to set the (altered) tempo header as next-to-last.
 placeHeaderPenultimately :: Header -> TuneHeaders -> TuneHeaders
@@ -201,3 +197,4 @@ placeHeaderPenultimately h hs =
       (h : Nil)
     x : xs ->
       reverse (x : h : xs)
+

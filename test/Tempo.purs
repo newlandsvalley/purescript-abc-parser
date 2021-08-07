@@ -59,7 +59,7 @@ fullHeaderMed =
 
 
 fullHeaderHigh =
-    "X: 1\x0D\nT: a title\x0D\nM: 3/4\x0D\nQ: 1/4=132\x0D\nK: CMajor\x0D\n| A,B, (3CDE [FG] |\x0D\n"
+    "X: 1\x0D\nT: a title\x0D\nQ: 1/4=132\x0D\nM: 3/4\x0D\nK: CMajor\x0D\n| A,B, (3CDE [FG] |\x0D\n"
 
 
 noHeader =

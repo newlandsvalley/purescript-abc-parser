@@ -19,6 +19,7 @@ You can edit this file as you like.
   , "ordered-collections"
   , "partial"
   , "prelude"
+  , "profunctor-lenses"
   , "rationals"
   , "string-parsers"
   , "strings"

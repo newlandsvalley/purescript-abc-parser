@@ -8,6 +8,7 @@ import Data.Abc (AbcNote, Accidental(..), Pitch(..), PitchClass(..), Mode(..), M
 import Control.Monad.Free (Free)
 import Data.Either (Either(..))
 import Data.List (List(..))
+import Data.Map (empty)
 import Data.Rational (fromInt)
 import Prelude (Unit, ($), discard, map, negate)
 import Test.Unit (Test, TestF, failure, suite, test)
@@ -218,7 +219,9 @@ keyChangeSuite = do
 
 buildKeySig :: PitchClass -> Accidental -> Mode -> ModifiedKeySignature
 buildKeySig pc acc mode =
-  { keySignature:  { pitchClass: pc, accidental: acc, mode: mode }, modifications: Nil }
+  { keySignature:  { pitchClass: pc, accidental: acc, mode: mode }
+  , modifications: Nil
+  , properties: empty }
 
 cs :: AbcNote
 cs =
@@ -349,7 +352,9 @@ eMinor =
 
 bFlatDorian :: ModifiedKeySignature
 bFlatDorian =
-  { keySignature:  { pitchClass: B, accidental:  Flat, mode: Dorian }, modifications: Nil }
+  { keySignature:  { pitchClass: B, accidental:  Flat, mode: Dorian }
+  , modifications: Nil
+  , properties : empty }
 
 bFlat :: ModifiedKeySignature
 bFlat =

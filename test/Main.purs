@@ -7,6 +7,7 @@ import Test.Unit.Main (runTest)
 import Test.Abc (abcSuite)
 import Test.Metadata (metadataSuite)
 import Test.Octave (octaveSuite)
+import Test.Optics (opticsSuite)
 import Test.Tempo (tempoSuite)
 import Test.Accidentals (accidentalsSuite)
 import Test.KeySignature (keySignatureSuite)
@@ -19,6 +20,7 @@ main :: Effect  Unit
 main = runTest do
   suite "parser" do
     abcSuite
+    opticsSuite
     metadataSuite
     octaveSuite
     tempoSuite

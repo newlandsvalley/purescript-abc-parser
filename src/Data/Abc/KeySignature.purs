@@ -245,7 +245,7 @@ transposeKeySignatureBy interval mks =
     modifications =
       map (transposeKeyAccidentalBy interval) mks.modifications
   in
-    { keySignature : newks, modifications : modifications }
+    { keySignature : newks, modifications : modifications, properties : mks.properties }
 
 -- | a relationship between a Pitch and a note number
 -- | i.e. C is 0, C Sharp is 1 B is 11 etc.
@@ -395,7 +395,7 @@ pianoKeyToPitch :: Boolean -> PianoKey -> Pitch
 pianoKeyToPitch isFlatCtx pianoKey =
   let
     convertPianoKey :: Boolean -> PianoKey -> Pitch
-    convertPianoKey flatCtx (White p) =
+    convertPianoKey _ (White p) =
       Pitch
           { pitchClass : p
           -- , accidental : Implicit

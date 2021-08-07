@@ -4,10 +4,11 @@ import Prelude (Unit, discard)
 import Control.Monad.Free (Free)
 import Data.Maybe (Maybe(..))
 import Data.List (List(..))
+import Data.Map (empty)
 import Data.Abc.KeySignature (modifiedKeySet)
 import Data.Abc (Accidental(..), PitchClass(..), KeySignature, Mode(..))
 import Data.Abc.Accidentals as Accidentals
-import Test.Unit (Test, TestF, suite, test)
+import Test.Unit (TestF, suite, test)
 import Test.Unit.Assert as Assert
 
 accidentalsSuite :: Free TestF Unit
@@ -17,12 +18,12 @@ accidentalsSuite =
       Assert.equal
           (Just Sharp)
           (Accidentals.implicitInKeySet F
-             (modifiedKeySet { keySignature: gMajor, modifications: Nil }))
+             (modifiedKeySet { keySignature: gMajor, modifications: Nil, properties: empty }))
     test "f in G Major" do
       Assert.equal
         (Nothing)
         (Accidentals.implicitInKeySet F
-           (modifiedKeySet { keySignature: cMajor, modifications: Nil }))
+           (modifiedKeySet { keySignature: cMajor, modifications: Nil, properties: empty }))
 
 -- key signatures
 cMajor :: KeySignature

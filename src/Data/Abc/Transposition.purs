@@ -15,23 +15,22 @@ module Data.Abc.Transposition
    This means we have to thread state through the transposition
 -}
 
-import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=)
-   , bind, map, mod, negate, pure)
+import Data.Abc
+
 import Control.Monad.State (State, evalStateT, get, put)
+import Data.Abc.Accidentals as Accidentals
+import Data.Abc.KeySignature (diatonicScale, isCOrSharpKey, modifiedKeySet, notesInChromaticScale, pitchNumbers, pitchNumber, inKeySet, transposeKeySignatureBy)
+import Data.Abc.Metadata (getKeySig, getKeyProps)
 import Data.Either (Either(..))
+import Data.Foldable (oneOf)
 import Data.List (List(..), (:), filter, reverse)
 import Data.List.NonEmpty (NonEmptyList) as Nel
 import Data.Map (Map, empty, fromFoldable, lookup)
 import Data.Maybe (Maybe(..), fromMaybe, isJust)
-import Data.Tuple (Tuple(..), fst, snd)
 import Data.Newtype (unwrap)
 import Data.Traversable (traverse)
-import Data.Foldable (oneOf)
-import Data.Abc
-import Data.Abc.Accidentals as Accidentals
-import Data.Abc.Metadata (getKeySig, getKeyProps)
-import Data.Abc.KeySignature (diatonicScale, isCOrSharpKey, modifiedKeySet
-    ,notesInChromaticScale, pitchNumbers, pitchNumber, inKeySet, transposeKeySignatureBy)
+import Data.Tuple (Tuple(..), fst)
+import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=), bind, map, mod, negate, pure)
 
 type TranspositionState =
     { keyDistance :: Int  -- semitone distance between keys - may be positive or negative
@@ -56,7 +55,10 @@ type NoteIndex =
 -- | The default Key - C Major.
 defaultKey :: ModifiedKeySignature
 defaultKey =
-  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }, modifications: Nil }
+  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }
+  , modifications: Nil
+  , properties: empty 
+  }
 
 -- | Calculate the distance between the keys (target - source) measured in semitones.
 -- | Keys must be in compatible modes.
@@ -144,7 +146,10 @@ transposeTo (Pitch targetP) t =
     targetAcc = targetP.accidental
     targetPc = targetP.pitchClass
     targetmks =
-        { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }, modifications: Nil }
+        { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }
+        , modifications: Nil
+        , properties : mks.properties
+        }
     -- work out the distance between them
     d = transpositionDistance
            (Pitch targetP)
@@ -177,7 +182,7 @@ transposeTune t =
     let
       newHeaders :: TuneHeaders
       newHeaders =
-        replaceKeyHeader state.targetmks state.sourceKeyProps t.headers
+        replaceKeyHeader state.targetmks t.headers
     newTuneBody <- transposeTuneBody t.body
     pure { headers: newHeaders, body: newTuneBody }
 
@@ -189,7 +194,7 @@ transposeTuneBody body =
 processHeader :: Header -> Transposition Header
 processHeader h =
   case h of
-    Key mks props ->
+    Key mks ->
       do
         state <- get
         let
@@ -199,7 +204,7 @@ processHeader h =
           newState =
             state
               { sourcemks = mks
-              , sourceKeyProps = props
+              , sourceKeyProps = mks.properties
               , sourceBarAccidentals = Accidentals.empty
               , targetmks = newmks
               , targetKeySet = modifiedKeySet newmks
@@ -208,7 +213,7 @@ processHeader h =
               }
 
         _ <- put newState
-        pure $ (Key newmks props)
+        pure $ (Key newmks)
     _ ->
       pure h
 
@@ -278,7 +283,7 @@ transposeMusic m =
         pure $ Chord newC
 
     -- we won't attempt to transpose chord symbols - just quietly drop them
-    ChordSymbol s ->
+    ChordSymbol _ ->
       pure Ignore
 
       -- an inline header
@@ -462,7 +467,7 @@ sharpNoteNumbers =
     f nn =
       let
         Pitch p = fst nn
-        pos = snd nn
+        -- pos = snd nn
       in
         ((p.accidental == Sharp) && (p.pitchClass /= E && p.pitchClass /= B))
             || (p.accidental == Natural)
@@ -477,7 +482,7 @@ flatNoteNumbers =
     f nn =
       let
         Pitch p = fst nn
-        pos = snd nn
+        -- pos = snd nn
       in
         ((p.accidental == Flat) && (p.pitchClass /= F && p.pitchClass /= C))
           || (p.accidental == Natural)
@@ -555,12 +560,12 @@ transpositionDistance target source =
 
 -- | replace a Key header (if it exists)
 -- | and place last in the list of headers, retaining the order of the other headers
-replaceKeyHeader :: ModifiedKeySignature -> AmorphousProperties -> TuneHeaders -> TuneHeaders
-replaceKeyHeader newmks props hs =
+replaceKeyHeader :: ModifiedKeySignature -> TuneHeaders -> TuneHeaders
+replaceKeyHeader newmks hs =
   let
     f h =
       case h of
-        Key _ _ ->
+        Key _ ->
           false
 
         _ ->
@@ -568,4 +573,4 @@ replaceKeyHeader newmks props hs =
     newhs =
       filter f hs
   in
-    reverse $ ( Key newmks props) : (reverse newhs)
+    reverse $ ( Key newmks) : (reverse newhs)

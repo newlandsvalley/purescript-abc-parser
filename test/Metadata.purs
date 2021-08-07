@@ -1,21 +1,25 @@
 module Test.Metadata (metadataSuite) where
 
-import Prelude (Unit, discard, map, show, ($), (<>), (==))
+import Prelude (Unit, discard, ($), (<>), (<<<))
 import Control.Monad.Free (Free)
 
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
-import Data.List (List(..), head, intersect, length, (:))
+import Data.Lens.Fold (toListOf)
+import Data.Lens.Traversal (traversed)
+import Data.List (List(..), head, length, (:))
 import Data.List.NonEmpty (NonEmptyList(..))
+import Data.Map (empty)
 import Data.NonEmpty ((:|))
 import Data.Rational (Rational, (%))
 import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..),
-                 BodyPart(..), NoteDuration, Header(..), KeySet, Mode(..),
+                 BodyPart(..), NoteDuration, Mode(..),
                  AbcChord, AbcNote, AbcTune)
 import Data.Abc.Metadata
 import Data.Abc.Canonical (fromTune)
+import Data.Abc.Optics (_headers, _Title)
 
 import Test.Unit (Test, TestF, suite, test, success, failure)
 import Test.Unit.Assert as Assert
@@ -24,17 +28,12 @@ assertOkTitle :: String -> String -> Test
 assertOkTitle source target =
   case parse source of
     Right tune ->
-      let
-        mtitle =
-          getTitle tune
-      in
-        case mtitle of
-          Just title ->
-            Assert.equal target title
+      case (getTitle tune) of
+        Just title ->
+          Assert.equal target title
 
-          _ ->
-            failure "no title"
-
+        _ ->
+          failure "no title"
     _ ->
       failure "parse error"
 
@@ -43,15 +42,8 @@ assertAllTitles source target =
   case parse source of
     Right tune ->
       let
-        f :: Header -> String 
-        f header = 
-          case header of  
-            Title title -> title 
-            _ -> ""
-        titleHeaders =
-          getHeaders 'T' tune
         titles = 
-          map f titleHeaders
+          toListOf (_headers <<< traversed <<< _Title) tune
       in
         Assert.equal target titles
     _ ->
@@ -62,18 +54,15 @@ assertOkKeySig :: String -> ModifiedKeySignature -> Test
 assertOkKeySig source target =
   case parse source of
     Right tune ->
-      let
-        mkeySig =
-          getKeySig tune
-      in
-        case mkeySig of
-          Just keySig ->
-            Assert.equal target.keySignature.pitchClass keySig.keySignature.pitchClass
+      case (getKeySig tune) of
+        Just keySig ->
+          Assert.equal target.keySignature.pitchClass keySig.keySignature.pitchClass
 
-          _ ->
-            failure "no key signature"
+        _ ->
+          failure "no key signature"
     _ ->
       failure "parse error"
+
 
 assertOkMeter :: String -> (Tuple Int Int) -> Test
 assertOkMeter source target =
@@ -81,14 +70,9 @@ assertOkMeter source target =
     Right tune ->
       let
         meter =
-          getMeter tune
+          getDefaultedMeter tune
       in
-        case meter of
-          Just m  ->
-            Assert.equal target m
-
-          _ ->
-            failure "no meter"
+        Assert.equal target meter
     _ ->
       failure "parse error"
 
@@ -96,16 +80,11 @@ assertOkNoteLen :: String -> Rational -> Test
 assertOkNoteLen source target =
   case parse source of
     Right tune ->
-      let
-        len =
-          getUnitNoteLength tune
-      in
-        case len of
-          Just rat  ->
-            Assert.equal target rat
-
-          _ ->
-            failure "no unit note length"
+      case (getUnitNoteLength tune) of
+        Just rat  ->
+          Assert.equal target rat
+        _ ->
+          failure "no unit note length"
     _ ->
       failure "parse error"
 
@@ -136,20 +115,22 @@ assertHeaderCount expectedCount source =
     _ ->
       failure "parse error"
 
+{-}
 assertEquivalentKeys :: KeySet -> KeySet -> Test
 assertEquivalentKeys actual expected =
   let
     intersection = intersect actual expected
   in
-    {- debug
+    -- debug 
     if null expected then
       failure $ "debug: " <> (show actual)
-    -}
+    -- end of debug
     if (length intersection == length expected) then
       success
     else
       failure $ "non-equivalent keys: "
          <> (show actual) <> " not equal to: " <> (show expected)
+-}
 
 assertEmptyScore :: Boolean -> String -> Test
 assertEmptyScore expected source =
@@ -291,7 +272,7 @@ fMajor =
 
 fMajorM :: ModifiedKeySignature
 fMajorM =
-    { keySignature: fMajor, modifications: Nil }
+    { keySignature: fMajor, modifications: Nil, properties: empty }
 
 augustssonHeaders :: String
 augustssonHeaders =

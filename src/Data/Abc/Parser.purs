@@ -15,7 +15,7 @@ import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
-import Data.Map (Map)
+import Data.Map (Map, empty)
 import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
@@ -1340,12 +1340,12 @@ buildKeySignature pStr ma mm =
 
 {- build a complete key designation (key signature plus modifying accidentals) -}
 buildKey :: String -> KeySignature -> List Pitch -> AmorphousProperties -> Header
-buildKey code ks pitches properties =
-    Key { keySignature: ks, modifications: pitches } properties
+buildKey _ ks pitches properties =
+    Key { keySignature: ks, modifications: pitches, properties }
 
 
 buildVoice :: String -> String -> AmorphousProperties -> Header
-buildVoice code id properties  =
+buildVoice _ id properties  =
     Voice { id, properties }
 
 -- lookups
@@ -1473,6 +1473,7 @@ counted :: ∀ a. Int -> Parser a -> Parser (Nel.NonEmptyList a)
 counted num parser =
   replicate1A num parser
 
+{-}
 concatenate :: List String -> String
 concatenate = foldr (<>) ""
 
@@ -1480,6 +1481,7 @@ invert :: Rational -> Rational
 invert r =
   -- (denominator r % numerator r)
   (1 % 1) / r
+-}
 
 {-
 -- | Run a parser for an input string, returning either a positioned error or a result.
@@ -1510,7 +1512,7 @@ parseKeySignature s =
           let
              emptyList = Nil :: List Pitch
           in
-             Right { keySignature: ks, modifications: emptyList }
+             Right { keySignature: ks, modifications: emptyList, properties : empty }
 
         Left e ->
             Left e

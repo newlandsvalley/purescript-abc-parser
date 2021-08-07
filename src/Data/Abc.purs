@@ -311,6 +311,7 @@ type KeySignature =
 type ModifiedKeySignature =
   { keySignature :: KeySignature
   , modifications ::  List Pitch
+  , properties :: AmorphousProperties
   }
 
 -- | A Key Accidental is represented by a Pitch (A modification to a standard key for one pitch in the scale).
@@ -391,7 +392,7 @@ data Header
     | History String
     | Instruction String
       -- Directive
-    | Key ModifiedKeySignature AmorphousProperties
+    | Key ModifiedKeySignature
       -- a standard key signature possibly modified with accidentals
     | UnitNoteLength NoteDuration
     | Meter (Maybe MeterSignature)
