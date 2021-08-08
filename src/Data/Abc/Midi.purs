@@ -9,10 +9,9 @@ module Data.Abc.Midi
 import Control.Monad.State (State, get, put, evalState)
 import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarLine, 
     Broken(..), Header(..), TuneBody, BodyPart(..), Grace, GraceableNote, 
-    MusicLine, Music(..), Mode(..), ModifiedKeySignature, 
-    TempoSignature, PitchClass(..))
+    MusicLine, Music(..), ModifiedKeySignature, TempoSignature)
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
+import Data.Abc.KeySignature (defaultKey, modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
@@ -27,7 +26,6 @@ import Data.Array as Array
 import Data.List (List(..), (:), null, concat, concatMap, foldr, filter, reverse, singleton)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
-import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
 import Data.Newtype (unwrap)
@@ -148,14 +146,6 @@ buildNewBar i barLine =
   ,  startRepeats : barLine.startRepeats
   ,  iteration : barLine.iteration
   ,  midiMessages : Nil
-  }
-
--- | default to C Major (i.e. no accidental modifiers or other properties)
-defaultKey :: ModifiedKeySignature
-defaultKey =
-  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }
-    , modifications: Nil 
-    , properties: empty
   }
 
 -- the default MIDI volume (velocity)

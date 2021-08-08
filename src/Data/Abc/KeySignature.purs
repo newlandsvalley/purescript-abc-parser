@@ -4,6 +4,7 @@
 module Data.Abc.KeySignature
    ( notesInChromaticScale
    , diatonicScale
+   , defaultKey
    , keySet
    , modifiedKeySet
    , isCOrSharpKey
@@ -19,7 +20,7 @@ import Data.Array (index, elemIndex, head, drop, take, filter, toUnfoldable)
 import Data.Enum (succ, pred)
 import Data.List (List(..), (:), null, foldr)
 import Data.List (elem, filter) as L
-import Data.Map (Map, fromFoldable, lookup)
+import Data.Map (Map, empty, fromFoldable, lookup)
 import Data.Maybe (fromMaybe, fromJust)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
@@ -96,6 +97,14 @@ isFSharp ks =
 notesInChromaticScale :: Int
 notesInChromaticScale =
   12
+
+-- | The default key is C Major (with no accidental modifiers or other properties)
+defaultKey :: ModifiedKeySignature
+defaultKey =
+  { keySignature: { pitchClass: C, accidental: Natural, mode: Major }
+    , modifications: Nil 
+    , properties: empty
+  }  
 
 -- | The set of keys (pitches) that comprise the key signature.
 keySet :: KeySignature -> KeySet
