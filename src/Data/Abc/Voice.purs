@@ -40,12 +40,13 @@ import Control.Monad.State.Class (get, put, modify)
 import Control.Monad.State.Trans (StateT, evalStateT)
 import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody, TuneHeaders)
 import Data.Abc.Metadata (isEmptyStave)
-import Data.Abc.Optics (_headers, _Voice)
+import Data.Abc.Optics (_headers, _Voice, _Title)
 import Data.Foldable (foldM)
 import Data.Identity (Identity(..))
-import Data.Lens.Fold (lastOf)
+import Data.Lens.Fold (firstOf, lastOf)
 import Data.Lens.Traversal (traversed)
-import Data.List (List, (:), head, filter, singleton, snoc)
+import Data.Lens.Setter (set)
+import Data.List (List, (:), filter, head, singleton, snoc)
 import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set, empty, insert, toUnfoldable) as Set
@@ -245,16 +246,20 @@ initialVoiceLabel tune =
     _ -> NoLabel
 
 -- retitle the headers by replacing any original tune title 
--- with the voice name (and normalising the Ref No to 1)
+-- with the voice name 
 retitle :: String -> TuneHeaders -> TuneHeaders 
 retitle voiceName headers = 
-  ReferenceNumber (Just 1) : Title ("Voice " <> voiceName) : filteredHeaders
+  case (firstOf (traversed <<< _Title) headers) of 
+    Just _ ->
+      set (traversed <<< _Title) ("Voice " <> voiceName) headers
+    _ -> 
+      ReferenceNumber (Just 1) : Title ("Voice " <> voiceName) : filteredHeaders
 
-  where 
-    predicate :: Header -> Boolean 
-    predicate h =
-      case h of 
-        ReferenceNumber _ -> false 
-        Title _ -> false 
-        _ -> true
-    filteredHeaders = filter predicate headers
+      where 
+        predicate :: Header -> Boolean 
+        predicate h =
+          case h of 
+            ReferenceNumber _ -> false 
+            Title _ -> false 
+            _ -> true
+        filteredHeaders = filter predicate headers

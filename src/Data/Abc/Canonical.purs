@@ -407,7 +407,6 @@ header h =
         _ ->
             ""
 
-
 tuneHeaders :: List Header -> String
 tuneHeaders hs =
     let
@@ -424,15 +423,6 @@ bodyPart bp =
 
         BodyInfo h ->
             header h
-
-{-}
-continuation :: Boolean -> String
-continuation c =
-    if c then
-        "\\"
-    else
-        ""
--}
 
 tuneBody :: TuneBody -> String
 tuneBody b =

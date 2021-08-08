@@ -9,7 +9,7 @@ import Data.Abc
 import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (foldr, foldMap)
+import Data.Foldable (foldMap)
 import Data.Functor (map)
 import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
@@ -25,7 +25,7 @@ import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable1 (replicate1A)
-import Prelude (bind, flip, join, max, pure, ($), (*>), (+), (-), (/), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
+import Prelude (bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
@@ -679,7 +679,7 @@ anywhereInfo isInline =
         , remark isInline
         , title isInline
         , userDefined isInline
-        , voice isInline
+        , voice
         , wordsAfter isInline
         , fieldContinuation
         , commentLine
@@ -889,8 +889,8 @@ userDefined isInline =
         <$> ((headerCode 'U') *> (inlineInfo isInline))
         <?> "U header"
 
-voice :: Boolean -> Parser Header
-voice isInline =
+voice :: Parser Header
+voice =
     buildVoice
         <$> (headerCode 'V')
         <*> alphaNumPlusString

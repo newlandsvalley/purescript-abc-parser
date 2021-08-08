@@ -21,6 +21,11 @@
 -- | Or to get the tune mode:
 -- | 
 -- | firstOf (_headers <<< traversed <<< _ModifiedKeySignature <<< _keySignature <<< _mode) abcTune
+-- |
+-- | Or to reset the title of a tune:
+-- |
+-- | set (_headers <<< traversed <<< _Title) "new title" abcTune
+-- |
 
 module Data.Abc.Optics where
   

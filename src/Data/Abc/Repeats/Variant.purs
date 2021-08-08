@@ -17,7 +17,6 @@ module Data.Abc.Repeats.Variant
 import Prelude (($), (>), (<>))
 import Data.Abc (Volta(..))
 import Data.Abc.Repeats.Types (BarNo, Section(..), VariantPositions)
-import Data.Array as Array
 import Data.Foldable (foldr)
 import Data.List (List(..), (:), range)
 import Data.List.NonEmpty (NonEmptyList)
@@ -48,7 +47,7 @@ addVariants variants barNo (Section s) =
   let 
     -- the update defintions sets each variant to be associated with the barNo
     variantPositions :: VariantPositions
-    variantPositions = insertAllVariantIndices' variants barNo s.variantPositions
+    variantPositions = insertAllVariantIndices variants barNo s.variantPositions
   in    
     Section s { variantPositions = variantPositions, repeatCount = 1 }        
     
@@ -66,18 +65,8 @@ variantIndexMax (Section s) =
     fromMaybe 0 $ findMax variantIndices
 
 -- set a bunch of variant positions with the same bar number position
-insertAllVariantIndices :: Array Int -> BarNo -> VariantPositions -> VariantPositions
+insertAllVariantIndices :: List Int -> BarNo -> VariantPositions -> VariantPositions
 insertAllVariantIndices variants barNo variantPositions =     
-  let 
-    f :: Int -> VariantPositions -> VariantPositions
-    f v positions = 
-      insert v barNo positions
-  in
-    Array.foldr f variantPositions variants
-
--- set a bunch of variant positions with the same bar number position
-insertAllVariantIndices' :: List Int -> BarNo -> VariantPositions -> VariantPositions
-insertAllVariantIndices' variants barNo variantPositions =     
   let 
     f :: Int -> VariantPositions -> VariantPositions
     f v positions = 

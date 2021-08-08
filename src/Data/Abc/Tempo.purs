@@ -130,14 +130,13 @@ getBpm tune =
     Just bpm -> bpm 
     _ -> defaultTempo.bpm
 
-
 -- | Change the tempo of the tune by altering the beats per minute (bpm)
 -- | in the tune's tempo header (if it exists) or by altering a newly incorporated
 -- | default tempo if not.
 setBpm :: Int -> AbcTune -> AbcTune
 setBpm bpm tune =
   case (firstOf (_headers <<< traversed <<< _Tempo) tune) of 
-    Just tempo -> 
+    Just _ -> 
       set (_headers <<< traversed <<< _Tempo <<< _bpm) bpm tune
     _ -> 
       let  
@@ -186,7 +185,6 @@ replaceTempoHeader newTempoHeader hs =
       filter f hs
   in
     placeHeaderPenultimately newTempoHeader newhs
-
 
 -- | the last ABC header should always be the key signature so we'll
 -- | choose to set the (altered) tempo header as next-to-last.

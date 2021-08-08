@@ -199,7 +199,7 @@ normaliseModalKey ks =
             }
       )
     -- retrieve the tonic of what is now a major scale
-    Tuple tonic allKeys = pianoKeyScale pianoKeySignature ks.mode
+    Tuple tonic _ = pianoKeyScale pianoKeySignature ks.mode
     -- retain the flat context of the original key (if there is one)
     isFlatCtx = ks.accidental == Flat
     -- translate to a pitch in the new Major key
