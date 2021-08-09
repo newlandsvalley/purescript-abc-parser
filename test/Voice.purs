@@ -85,6 +85,7 @@ assertVoiceMapLabels s target =
       failure ("parse failed: " <> (show err))      
 
 -- check that the partitioned voice has a title representing the voice name
+-- when using getVoiceMap
 assertVoiceTitles :: String -> List (Maybe String) -> Test
 assertVoiceTitles s target = 
   case (parse s) of
@@ -92,6 +93,21 @@ assertVoiceTitles s target =
       let 
         voiceMap = getVoiceMap tune
         titles = map getTitle (values voiceMap)
+      in
+        Assert.equal target titles
+
+    Left err ->
+      failure ("parse failed: " <> (show err))      
+
+-- check that the partitioned voice has a title representing the voice name
+-- when using partitionVoices
+assertPartitionedVoiceTitles :: String -> Array (Maybe String) -> Test
+assertPartitionedVoiceTitles s target = 
+  case (parse s) of
+    Right tune ->
+      let 
+        voices = partitionVoices tune
+        titles = map getTitle voices
       in
         Assert.equal target titles
 
@@ -150,12 +166,14 @@ voiceSuite = do
       assertVoiceLabels fourVoices ["1", "2", "3", "4"]
     test "labels from voice map - four voices" do
       assertVoiceMapLabels fourVoices (Set.fromFoldable ["1", "2", "3", "4"])
-    test "retitling the voice header - two voices" do 
-      assertVoiceTitles twoVoices (List.fromFoldable [Just "Voice T1", Just "Voice T2"])
-    test "retitling the voice header - three voices" do 
+    test "retitling the voice header via getVoiceMap - two voices" do 
+      assertVoiceTitles twoVoicesTitled (List.fromFoldable [Just "Voice T1", Just "Voice T2"])
+    test "retitling the voice header via getVoiceMap - three voices" do 
       assertVoiceTitles threeVoices (List.fromFoldable [Just "Voice T1", Just "Voice T2", Just "Voice T3"])
     test "retitling preserves other headers" do
       assertRetitlingPreservesHeaders threeVoices
+    test "retitling the voice header via partitionVoices - two voices" do 
+      assertPartitionedVoiceTitles twoVoicesTitled ([Just "Voice T1", Just "Voice T2"])
 
 noVoice :: String
 noVoice =
@@ -174,6 +192,11 @@ twoVoicesInline =
 twoVoices :: String
 twoVoices =
     "K: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
+    "| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
+
+twoVoicesTitled :: String
+twoVoicesTitled =
+    "T: two voices\r\nK: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
     "| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
 
 threeVoices :: String
@@ -196,12 +219,12 @@ firstVoiceOfTwoInline =
 -- note we get a redundant T1 voice in the headers but this is benign
 secondVoiceOfTwo :: String
 secondVoiceOfTwo =
-    "K: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"      
+    "X: 1\r\nT: Voice T2\r\nK: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"      
 
 -- the second voice of the twoVoices (inline representation)
 secondVoiceOfTwoInline :: String
 secondVoiceOfTwoInline =
-    "K: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
+    "X: 1\r\nT: Voice T2\r\nK: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
 
 -- Modified four Voice example (from abcnotation.com)
 -- added the foo=bar property for a voice header to prepare for v2.2
@@ -248,7 +271,7 @@ fourVoices =
 fourthVoiceOfFour :: String 
 fourthVoiceOfFour =
     "X: 1\r\n" <>
-    "T: Grand Staff With Four Voices\r\n" <>
+    "T: Voice 4\r\n" <>
     "M: 4/4\r\n" <>
     "L: 1/2\r\n" <>
     "K: CMajor\r\n" <>

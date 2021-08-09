@@ -50,7 +50,7 @@ import Data.List (List, (:), filter, head, singleton, snoc)
 import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set, empty, insert, toUnfoldable) as Set
-import Data.Tuple (Tuple(..))
+import Data.Tuple (Tuple(..), snd)
 import Prelude (class Eq, class Ord, ($), (<<<), (<>), bind, join, map, not, pure)
 
 data VoiceLabel = 
@@ -89,28 +89,30 @@ getVoiceLabels tune =
 -- | 'Voice voice-name'
 getVoiceMap :: AbcTune -> Map String AbcTune 
 getVoiceMap tune = 
-  let 
-    tuples :: Array (Tuple VoiceLabel TuneBody)
-    tuples = toUnfoldable $ voiceMap tune
-    -- map the keys to String and the values to AbcTune
-    f :: Tuple VoiceLabel TuneBody -> Tuple String AbcTune
-    f (Tuple k body) = 
-      case k of 
-        VoiceLabel name -> 
-          Tuple name {headers : newHeaders, body}
-            where 
-              newHeaders = retitle name tune.headers
-        NoLabel -> 
-          Tuple "unnamed" {headers : tune.headers, body}
-  in 
-    fromFoldable $ map f tuples
+  fromFoldable $ map (retitleFromVoiceLabel tune) tuples
 
--- | given a tune, partition it into multiple such tunes
--- | one for each voice
+  where
+    tuples :: Array (Tuple VoiceLabel TuneBody)
+    tuples = toUnfoldable $ voiceMap tune    
+    
+-- | given a tune, partition it into multiple such tunes, one for each voice
+-- | with the title of each partitioned tune set to the voice label
 partitionVoices :: AbcTune -> Array AbcTune 
 partitionVoices tune = 
-  map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
+  {-}
+  if (length tuples >= 1 ) then 
+    map (snd <<< retitleFromVoiceLabel tune) tuples
+  else
+    map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
+  -}
+  map (snd <<< retitleFromVoiceLabel tune) tuples
 
+  where
+    tuples :: Array (Tuple VoiceLabel TuneBody)
+    tuples = toUnfoldable $ voiceMap tune
+
+
+  -- map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
 
 -- | given a tune, partition its body into multiple such bodies 
 -- | with a separate body for each distinct voice
@@ -213,17 +215,6 @@ scoreLabelOrDefault currentVoiceLabel bars  =
     Just label -> label 
     _ -> currentVoiceLabel
 
-
-{-
--- find the voice label from an inline header (if it defines a voice)
--- otherwise fall back to the default voice
-voiceLabel :: VoiceLabel -> Header -> VoiceLabel
-voiceLabel currentVoice h =
-  case h of
-    (Voice description) -> VoiceLabel description.id
-    _ -> currentVoice
--}
-
 -- if the line of music starts with an inLine voice header, return the voice
 -- label, otherwise Nothing
 inlineLabel :: List Bar -> Maybe VoiceLabel
@@ -245,21 +236,35 @@ initialVoiceLabel tune =
     Just description -> VoiceLabel description.id 
     _ -> NoLabel
 
--- retitle the headers by replacing any original tune title 
--- with the voice name 
-retitle :: String -> TuneHeaders -> TuneHeaders 
-retitle voiceName headers = 
-  case (firstOf (traversed <<< _Title) headers) of 
-    Just _ ->
-      set (traversed <<< _Title) ("Voice " <> voiceName) headers
-    _ -> 
-      ReferenceNumber (Just 1) : Title ("Voice " <> voiceName) : filteredHeaders
+-- map the keys to String and the values to AbcTune
+retitleFromVoiceLabel :: AbcTune -> Tuple VoiceLabel TuneBody -> Tuple String AbcTune
+retitleFromVoiceLabel tune (Tuple k body) =       
+  case k of 
+    VoiceLabel name -> 
+      Tuple name {headers : newHeaders, body}
+        where 
+          newHeaders = retitle name tune.headers
+    NoLabel -> 
+      Tuple "unnamed" {headers : tune.headers, body}       
 
-      where 
-        predicate :: Header -> Boolean 
-        predicate h =
-          case h of 
-            ReferenceNumber _ -> false 
-            Title _ -> false 
-            _ -> true
-        filteredHeaders = filter predicate headers
+  where  
+
+  -- retitle the headers by replacing any original tune title 
+  -- with the voice name 
+  retitle :: String -> TuneHeaders -> TuneHeaders 
+  retitle voiceName headers = 
+    case (firstOf (traversed <<< _Title) headers) of 
+      Just _ ->
+        set (traversed <<< _Title) ("Voice " <> voiceName) headers
+      _ -> 
+        ReferenceNumber (Just 1) : Title ("Voice " <> voiceName) : filteredHeaders
+
+        where 
+          predicate :: Header -> Boolean 
+          predicate h =
+            case h of 
+              ReferenceNumber _ -> false 
+              Title _ -> false 
+              _ -> true
+          filteredHeaders = filter predicate headers
+
