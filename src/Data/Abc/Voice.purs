@@ -255,9 +255,9 @@ retitleFromVoiceLabel tune (Tuple k body) =
   retitle voiceName headers = 
     case (firstOf (traversed <<< _Title) headers) of 
       Just _ ->
-        set (traversed <<< _Title) ("Voice " <> voiceName) headers
+        set (traversed <<< _Title) ("voice " <> voiceName) headers
       _ -> 
-        ReferenceNumber (Just 1) : Title ("Voice " <> voiceName) : filteredHeaders
+        ReferenceNumber (Just 1) : Title ("voice " <> voiceName) : filteredHeaders
 
         where 
           predicate :: Header -> Boolean 

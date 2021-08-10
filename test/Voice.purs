@@ -167,13 +167,13 @@ voiceSuite = do
     test "labels from voice map - four voices" do
       assertVoiceMapLabels fourVoices (Set.fromFoldable ["1", "2", "3", "4"])
     test "retitling the voice header via getVoiceMap - two voices" do 
-      assertVoiceTitles twoVoicesTitled (List.fromFoldable [Just "Voice T1", Just "Voice T2"])
+      assertVoiceTitles twoVoicesTitled (List.fromFoldable [Just "voice T1", Just "voice T2"])
     test "retitling the voice header via getVoiceMap - three voices" do 
-      assertVoiceTitles threeVoices (List.fromFoldable [Just "Voice T1", Just "Voice T2", Just "Voice T3"])
+      assertVoiceTitles threeVoices (List.fromFoldable [Just "voice T1", Just "voice T2", Just "voice T3"])
     test "retitling preserves other headers" do
       assertRetitlingPreservesHeaders threeVoices
     test "retitling the voice header via partitionVoices - two voices" do 
-      assertPartitionedVoiceTitles twoVoicesTitled ([Just "Voice T1", Just "Voice T2"])
+      assertPartitionedVoiceTitles twoVoicesTitled ([Just "voice T1", Just "voice T2"])
 
 noVoice :: String
 noVoice =
@@ -219,12 +219,12 @@ firstVoiceOfTwoInline =
 -- note we get a redundant T1 voice in the headers but this is benign
 secondVoiceOfTwo :: String
 secondVoiceOfTwo =
-    "X: 1\r\nT: Voice T2\r\nK: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"      
+    "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"      
 
 -- the second voice of the twoVoices (inline representation)
 secondVoiceOfTwoInline :: String
 secondVoiceOfTwoInline =
-    "X: 1\r\nT: Voice T2\r\nK: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
+    "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
 
 -- Modified four Voice example (from abcnotation.com)
 -- added the foo=bar property for a voice header to prepare for v2.2
@@ -271,7 +271,7 @@ fourVoices =
 fourthVoiceOfFour :: String 
 fourthVoiceOfFour =
     "X: 1\r\n" <>
-    "T: Voice 4\r\n" <>
+    "T: voice 4\r\n" <>
     "M: 4/4\r\n" <>
     "L: 1/2\r\n" <>
     "K: CMajor\r\n" <>
