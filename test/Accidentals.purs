@@ -16,20 +16,22 @@ accidentalsSuite =
   suite "accidental lookups" do
     test "f in G Major" do
       Assert.equal
-          (Just Sharp)
-          (Accidentals.implicitInKeySet F
-             (modifiedKeySet { keySignature: gMajor, modifications: Nil, properties: empty }))
+        (Just Sharp)
+        ( Accidentals.implicitInKeySet F
+            (modifiedKeySet { keySignature: gMajor, modifications: Nil, properties: empty })
+        )
     test "f in G Major" do
       Assert.equal
         (Nothing)
-        (Accidentals.implicitInKeySet F
-           (modifiedKeySet { keySignature: cMajor, modifications: Nil, properties: empty }))
+        ( Accidentals.implicitInKeySet F
+            (modifiedKeySet { keySignature: cMajor, modifications: Nil, properties: empty })
+        )
 
 -- key signatures
 cMajor :: KeySignature
 cMajor =
-    { pitchClass: C, accidental: Natural, mode: Major }
+  { pitchClass: C, accidental: Natural, mode: Major }
 
 gMajor :: KeySignature
 gMajor =
-    { pitchClass: G, accidental: Natural, mode: Major }
+  { pitchClass: G, accidental: Natural, mode: Major }

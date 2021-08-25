@@ -2,18 +2,18 @@
 -- | The individual (sharp or flat) keys that comprise each key signature
 -- | across all the modes in western music.
 module Data.Abc.KeySignature
-   ( notesInChromaticScale
-   , diatonicScale
-   , defaultKey
-   , keySet
-   , modifiedKeySet
-   , isCOrSharpKey
-   , normaliseModalKey
-   , inKeySet
-   , transposeKeySignatureBy
-   , pitchNumbers
-   , pitchNumber
-   ) where
+  ( notesInChromaticScale
+  , diatonicScale
+  , defaultKey
+  , keySet
+  , modifiedKeySet
+  , isCOrSharpKey
+  , normaliseModalKey
+  , inKeySet
+  , transposeKeySignatureBy
+  , pitchNumbers
+  , pitchNumber
+  ) where
 
 import Data.Abc (Accidental(..), KeySet, KeySignature, Mode(..), ModifiedKeySignature, Pitch(..), PitchClass(..))
 import Data.Array (index, elemIndex, head, drop, take, filter, toUnfoldable)
@@ -29,8 +29,8 @@ import Prelude (class Eq, class Ord, class Show, map, mod, show, ($), (&&), (+),
 -- Internal data structures
 -- a note on a piano keyboard. The virtue of this representation is that we
 -- don't (yet)commit to a particular (sharp or flat) representation
-data PianoKey =
-    White PitchClass
+data PianoKey
+  = White PitchClass
   | Black PitchClass PitchClass
 
 derive instance eqPianoKey :: Eq PianoKey
@@ -46,7 +46,7 @@ instance showPianoKey :: Show PianoKey where
 -- this represents the cumulative position of each note in such a scale
 -- (of seven notes)
 diatonicScaleOffsets :: Array Int
-diatonicScaleOffsets = [0,2,4,5,7,9,11]
+diatonicScaleOffsets = [ 0, 2, 4, 5, 7, 9, 11 ]
 
 -- The notes of a chromatic scale (on a piano) starting at C
 -- This is sufficient to recognize all (major) key signatures except
@@ -72,14 +72,14 @@ pianoOctave =
 -- which we can't represent in our internal structure
 fSharpScale :: KeySet
 fSharpScale =
-    Pitch { pitchClass : F, accidental : Sharp }
-  : Pitch { pitchClass : G, accidental : Sharp }
-  : Pitch { pitchClass : A, accidental : Sharp }
-  : Pitch { pitchClass : B, accidental : Natural }
-  : Pitch { pitchClass : C, accidental : Sharp }
-  : Pitch { pitchClass : D, accidental : Sharp }
-  : Pitch { pitchClass : E, accidental : Sharp }
-  : Nil
+  Pitch { pitchClass: F, accidental: Sharp }
+    : Pitch { pitchClass: G, accidental: Sharp }
+    : Pitch { pitchClass: A, accidental: Sharp }
+    : Pitch { pitchClass: B, accidental: Natural }
+    : Pitch { pitchClass: C, accidental: Sharp }
+    : Pitch { pitchClass: D, accidental: Sharp }
+    : Pitch { pitchClass: E, accidental: Sharp }
+    : Nil
 
 -- ditto for the F# key signature
 fSharpKeySet :: KeySet
@@ -102,9 +102,9 @@ notesInChromaticScale =
 defaultKey :: ModifiedKeySignature
 defaultKey =
   { keySignature: { pitchClass: C, accidental: Natural, mode: Major }
-    , modifications: Nil 
-    , properties: empty
-  }  
+  , modifications: Nil
+  , properties: empty
+  }
 
 -- | The set of keys (pitches) that comprise the key signature.
 keySet :: KeySignature -> KeySet
@@ -112,17 +112,18 @@ keySet ks =
   let
     -- the key signature in terms of a PianoKey
     pianoKeySignature = buildPianoKey
-      (Pitch { pitchClass : ks.pitchClass,
-              accidental : ks.accidental
-            }
+      ( Pitch
+          { pitchClass: ks.pitchClass
+          , accidental: ks.accidental
+          }
       )
     Tuple tonic blackKeys = blackKeySet pianoKeySignature ks.mode
     -- decide how we translate the black keys in the given context
     isFlatCtx =
       case tonic of
-        White F -> true  -- F Natural uses flat keys
+        White F -> true -- F Natural uses flat keys
         White _ -> false -- all other Natural key signatures use sharp (or no) keys
-        _ -> true        -- we'll ignore F# for the time being - all black note naturals use flat keys
+        _ -> true -- we'll ignore F# for the time being - all black note naturals use flat keys
     -- generate the basic keys
     basicKeySet = toUnfoldable $ map (pianoKeyToPitch isFlatCtx) blackKeys
   in
@@ -134,7 +135,7 @@ keySet ks =
       case tonic of
         Black F G ->
           -- need to mend this line with a modify
-          (Pitch { pitchClass : C, accidental : Flat }) :  basicKeySet
+          (Pitch { pitchClass: C, accidental: Flat }) : basicKeySet
         _ ->
           basicKeySet
 
@@ -145,17 +146,18 @@ diatonicScale ks =
   let
     -- the key signature in terms of a PianoKey
     pianoKeySignature = buildPianoKey
-      (Pitch { pitchClass : ks.pitchClass,
-              accidental : ks.accidental
-            }
+      ( Pitch
+          { pitchClass: ks.pitchClass
+          , accidental: ks.accidental
+          }
       )
     Tuple tonic allKeys = pianoKeyScale pianoKeySignature ks.mode
     -- decide how we translate the black keys in the given context
     isFlatCtx =
       case tonic of
-        White F -> true  -- F Natural uses flat keys
+        White F -> true -- F Natural uses flat keys
         White _ -> false -- all other Natural key signatures use sharp (or no) keys
-        _ -> true        -- we'll ignore F# for the time being - all black note naturals use flat keys
+        _ -> true -- we'll ignore F# for the time being - all black note naturals use flat keys
     -- generate the basic keys
     basicKeySet = toUnfoldable $ map (pianoKeyToPitch isFlatCtx) allKeys
   in
@@ -169,7 +171,6 @@ diatonicScale ks =
           renameBNatural basicKeySet
         _ ->
           basicKeySet
-
 
 -- | The set of keys (pitch classes with accidental) that comprise a modified key signature
 -- | (i.e. those signatures that don't represent classical western modes such as,
@@ -203,9 +204,10 @@ normaliseModalKey ks =
   let
     -- convert key sig to a piano key
     pianoKeySignature = buildPianoKey
-      (Pitch { pitchClass : ks.pitchClass,
-              accidental : ks.accidental
-            }
+      ( Pitch
+          { pitchClass: ks.pitchClass
+          , accidental: ks.accidental
+          }
       )
     -- retrieve the tonic of what is now a major scale
     Tuple tonic _ = pianoKeyScale pianoKeySignature ks.mode
@@ -214,9 +216,9 @@ normaliseModalKey ks =
     -- translate to a pitch in the new Major key
     (Pitch newKeyPitch) = pianoKeyToPitch isFlatCtx tonic
   in
-    { pitchClass : newKeyPitch.pitchClass
-    , accidental : newKeyPitch.accidental
-    , mode : Major
+    { pitchClass: newKeyPitch.pitchClass
+    , accidental: newKeyPitch.accidental
+    , mode: Major
     }
 
 -- | Is the pitch is in the KeySet?
@@ -230,9 +232,10 @@ transposeKeySignatureBy interval mks =
   let
     -- convert key sig to a piano key
     pianoKey = buildPianoKey
-      (Pitch { pitchClass : mks.keySignature.pitchClass,
-              accidental : mks.keySignature.accidental
-            }
+      ( Pitch
+          { pitchClass: mks.keySignature.pitchClass
+          , accidental: mks.keySignature.accidental
+          }
       )
 
     -- retain the sharp/flat/natural context
@@ -246,61 +249,62 @@ transposeKeySignatureBy interval mks =
     newPianoKey = fromMaybe (White C) $ index pianoOctave newPos
     -- and convert back (via a pitch)
     Pitch pitch = pianoKeyToPitch isFlatCtx newPianoKey
-    newks = { pitchClass : pitch.pitchClass
-            , accidental : pitch.accidental
-            , mode : mks.keySignature.mode
-            }
+    newks =
+      { pitchClass: pitch.pitchClass
+      , accidental: pitch.accidental
+      , mode: mks.keySignature.mode
+      }
     -- and also transpose any mods to the key signature
     modifications =
       map (transposeKeyAccidentalBy interval) mks.modifications
   in
-    { keySignature : newks, modifications : modifications, properties : mks.properties }
+    { keySignature: newks, modifications: modifications, properties: mks.properties }
 
 -- | a relationship between a Pitch and a note number
 -- | i.e. C is 0, C Sharp is 1 B is 11 etc.
-pitchNumbers :: List ( Tuple Pitch Int )
+pitchNumbers :: List (Tuple Pitch Int)
 pitchNumbers =
   ( Tuple (Pitch { pitchClass: C, accidental: Flat }) 11
-  : Tuple (Pitch { pitchClass: C, accidental: Natural }) 0
-  : Tuple (Pitch { pitchClass: C, accidental: Implicit }) 0
-  : Tuple (Pitch { pitchClass: C, accidental: Sharp }) 1
-  : Tuple (Pitch { pitchClass: C, accidental: DoubleSharp }) 2
-  : Tuple (Pitch { pitchClass: D, accidental: DoubleFlat }) 0
-  : Tuple (Pitch { pitchClass: D, accidental: Flat }) 1
-  : Tuple (Pitch { pitchClass: D, accidental: Natural }) 2
-  : Tuple (Pitch { pitchClass: D, accidental: Implicit }) 2
-  : Tuple (Pitch { pitchClass: D, accidental: Sharp }) 3
-  : Tuple (Pitch { pitchClass: D, accidental: DoubleSharp }) 4
-  : Tuple (Pitch { pitchClass: E, accidental: DoubleFlat }) 2
-  : Tuple (Pitch { pitchClass: E, accidental: Flat }) 3
-  : Tuple (Pitch { pitchClass: E, accidental: Natural }) 4
-  : Tuple (Pitch { pitchClass: E, accidental: Implicit }) 4
-  : Tuple (Pitch { pitchClass: E, accidental: Sharp }) 5
-  : Tuple (Pitch { pitchClass: E, accidental: DoubleSharp }) 6
-  : Tuple (Pitch { pitchClass: F, accidental: Flat }) 4
-  : Tuple (Pitch { pitchClass: F, accidental: Natural }) 5
-  : Tuple (Pitch { pitchClass: F, accidental: Implicit }) 5
-  : Tuple (Pitch { pitchClass: F, accidental: Sharp }) 6
-  : Tuple (Pitch { pitchClass: F, accidental: DoubleSharp }) 7
-  : Tuple (Pitch { pitchClass: G, accidental: DoubleFlat }) 5
-  : Tuple (Pitch { pitchClass: G, accidental: Flat }) 6
-  : Tuple (Pitch { pitchClass: G, accidental: Natural }) 7
-  : Tuple (Pitch { pitchClass: G, accidental: Implicit }) 7
-  : Tuple (Pitch { pitchClass: G, accidental: Sharp }) 8
-  : Tuple (Pitch { pitchClass: G, accidental: DoubleSharp }) 9
-  : Tuple (Pitch { pitchClass: A, accidental: DoubleFlat }) 7
-  : Tuple (Pitch { pitchClass: A, accidental: Flat }) 8
-  : Tuple (Pitch { pitchClass: A, accidental: Natural }) 9
-  : Tuple (Pitch { pitchClass: A, accidental: Implicit }) 9
-  : Tuple (Pitch { pitchClass: A, accidental: Sharp }) 10
-  : Tuple (Pitch { pitchClass: A, accidental: DoubleSharp }) 11
-  : Tuple (Pitch { pitchClass: B, accidental: DoubleFlat }) 9
-  : Tuple (Pitch { pitchClass: B, accidental: Flat }) 10
-  : Tuple (Pitch { pitchClass: B, accidental: Natural }) 11
-  : Tuple (Pitch { pitchClass: B, accidental: Implicit }) 11
-  : Tuple (Pitch { pitchClass: B, accidental: Sharp }) 0
-  : Tuple (Pitch { pitchClass: B, accidental: DoubleSharp }) 1
-  : Nil
+      : Tuple (Pitch { pitchClass: C, accidental: Natural }) 0
+      : Tuple (Pitch { pitchClass: C, accidental: Implicit }) 0
+      : Tuple (Pitch { pitchClass: C, accidental: Sharp }) 1
+      : Tuple (Pitch { pitchClass: C, accidental: DoubleSharp }) 2
+      : Tuple (Pitch { pitchClass: D, accidental: DoubleFlat }) 0
+      : Tuple (Pitch { pitchClass: D, accidental: Flat }) 1
+      : Tuple (Pitch { pitchClass: D, accidental: Natural }) 2
+      : Tuple (Pitch { pitchClass: D, accidental: Implicit }) 2
+      : Tuple (Pitch { pitchClass: D, accidental: Sharp }) 3
+      : Tuple (Pitch { pitchClass: D, accidental: DoubleSharp }) 4
+      : Tuple (Pitch { pitchClass: E, accidental: DoubleFlat }) 2
+      : Tuple (Pitch { pitchClass: E, accidental: Flat }) 3
+      : Tuple (Pitch { pitchClass: E, accidental: Natural }) 4
+      : Tuple (Pitch { pitchClass: E, accidental: Implicit }) 4
+      : Tuple (Pitch { pitchClass: E, accidental: Sharp }) 5
+      : Tuple (Pitch { pitchClass: E, accidental: DoubleSharp }) 6
+      : Tuple (Pitch { pitchClass: F, accidental: Flat }) 4
+      : Tuple (Pitch { pitchClass: F, accidental: Natural }) 5
+      : Tuple (Pitch { pitchClass: F, accidental: Implicit }) 5
+      : Tuple (Pitch { pitchClass: F, accidental: Sharp }) 6
+      : Tuple (Pitch { pitchClass: F, accidental: DoubleSharp }) 7
+      : Tuple (Pitch { pitchClass: G, accidental: DoubleFlat }) 5
+      : Tuple (Pitch { pitchClass: G, accidental: Flat }) 6
+      : Tuple (Pitch { pitchClass: G, accidental: Natural }) 7
+      : Tuple (Pitch { pitchClass: G, accidental: Implicit }) 7
+      : Tuple (Pitch { pitchClass: G, accidental: Sharp }) 8
+      : Tuple (Pitch { pitchClass: G, accidental: DoubleSharp }) 9
+      : Tuple (Pitch { pitchClass: A, accidental: DoubleFlat }) 7
+      : Tuple (Pitch { pitchClass: A, accidental: Flat }) 8
+      : Tuple (Pitch { pitchClass: A, accidental: Natural }) 9
+      : Tuple (Pitch { pitchClass: A, accidental: Implicit }) 9
+      : Tuple (Pitch { pitchClass: A, accidental: Sharp }) 10
+      : Tuple (Pitch { pitchClass: A, accidental: DoubleSharp }) 11
+      : Tuple (Pitch { pitchClass: B, accidental: DoubleFlat }) 9
+      : Tuple (Pitch { pitchClass: B, accidental: Flat }) 10
+      : Tuple (Pitch { pitchClass: B, accidental: Natural }) 11
+      : Tuple (Pitch { pitchClass: B, accidental: Implicit }) 11
+      : Tuple (Pitch { pitchClass: B, accidental: Sharp }) 0
+      : Tuple (Pitch { pitchClass: B, accidental: DoubleSharp }) 1
+      : Nil
   )
 
 -- | the pitch number is the position of the pitch in the chromatic scale
@@ -311,12 +315,11 @@ pitchNumber (Pitch p) =
     target =
       case p.accidental of
         Implicit ->
-          Pitch { pitchClass : p.pitchClass, accidental : Natural }
+          Pitch { pitchClass: p.pitchClass, accidental: Natural }
         _ ->
           Pitch p
   in
     fromMaybe 0 $ lookup target chromaticScaleMap
-
 
 -- IMPLEMENTATION
 
@@ -336,7 +339,6 @@ transposeKeyAccidentalBy interval (Pitch p) =
   in
     pianoKeyToPitch isFlatCtx newPianoKey
 
-
 -- the set of black notes determined by the key signature
 -- of a diatonic scale (e.g. White C Major means C Major,
 -- Black D E Dorian means both C# Dorian or Db Dorian) #
@@ -351,7 +353,6 @@ blackKeySet keySig mode =
     isBlackKey (Black _ _) = true
   in
     Tuple tonic $ filter isBlackKey fullScale
-
 
 -- | a complete diatonic scale in terms of PianoKeys governed by the
 -- | Piano Key and Mode that defines the key signature
@@ -374,7 +375,6 @@ pianoKeyScale keySig mode =
   in
     Tuple tonic keys
 
-
 -- calculate the number of semitones between the C and the key
 distanceFromC :: PianoKey -> Int
 distanceFromC keySig =
@@ -395,7 +395,7 @@ distanceFromMajor mode =
     Ionian -> 0
 
 -- rotate left an array by the specificed amount
-rotate :: ∀ a. Int -> Array a ->  Array a
+rotate :: ∀ a. Int -> Array a -> Array a
 rotate n xs = drop n xs <> take n xs
 
 -- Transform the PianoKey into a Pitch with black notes
@@ -406,21 +406,21 @@ pianoKeyToPitch isFlatCtx pianoKey =
     convertPianoKey :: Boolean -> PianoKey -> Pitch
     convertPianoKey _ (White p) =
       Pitch
-          { pitchClass : p
-          -- , accidental : Implicit
-          , accidental : Natural
-          }
+        { pitchClass: p
+        -- , accidental : Implicit
+        , accidental: Natural
+        }
     convertPianoKey flatCtx (Black p q) =
       if flatCtx then
         Pitch
-            { pitchClass : q
-            , accidental : Flat
-            }
+          { pitchClass: q
+          , accidental: Flat
+          }
       else
         Pitch
-            { pitchClass : p
-            , accidental : Sharp
-            }
+          { pitchClass: p
+          , accidental: Sharp
+          }
   in
     convertPianoKey isFlatCtx pianoKey
 
@@ -432,15 +432,14 @@ modifyKeySet :: Pitch -> KeySet -> KeySet
 modifyKeySet newP ks =
   case newP of
     -- ignore naturals in incomimg key for key signatures
-    Pitch { pitchClass: _, accidental: Natural}  ->
+    Pitch { pitchClass: _, accidental: Natural } ->
       ks
-    Pitch { pitchClass: pitchClass, accidental: _ }  ->
+    Pitch { pitchClass: pitchClass, accidental: _ } ->
       newP : (L.filter (noMatchPC pitchClass) ks)
   where
-    noMatchPC :: PitchClass -> Pitch -> Boolean
-    noMatchPC pc (Pitch p) =
-       pc /= p.pitchClass
-
+  noMatchPC :: PitchClass -> Pitch -> Boolean
+  noMatchPC pc (Pitch p) =
+    pc /= p.pitchClass
 
 -- the key signature in terms of a PianoKey
 buildPianoKey :: Pitch -> PianoKey
@@ -481,9 +480,9 @@ renameBNatural :: KeySet -> KeySet
 renameBNatural =
   let
     f :: Pitch -> Pitch
-    f (Pitch p ) =
+    f (Pitch p) =
       if (p.pitchClass == B) && (p.accidental == Natural) then
-        Pitch { pitchClass : C, accidental : Flat }
+        Pitch { pitchClass: C, accidental: Flat }
       else
         Pitch p
   in

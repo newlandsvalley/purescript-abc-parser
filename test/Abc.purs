@@ -80,18 +80,17 @@ assertMusicLines s target =
       Left err ->
         failure ("parse failed: " <> (show err))
 
-
 abcSuite :: Free TestF Unit
 abcSuite = do
-   headerSuite
-   noteSuite
-   barSuite
-   slurSuite
-   phrasingSuite
-   structureSuite
-   ambiguitySuite
-   badInputSuite
-   keySigSuite
+  headerSuite
+  noteSuite
+  barSuite
+  slurSuite
+  phrasingSuite
+  structureSuite
+  ambiguitySuite
+  badInputSuite
+  keySigSuite
 
 headerSuite :: Free TestF Unit
 headerSuite =
@@ -125,17 +124,17 @@ headerSuite =
     test "key trailing space" do
       assertCanonical "K: CMajor \x0D\n| ABC |\x0D\n" keyCMajor
     test "key with properties" do
-      assertRoundTrip "K: GMinor shift=GD\x0D\n| ABC |\x0D\n" 
+      assertRoundTrip "K: GMinor shift=GD\x0D\n| ABC |\x0D\n"
     test "note length" do
-        assertRoundTrip "L: 1/8\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "L: 1/8\x0D\n| ABC |\x0D\n"
     test "meter" do
-        assertRoundTrip "M: 3/4\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "M: 3/4\x0D\n| ABC |\x0D\n"
     test "no meter" do
       assertRoundTrip "M: none\x0D\n| ABC |\x0D\n"
     test "macro" do
-       assertRoundTrip "m: ~g2 = {a}g{f}g\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "m: ~g2 = {a}g{f}g\x0D\n| ABC |\x0D\n"
     test "notes" do
-       assertRoundTrip "N: from recording made at Tideswell\x0D\n| ABC |\x0D\n"
+      assertRoundTrip "N: from recording made at Tideswell\x0D\n| ABC |\x0D\n"
     test "origin" do
       assertRoundTrip "O: Skåne\x0D\n| ABC |\x0D\n"
     test "parts" do
@@ -188,74 +187,74 @@ headerSuite =
     test "comment in reference number" do
       assertParses "X: 125 % start of header\x0D\n| ABC |\x0D\n"
     test "comment in key" do
-      assertParses "K: C % scale: C major\x0D\n| ABC |\x0D\n"    
+      assertParses "K: C % scale: C major\x0D\n| ABC |\x0D\n"
 
 noteSuite :: Free TestF Unit
 noteSuite =
   suite "note" do
     test "single duration" do
-       assertRoundTrip "| A |\r\n"
+      assertRoundTrip "| A |\r\n"
     test "doubly implied half duration" do
-       assertRoundTrip "| B/ |\r\n"
+      assertRoundTrip "| B/ |\r\n"
     test "implied half duration" do
-       assertCanonical "| B/2 |\r\n" halfNoteCanonical
+      assertCanonical "| B/2 |\r\n" halfNoteCanonical
     test "explicit half duration" do
-       assertCanonical "| B1/2 |\r\n" halfNoteCanonical
+      assertCanonical "| B1/2 |\r\n" halfNoteCanonical
     test "quarter duration" do
-       assertCanonical "| D// |\r\n" quarterNoteCanonical
+      assertCanonical "| D// |\r\n" quarterNoteCanonical
     test "eighth duration" do
-       assertCanonical "| D/// |\r\n" eighthNoteCanonical
+      assertCanonical "| D/// |\r\n" eighthNoteCanonical
     test "double duration" do
-       assertRoundTrip "| a2 |\r\n"
+      assertRoundTrip "| a2 |\r\n"
     test "broken rhythm" do
-       assertRoundTrip "| A>B C>>D a<b c<<d |\x0D\n"
+      assertRoundTrip "| A>B C>>D a<b c<<d |\x0D\n"
     test "broken rhythm spaced" do
-       assertCanonical "| A> B |\x0D\n" "| A>B |\x0D\n"
+      assertCanonical "| A> B |\x0D\n" "| A>B |\x0D\n"
     test "octave" do
-       assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
+      assertRoundTrip "| A,B,,C z2 d'e''f z/ |\x0D\n"
     test "tie" do
-       assertRoundTrip "| A4- A2 |\x0D\n"
+      assertRoundTrip "| A4- A2 |\x0D\n"
     -- relaxation of the spec for degenerate ties
     test "degenerate tie" do
-       assertCanonical "| A4 -A2 |\x0D\n" "| A4-A2 |\x0D\n"
+      assertCanonical "| A4 -A2 |\x0D\n" "| A4-A2 |\x0D\n"
     test "complex tie" do
-       assertRoundTrip "| fg-ga ab-bc|\x0D\n"
+      assertRoundTrip "| fg-ga ab-bc|\x0D\n"
     test "triplet" do
-       assertRoundTrip "| (3efg |\r\n"
+      assertRoundTrip "| (3efg |\r\n"
     test "triplet long form" do
-       assertCanonical "| (3:2:3efg |\r\n"  "| (3efg |\r\n"
+      assertCanonical "| (3:2:3efg |\r\n" "| (3efg |\r\n"
     test "triplet intermediate form" do
-       assertCanonical "| (3:2efg |\r\n"  "| (3efg |\r\n"
+      assertCanonical "| (3:2efg |\r\n" "| (3efg |\r\n"
     test "spaced triplet" do
-       assertCanonical "| (3 abc def |\x0D\n" "| (3abc def |\x0D\n"
+      assertCanonical "| (3 abc def |\x0D\n" "| (3abc def |\x0D\n"
     test "space between notes in triplet" do
-       assertCanonical "| (3 a b c def |\x0D\n" "| (3abc def |\x0D\n"
+      assertCanonical "| (3 a b c def |\x0D\n" "| (3abc def |\x0D\n"
     test "triplet with rest" do
-       assertRoundTrip "| (3zfg |\r\n"
+      assertRoundTrip "| (3zfg |\r\n"
     test "grace note" do
-       assertRoundTrip "| {d^f}GA |\x0D\n"
+      assertRoundTrip "| {d^f}GA |\x0D\n"
     test "grace note in tuplet" do
-       assertRoundTrip "| (3c{d}fg A |\x0D\n"
+      assertRoundTrip "| (3c{d}fg A |\x0D\n"
     test "grace note before tuplet" do
-       assertRoundTrip "| {d}(3cfg A |\x0D\n"
+      assertRoundTrip "| {d}(3cfg A |\x0D\n"
     test "grace note in broken rhythm pair" do
-       assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
+      assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
     test "double sharp" do
-       assertRoundTrip "| ^^C2 |\r\n"
+      assertRoundTrip "| ^^C2 |\r\n"
     test "sharp" do
-       assertRoundTrip "| ^C/ |\r\n"
+      assertRoundTrip "| ^C/ |\r\n"
     test "double flat" do
-       assertRoundTrip "| __C |\r\n"
+      assertRoundTrip "| __C |\r\n"
     test "flat" do
-       assertRoundTrip "| _C3/2 |\r\n"
+      assertRoundTrip "| _C3/2 |\r\n"
     test "natural" do
-       assertRoundTrip "| =C3/2 |\r\n"
+      assertRoundTrip "| =C3/2 |\r\n"
     test "chord symbol" do
-       assertRoundTrip "| \"Em\" EG \"Am\" AC |\x0D\n"
+      assertRoundTrip "| \"Em\" EG \"Am\" AC |\x0D\n"
     test "chords" do
-       assertRoundTrip "| [de^f]g [cda]b |\x0D\n"
+      assertRoundTrip "| [de^f]g [cda]b |\x0D\n"
     test "chord duration" do
-       assertRoundTrip "| [cda]4 |\x0D\n"
+      assertRoundTrip "| [cda]4 |\x0D\n"
 
 barSuite :: Free TestF Unit
 barSuite =
@@ -287,41 +286,41 @@ barSuite =
     test "alternate endings - combo" do
       assertRoundTrip "| A |1-3,5 B :|4 c||\r\n"
     test "repeat 0" do
-      assertRoundTrip  "|: ABCD EFGa |1 D4 C4 :|2 c8 |\x0D\n"
+      assertRoundTrip "|: ABCD EFGa |1 D4 C4 :|2 c8 |\x0D\n"
     test "repeat 1" do
-      assertCanonical  "|: ABCD EFGa |[1 D4 C4 :|[2 c8 |\x0D\n" repeat
+      assertCanonical "|: ABCD EFGa |[1 D4 C4 :|[2 c8 |\x0D\n" repeat
     test "repeat 1a" do
-      assertRoundTrip  "|: ABCD EFGa [|1 D4 C4 :[|2 c8 |]\x0D\n"
+      assertRoundTrip "|: ABCD EFGa [|1 D4 C4 :[|2 c8 |]\x0D\n"
     test "repeat 2" do
-      assertRoundTrip  "|: ABCD EFGa [|1 D4 C4 :[|2 c8 |]\x0D\n"
+      assertRoundTrip "|: ABCD EFGa [|1 D4 C4 :[|2 c8 |]\x0D\n"
     test "repeat 3" do
       assertRoundTrip repeat3
     test "repeat 3a" do
-      assertCanonical  "|: ABCD EFGa :|: c8 |\x0D\n" repeat3
+      assertCanonical "|: ABCD EFGa :|: c8 |\x0D\n" repeat3
     test "repeat 3b" do
-      assertRoundTrip  "|: ABCD EFGa :||: c8 |\x0D\n"
+      assertRoundTrip "|: ABCD EFGa :||: c8 |\x0D\n"
     test "repeat 4" do
-      assertRoundTrip  "[|2 ABCD EFGa |]: c8 |\x0D\n"
+      assertRoundTrip "[|2 ABCD EFGa |]: c8 |\x0D\n"
     test "repeat 5" do
-      assertRoundTrip  "|: ABCD EFGa :|] c8 |\x0D\n"
+      assertRoundTrip "|: ABCD EFGa :|] c8 |\x0D\n"
     test "repeat 6" do
-      assertRoundTrip  "[|2 ABCD EFGa ||: c8 |\x0D\n"
+      assertRoundTrip "[|2 ABCD EFGa ||: c8 |\x0D\n"
     test "repeat 7" do
-      assertRoundTrip  "| ABCD EFGa :|| c8 |\x0D\n"
+      assertRoundTrip "| ABCD EFGa :|| c8 |\x0D\n"
     test "degenerate repeat 1" do
-      assertCanonical  "[1 ABCD |\x0D\n" "|1 ABCD |\x0D\n"
+      assertCanonical "[1 ABCD |\x0D\n" "|1 ABCD |\x0D\n"
     test "degenerate repeat 2" do
-      assertCanonical  "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
+      assertCanonical "| [1 ABCD |\x0D\n" "| |1 ABCD |\x0D\n"
 
 slurSuite :: Free TestF Unit
 slurSuite =
   suite "slurs" do
     test "slur" do
-      assertRoundTrip  "| (de^f) (cda) |\x0D\n"
+      assertRoundTrip "| (de^f) (cda) |\x0D\n"
     test "broken rhythm slurred start" do
       assertRoundTrip "| A>(BC) |\x0D\n"
     test "broken rhythm slurred finish" do
-      assertRoundTrip  "| (BC)>A |\x0D\n"
+      assertRoundTrip "| (BC)>A |\x0D\n"
     test "grace note with slur" do
       assertRoundTrip "| {d^f}(GA) |\x0D\n"
     test "chord with leading slur" do
@@ -335,36 +334,36 @@ slurSuite =
       assertCanonical "| A(>BC) |\x0D\n" "| A>BC) |\x0D\n"
     test "degenerate slurred broken rhythm finish" do
       assertCanonical "| (BC>)A |\x0D\n" "| (BC>A |\x0D\n"
-    {- this test would fail.  We don't allow slurs to span mote sequences
-       starting with a grace note.  Instead, users should start the slur at
-       the first full note
-    test "degenerate slurred grace" do
-      assertParses "| ({d^f}GA) |\x0D\n"
-    -}
+{- this test would fail.  We don't allow slurs to span mote sequences
+   starting with a grace note.  Instead, users should start the slur at
+   the first full note
+test "degenerate slurred grace" do
+  assertParses "| ({d^f}GA) |\x0D\n"
+-}
 
 phrasingSuite :: Free TestF Unit
-phrasingSuite  =
+phrasingSuite =
   suite "phrasing" do
     test "articulation" do
-      assertRoundTrip  "(vA2 | !fz! Ld2).d.f .e.d.c.B A2(A2 | d2).d.f .e.d.c.B A2A2 |\x0D\n"
+      assertRoundTrip "(vA2 | !fz! Ld2).d.f .e.d.c.B A2(A2 | d2).d.f .e.d.c.B A2A2 |\x0D\n"
     test "annotation" do
-      assertRoundTrip  "| \"<(\" \">)\" EG |\x0D\n"
+      assertRoundTrip "| \"<(\" \">)\" EG |\x0D\n"
     test "decorated note" do
-      assertRoundTrip  "| !uppermordent! !trill! C |\x0D\n"
+      assertRoundTrip "| !uppermordent! !trill! C |\x0D\n"
     test "decorated space" do
-      assertRoundTrip  "| ABc !coda! y |\x0D\n"
-    test "decorated chord" do 
+      assertRoundTrip "| ABc !coda! y |\x0D\n"
+    test "decorated chord" do
       assertRoundTrip "| A B C | !uppermordent! [DE] |\r\n"
-    test "decorated bar" do 
+    test "decorated bar" do
       assertRoundTrip "| A B C | D E F !dacapo! |\r\n"
 
 structureSuite :: Free TestF Unit
-structureSuite  =
+structureSuite =
   suite "structure" do
     test "ignore" do
-      assertParses  "| ABC# z2 @def z/ |\x0D\n"
+      assertParses "| ABC# z2 @def z/ |\x0D\n"
     test "typeset space" do
-      assertParses  "| ABC yz2 defyz/ |\x0D\n"
+      assertParses "| ABC yz2 defyz/ |\x0D\n"
     test "backtick" do
       assertParses "| A``B``C |\x0D\n"
     test "inline" do
@@ -402,9 +401,9 @@ structureSuite  =
     test "inline comment" do
       assertRoundTrip "| ABC z2 def z/ \x0D\n% this is a comment\x0D\n| ABC z2 def z/ |\x0D\n"
     test "outmoded line-break" do
-      assertParses"| ABc | def |!\x0D\n| ABC|\x0D\n"
+      assertParses "| ABc | def |!\x0D\n| ABC|\x0D\n"
     test "workaround missing line feed line terminator" do
-      assertParses"| ABc | def |\x0D| ABC|\x0D\n"
+      assertParses "| ABc | def |\x0D| ABC|\x0D\n"
 
 -- | the purescript version handles parsing differently from the elm version 
 -- | when two different productions have the same initial lexeme.
@@ -416,7 +415,6 @@ ambiguitySuite =
       assertRoundTrip "K: GMajor\r\nA\r\n"
     test "ambiguous a" do
       assertRoundTrip "K: GMajor\r\na\r\n"
-
 
 badInputSuite :: Free TestF Unit
 badInputSuite =
@@ -446,37 +444,35 @@ keySigSuite =
     test "Bb Minor" do
       assertKeySigParses "Bb Minor"
 
-
-
 -- these ABC samples are already in canonical format which should allow round-tripping to work
 -- because of the exact string matching algorithm
 
 keyWithAccidental =
-    "K: EMinor ^c\x0D\n| ABC |\x0D\n"
+  "K: EMinor ^c\x0D\n| ABC |\x0D\n"
 
 keyCMajor =
-    "K: CMajor\x0D\n| ABC |\x0D\n"
+  "K: CMajor\x0D\n| ABC |\x0D\n"
 
 keyADorian =
-    "K: ADorian\x0D\n| ABC |\x0D\n"
+  "K: ADorian\x0D\n| ABC |\x0D\n"
 
 halfNoteCanonical =
-    "| B/ |\r\n"
+  "| B/ |\r\n"
 
 quarterNoteCanonical =
-    "| D1/4 |\r\n"
+  "| D1/4 |\r\n"
 
 eighthNoteCanonical =
-    "| D1/8 |\r\n"
+  "| D1/8 |\r\n"
 
 repeat =
-    "|: ABCD EFGa ||1 D4 C4 :||2 c8 |\r\n"
+  "|: ABCD EFGa ||1 D4 C4 :||2 c8 |\r\n"
 
 repeat3 =
-    "|: ABCD EFGa :|: c8 |\x0D\n"
+  "|: ABCD EFGa :|: c8 |\x0D\n"
 
 standardTempo =
-    "Q: 1/4=120\x0D\n| ABC |\x0D\n"
+  "Q: 1/4=120\x0D\n| ABC |\x0D\n"
 
 suffixedTempo =
-    "Q: 1/4=70 \"lento\"\x0D\n| ABC |\x0D\n"
+  "Q: 1/4=70 \"lento\"\x0D\n| ABC |\x0D\n"

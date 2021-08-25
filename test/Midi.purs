@@ -112,7 +112,7 @@ transformationSuite =
     test "doubly fractional chord" do
       assertMidi "| [C/E/G/]1/3 |\r\n"
         (Midi.Track (standardTempo <> chordC (1 % 6)))
-    test "tie into chord" do  -- we don't support ties into chords - it's ambiguous
+    test "tie into chord" do -- we don't support ties into chords - it's ambiguous
       assertMidi "| C-[CEG] |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> chordC (fromInt 1)))
     test "tempo header" do
@@ -124,9 +124,9 @@ transformationSuite =
     test "key signature header" do
       assertMidi "K: D\r\n| CDE |\r\n"
         (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
-    test "accidental impact" do  -- an accidental influences the pitch of notes later in the bar
+    test "accidental impact" do -- an accidental influences the pitch of notes later in the bar
       assertMidi "| ^CDEC |\r\n"
-        (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+        (Midi.Track (standardTempo <> noteCs (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1)))
     test "change tempo" do
       assertMidi "| CD |\r\nQ: 1/4=180\r\n| E |\r\n"
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (2 % 3) <> noteE (fromInt 1)))
@@ -141,92 +141,153 @@ transformationSuite =
         (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> tempo (1 % 2) <> noteE (fromInt 1)))
     test "change key" do
       assertMidi "| CDE |\r\nK: D\r\n| C |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1)))
     test "change key inline" do
       assertMidi "| CDE | [K: D] | C |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1) ))
+        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteCs (fromInt 1)))
 
 repeatSuite :: Free TestF Unit
 repeatSuite =
   suite "repeats" do
     test "simple repeat" do
       assertMidi "|: CDE :|\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+            )
+        )
     test "lead-in then repeat" do
       assertMidi "FC |: CDE :|\r\n"
-        (Midi.Track (standardTempo <> noteF (fromInt 1) <> noteC (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+        ( Midi.Track
+            ( standardTempo <> noteF (fromInt 1) <> noteC (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+            )
+        )
     test "pair of repeats" do
-        assertMidi "|: CDE :|: DEF :|\r\n"
-          (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-            <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-            <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteF (fromInt 1)
-            <> noteD (fromInt 1) <> noteE (fromInt 1) <> noteF (fromInt 1)
-            ))
+      assertMidi "|: CDE :|: DEF :|\r\n"
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteF (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteF (fromInt 1)
+            )
+        )
     test "simple repeat implicit start" do
       assertMidi "| CDE :|\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> standardTempo
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+            )
+        )
     test "simple repeat then unrepeated" do
       assertMidi "|: CDE :| F |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteF (fromInt 1)
-          ))
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteF (fromInt 1)
+            )
+        )
     test "unrepeated then simple repeat" do
       assertMidi "| F |: CDE :|\r\n"
-        (Midi.Track (standardTempo <> noteF (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          ))
+        ( Midi.Track
+            ( standardTempo <> noteF (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+            )
+        )
     test "alternate endings" do
       assertMidi "|: CD |1 E :|2 F |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)))
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteF (fromInt 1)
+            )
+        )
     test "alternate endings then repeat" do
       assertMidi "|: CD |1 E :|2 F |: CDE :|\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-        )) 
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteF (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+            )
+        )
     test "alternate endings list" do
       assertMidi "|: CD |1,3 E :|2 F |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-        ))
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteF (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+            )
+        )
     test "alternate endings range" do
       assertMidi "|: CD |1-3 E :|4 F |\r\n"
-        (Midi.Track (standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
-          <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteF (fromInt 1)
-        ))
-
+        ( Midi.Track
+            ( standardTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteE (fromInt 1)
+                <> noteC (fromInt 1)
+                <> noteD (fromInt 1)
+                <> noteF (fromInt 1)
+            )
+        )
 
 -- different types of variants (voltas) in repeated sections
 variantSuite :: Free TestF Unit
 variantSuite =
   suite "next position" do
     test "sample1 at 1,2,3 and 4" do
-       Assert.equal 8 $ findEndingPosition variant1 1 end
-       Assert.equal 8 $ findEndingPosition variant1 2 end
-       Assert.equal 8 $ findEndingPosition variant1 3 end
-       Assert.equal end $ findEndingPosition variant1 4 end
+      Assert.equal 8 $ findEndingPosition variant1 1 end
+      Assert.equal 8 $ findEndingPosition variant1 2 end
+      Assert.equal 8 $ findEndingPosition variant1 3 end
+      Assert.equal end $ findEndingPosition variant1 4 end
     test "sample2 at 1,2,3 and 4" do
-       Assert.equal 8 $ findEndingPosition variant2 1 end
-       Assert.equal end $ findEndingPosition variant2 2 end
-       Assert.equal 8 $ findEndingPosition variant2 3 end
-       Assert.equal end $ findEndingPosition variant2 4 end
+      Assert.equal 8 $ findEndingPosition variant2 1 end
+      Assert.equal end $ findEndingPosition variant2 2 end
+      Assert.equal 8 $ findEndingPosition variant2 3 end
+      Assert.equal end $ findEndingPosition variant2 4 end
     test "sample3 at 1,2,3 and 4" do
-       Assert.equal 4 $ findEndingPosition variant3 1 end
-       Assert.equal 6 $ findEndingPosition variant3 2 end
-       Assert.equal 8 $ findEndingPosition variant3 3 end
-       Assert.equal end $ findEndingPosition variant3 4 end
-
+      Assert.equal 4 $ findEndingPosition variant3 1 end
+      Assert.equal 6 $ findEndingPosition variant3 2 end
+      Assert.equal 8 $ findEndingPosition variant3 3 end
+      Assert.equal end $ findEndingPosition variant3 4 end
 
 -- each grace note 'steals' 10% of the note it graces
 graceSuite :: Free TestF Unit
@@ -254,7 +315,6 @@ graceSuite =
       assertMidi "| C>{E}D |\r\n"
         (Midi.Track (standardTempo <> noteC (3 % 2) <> noteE (1 % 20) <> noteD (9 % 20)))
 
-
 atTempoSuite :: Free TestF Unit
 atTempoSuite =
   suite "set tempo externally" do
@@ -265,7 +325,6 @@ atTempoSuite =
       assertMidiAtBpm "| CDE |\r\n" 60
         (Midi.Track (halfTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
 
-
 -- | the number of MIDI ticks that equates to 1/4=120
 standardTicks :: Int
 standardTicks = 250000
@@ -274,13 +333,13 @@ standardTicks = 250000
 standardTempo :: List Midi.Message
 standardTempo =
   Midi.Message 0 (Midi.Tempo standardTicks)
-  : Nil
+    : Nil
 
 -- half the standard tempo - a MIDI tick is twice as long
 halfTempo :: List Midi.Message
 halfTempo =
   Midi.Message 0 (Midi.Tempo (standardTicks * 2))
-  : Nil
+    : Nil
 
 tempo :: Rational -> List Midi.Message
 tempo r =
@@ -288,76 +347,72 @@ tempo r =
     tmpo = (round <<< toNumber) (r * fromInt standardTicks)
   in
     Midi.Message 0 (Midi.Tempo tmpo)
-    : Nil
+      : Nil
 
 rest :: Rational -> List Midi.Message
 rest abcDuration =
   Midi.Message (midiTicks abcDuration) (Midi.NoteOn 0 0 80)
-  : Nil
-
+    : Nil
 
 noteC :: Rational -> List Midi.Message
 noteC abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 60 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
-  : Nil
+    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
+    : Nil
 
 noteCs :: Rational -> List Midi.Message
 noteCs abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 61 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 61 80)
-  : Nil
+    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 61 80)
+    : Nil
 
 noteD :: Rational -> List Midi.Message
 noteD abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 62 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 62 80)
-  : Nil
+    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 62 80)
+    : Nil
 
 noteE :: Rational -> List Midi.Message
 noteE abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 64 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 64 80)
-  : Nil
+    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 64 80)
+    : Nil
 
 noteF :: Rational -> List Midi.Message
 noteF abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 65 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 65 80)
-  : Nil
+    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 65 80)
+    : Nil
 
 chordC :: Rational -> List Midi.Message
 chordC abcDuration =
   Midi.Message 0 (Midi.NoteOn 0 60 80)
-  : Midi.Message 0 (Midi.NoteOn 0 64 80)
-  : Midi.Message 0 (Midi.NoteOn 0 67 80)
-  : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
-  : Midi.Message 0 (Midi.NoteOff 0 64 80)
-  : Midi.Message 0 (Midi.NoteOff 0 67 80)
-  : Nil
-
-
+    : Midi.Message 0 (Midi.NoteOn 0 64 80)
+    : Midi.Message 0 (Midi.NoteOn 0 67 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
+    : Midi.Message 0 (Midi.NoteOff 0 64 80)
+    : Midi.Message 0 (Midi.NoteOff 0 67 80)
+    : Nil
 
 --  |1,2,3 ...:|4.....|
-variant1 :: VariantPositions 
+variant1 :: VariantPositions
 variant1 =
-  fromFoldable [Tuple 1 5, Tuple 2 5, Tuple 3 5, Tuple 4 8]
+  fromFoldable [ Tuple 1 5, Tuple 2 5, Tuple 3 5, Tuple 4 8 ]
 
 -- |1,3....:|2,4.....|
-variant2 :: VariantPositions 
+variant2 :: VariantPositions
 variant2 =
-  fromFoldable [Tuple 1 5, Tuple 3 5, Tuple 2 8, Tuple 4 8]
+  fromFoldable [ Tuple 1 5, Tuple 3 5, Tuple 2 8, Tuple 4 8 ]
 
 -- |1....:|2....:|3....:|4.....|
-variant3 :: VariantPositions 
+variant3 :: VariantPositions
 variant3 =
-  fromFoldable [Tuple 1 2, Tuple 2 4, Tuple 3 6, Tuple 4 8]  
+  fromFoldable [ Tuple 1 2, Tuple 2 4, Tuple 3 6, Tuple 4 8 ]
 
 -- the end of a section with variants
-end :: Int 
+end :: Int
 end = 10
-
 
 midiTicks :: Rational -> Int
 midiTicks r =
-  (round <<< toNumber)  (fromInt standardMidiTick * r)
+  (round <<< toNumber) (fromInt standardMidiTick * r)

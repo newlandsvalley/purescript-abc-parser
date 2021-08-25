@@ -59,66 +59,66 @@ assertVoice' s canonical ix =
         Assert.equal (Just canonical) (map fromTune indexedVoice)
 
     Left err ->
-      failure ("parse failed: " <> (show err))      
+      failure ("parse failed: " <> (show err))
 
 -- assert the set of voice names found in the tune after asking for just the labels
 assertVoiceLabels :: String -> Array String -> Test
-assertVoiceLabels s target = 
+assertVoiceLabels s target =
   case (parse s) of
     Right tune ->
       Assert.equal target (getVoiceLabels tune)
 
     Left err ->
-      failure ("parse failed: " <> (show err))      
+      failure ("parse failed: " <> (show err))
 
 -- ditto after asking for the entire voice map
 assertVoiceMapLabels :: String -> Set String -> Test
-assertVoiceMapLabels s target = 
+assertVoiceMapLabels s target =
   case (parse s) of
     Right tune ->
-      let 
+      let
         voiceMap = getVoiceMap tune
       in
         Assert.equal target (keys voiceMap)
 
     Left err ->
-      failure ("parse failed: " <> (show err))      
+      failure ("parse failed: " <> (show err))
 
 -- check that the partitioned voice has a title representing the voice name
 -- when using getVoiceMap
 assertVoiceTitles :: String -> List (Maybe String) -> Test
-assertVoiceTitles s target = 
+assertVoiceTitles s target =
   case (parse s) of
     Right tune ->
-      let 
+      let
         voiceMap = getVoiceMap tune
         titles = map getTitle (values voiceMap)
       in
         Assert.equal target titles
 
     Left err ->
-      failure ("parse failed: " <> (show err))      
+      failure ("parse failed: " <> (show err))
 
 -- check that the partitioned voice has a title representing the voice name
 -- when using partitionVoices
 assertPartitionedVoiceTitles :: String -> Array (Maybe String) -> Test
-assertPartitionedVoiceTitles s target = 
+assertPartitionedVoiceTitles s target =
   case (parse s) of
     Right tune ->
-      let 
+      let
         voices = partitionVoices tune
         titles = map getTitle voices
       in
         Assert.equal target titles
 
     Left err ->
-      failure ("parse failed: " <> (show err))      
+      failure ("parse failed: " <> (show err))
 
 assertRetitlingPreservesHeaders :: String -> Test
 assertRetitlingPreservesHeaders s =
   case (parse s) of
     Right tune ->
-      let 
+      let
         tuneHeaderLength = List.length (tune.headers)
         voiceMap = getVoiceMap tune
         voiceHeaderLengths = map (List.length <<< _.headers) (values voiceMap)
@@ -126,8 +126,7 @@ assertRetitlingPreservesHeaders s =
         Assert.equal (replicate (size voiceMap) tuneHeaderLength) voiceHeaderLengths
 
     Left err ->
-      failure ("parse failed: " <> (show err))      
-
+      failure ("parse failed: " <> (show err))
 
 voiceSuite :: Free TestF Unit
 voiceSuite = do
@@ -159,92 +158,94 @@ voiceSuite = do
     test "labels - no voice" do
       assertVoiceLabels noVoice []
     test "labels - one voice" do
-      assertVoiceLabels oneVoice ["T1"]
+      assertVoiceLabels oneVoice [ "T1" ]
     test "labels - two voice inline" do
-      assertVoiceLabels twoVoicesInline ["T1", "T2"]
+      assertVoiceLabels twoVoicesInline [ "T1", "T2" ]
     test "labels - four voices" do
-      assertVoiceLabels fourVoices ["1", "2", "3", "4"]
+      assertVoiceLabels fourVoices [ "1", "2", "3", "4" ]
     test "labels from voice map - four voices" do
-      assertVoiceMapLabels fourVoices (Set.fromFoldable ["1", "2", "3", "4"])
-    test "retitling the voice header via getVoiceMap - two voices" do 
-      assertVoiceTitles twoVoicesTitled (List.fromFoldable [Just "voice T1", Just "voice T2"])
-    test "retitling the voice header via getVoiceMap - three voices" do 
-      assertVoiceTitles threeVoices (List.fromFoldable [Just "voice T1", Just "voice T2", Just "voice T3"])
+      assertVoiceMapLabels fourVoices (Set.fromFoldable [ "1", "2", "3", "4" ])
+    test "retitling the voice header via getVoiceMap - two voices" do
+      assertVoiceTitles twoVoicesTitled (List.fromFoldable [ Just "voice T1", Just "voice T2" ])
+    test "retitling the voice header via getVoiceMap - three voices" do
+      assertVoiceTitles threeVoices (List.fromFoldable [ Just "voice T1", Just "voice T2", Just "voice T3" ])
     test "retitling preserves other headers" do
       assertRetitlingPreservesHeaders threeVoices
-    test "retitling the voice header via partitionVoices - two voices" do 
-      assertPartitionedVoiceTitles twoVoicesTitled ([Just "voice T1", Just "voice T2"])
+    test "retitling the voice header via partitionVoices - two voices" do
+      assertPartitionedVoiceTitles twoVoicesTitled ([ Just "voice T1", Just "voice T2" ])
 
 noVoice :: String
 noVoice =
-    "K: CMajor\x0D\n| AB (3zde [fg] |\x0D\n| CD EF FG |\x0D\n| AB EF FG |\x0D\n"
+  "K: CMajor\x0D\n| AB (3zde [fg] |\x0D\n| CD EF FG |\x0D\n| AB EF FG |\x0D\n"
 
 oneVoice :: String
 oneVoice =
-    "X: 1\x0D\nT: One Voice\x0D\n" <>
+  "X: 1\x0D\nT: One Voice\x0D\n" <>
     "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T1]| CD EF FG |\x0D\n[V:T1]| AB EF FG |\x0D\n"
 
 twoVoicesInline :: String
 twoVoicesInline =
-    "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T2]| CD EF FG |\x0D\n" <>
+  "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T2]| CD EF FG |\x0D\n" <>
     "[V:T1]| AB EF FG |\x0D\n[V:T2]| AB (3zde [fg] |\x0D\n"
 
 twoVoices :: String
 twoVoices =
-    "K: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
+  "K: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
     "| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
 
 twoVoicesTitled :: String
 twoVoicesTitled =
-    "T: two voices\r\nK: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
+  "T: two voices\r\nK: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
     "| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
 
 threeVoices :: String
 threeVoices =
-    "X: 1\x0D\nT: Three Voices\x0D\n" <>
-    "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T2]| CD EF FG |\x0D\n" <>
-    "[V:T1]| AB EF FG |\x0D\n[V:T3]| AB (3zde [fg] |\x0D\n"
+  "X: 1\x0D\nT: Three Voices\x0D\n"
+    <> "K: CMajor\x0D\n[V:T1]| AB (3zde [fg] |\x0D\n[V:T2]| CD EF FG |\x0D\n"
+    <>
+      "[V:T1]| AB EF FG |\x0D\n[V:T3]| AB (3zde [fg] |\x0D\n"
 
 -- the first voice of the twoVoices
 firstVoiceOfTwo :: String
 firstVoiceOfTwo =
-    "K: CMajor\x0D\nV: T1\r\n| AB (3zde [fg] |\r\n| AB EF FG |\x0D\n"      
+  "K: CMajor\x0D\nV: T1\r\n| AB (3zde [fg] |\r\n| AB EF FG |\x0D\n"
 
 -- the first voice of the twoVoices (inline representation)
 firstVoiceOfTwoInline :: String
 firstVoiceOfTwoInline =
-    "K: CMajor\x0D\n[V: T1]| AB (3zde [fg] |\x0D\n[V: T1]| AB EF FG |\x0D\n"
+  "K: CMajor\x0D\n[V: T1]| AB (3zde [fg] |\x0D\n[V: T1]| AB EF FG |\x0D\n"
 
 -- the second voice of the twoVoices
 -- note we get a redundant T1 voice in the headers but this is benign
 secondVoiceOfTwo :: String
 secondVoiceOfTwo =
-    "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"      
+  "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
 
 -- the second voice of the twoVoices (inline representation)
 secondVoiceOfTwoInline :: String
 secondVoiceOfTwoInline =
-    "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
+  "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\n[V: T2]| CD EF FG |\x0D\n[V: T2]| AB (3zde [fg] |\x0D\n"
 
 -- Modified four Voice example (from abcnotation.com)
 -- added the foo=bar property for a voice header to prepare for v2.2
 -- we use 4/4 meter instead of C, CMajor instead of C and spaces after 
 -- header colons to make it easier to test against the canonical form
-fourVoices :: String 
+fourVoices :: String
 fourVoices =
-    "X: 1\r\n" <>
-    "T: Grand Staff With Four Voices\r\n" <>
-    "M: 4/4\r\n" <>
-    "L: 1/2\r\n" <>
-    "K: CMajor\r\n" <>
-    "V: 1 clef=treble foo=bar\r\n" <>
-    "c/e/d/c/|c/B/B/c/|c2|]\r\n" <>
-    "V: 2 clef=treble\r\n" <>
-    "EF|ED|E2|]\r\n" <>
-    "V: 3 clef=bass\r\n" <>
-    "G,A,|G,G,|G,2|]\r\n" <>
-    "V: 4 clef=bass\r\n" <>
-    "C,F,|G,G,,|C,2|]\r\n" 
+  "X: 1\r\n"
+    <> "T: Grand Staff With Four Voices\r\n"
+    <> "M: 4/4\r\n"
+    <> "L: 1/2\r\n"
+    <> "K: CMajor\r\n"
+    <> "V: 1 clef=treble foo=bar\r\n"
+    <> "c/e/d/c/|c/B/B/c/|c2|]\r\n"
+    <> "V: 2 clef=treble\r\n"
+    <> "EF|ED|E2|]\r\n"
+    <> "V: 3 clef=bass\r\n"
+    <> "G,A,|G,G,|G,2|]\r\n"
+    <> "V: 4 clef=bass\r\n"
+    <>
+      "C,F,|G,G,,|C,2|]\r\n"
 
 {- This is the actual example and seems awkward and uses
    a variety of volatile features which will be regularized
@@ -268,13 +269,14 @@ fourVoices =
     "C,F,|G,G,,|C,2|]\r\n" 
 -}
 
-fourthVoiceOfFour :: String 
+fourthVoiceOfFour :: String
 fourthVoiceOfFour =
-    "X: 1\r\n" <>
-    "T: voice 4\r\n" <>
-    "M: 4/4\r\n" <>
-    "L: 1/2\r\n" <>
-    "K: CMajor\r\n" <>
-    "V: 1 clef=treble foo=bar\r\n" <>
-    "V: 4 clef=bass\r\n" <>
-    "C,F,|G,G,,|C,2|]\r\n" 
+  "X: 1\r\n"
+    <> "T: voice 4\r\n"
+    <> "M: 4/4\r\n"
+    <> "L: 1/2\r\n"
+    <> "K: CMajor\r\n"
+    <> "V: 1 clef=treble foo=bar\r\n"
+    <> "V: 4 clef=bass\r\n"
+    <>
+      "C,F,|G,G,,|C,2|]\r\n"

@@ -11,7 +11,6 @@ import Data.Abc.KeySignature
 import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
-
 assertEquivalentKeys :: KeySet -> KeySet -> Test
 assertEquivalentKeys actual expected =
   if (length actual == length expected) then
@@ -22,11 +21,12 @@ assertEquivalentKeys actual expected =
       Assert.equal es as
   else
     failure $ "non-equivalent key lengths: "
-       <> (show actual) <> " not equal to: " <> (show expected)
+      <> (show actual)
+      <> " not equal to: "
+      <> (show expected)
 
 {- It's such a pain to provide Eq, Show on what you'd like to be a somple record
    so for testing purposes just collapse tp a string
-
    Type class instances for type synonyms are disallowed
 showKeySig :: KeySignature -> String
 showKeySig ks =
@@ -35,13 +35,13 @@ showKeySig ks =
 
 keySignatureSuite :: Free TestF Unit
 keySignatureSuite = do
-   majorModeSuite
-   minorModeSuite
-   klezmerModeSuite
-   otherModeSuite
-   keySuite
-   transposeSignatureSuite
-   scaleSuite
+  majorModeSuite
+  minorModeSuite
+  klezmerModeSuite
+  otherModeSuite
+  keySuite
+  transposeSignatureSuite
+  scaleSuite
 
 majorModeSuite :: Free TestF Unit
 majorModeSuite =
@@ -49,26 +49,31 @@ majorModeSuite =
     test "G Major" do
       assertEquivalentKeys
         (keySet { pitchClass: G, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: F, accidental: Sharp} : Nil)
+        (Pitch { pitchClass: F, accidental: Sharp } : Nil)
     test "Ab Major" do
       assertEquivalentKeys
         (keySet { pitchClass: A, accidental: Flat, mode: Major })
         ( Pitch { pitchClass: B, accidental: Flat }
-        : Pitch { pitchClass: E, accidental: Flat }
-        : Pitch { pitchClass: A, accidental: Flat }
-        : Pitch { pitchClass: D, accidental: Flat } : Nil )
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Pitch { pitchClass: D, accidental: Flat }
+            : Nil
+        )
     test "A Major" do
       assertEquivalentKeys
         (keySet { pitchClass: A, accidental: Natural, mode: Major })
-        ( Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Sharp}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Sharp }
+            : Nil
+        )
     test "Bb Major" do
       assertEquivalentKeys
         (keySet { pitchClass: B, accidental: Flat, mode: Major })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat } : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Nil
+        )
     test "C Major" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Major })
@@ -76,66 +81,73 @@ majorModeSuite =
     test "B Major" do
       assertEquivalentKeys
         (keySet { pitchClass: B, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Sharp}
-        : Pitch  { pitchClass: D, accidental: Sharp}
-        : Pitch  { pitchClass: A, accidental: Sharp}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Sharp }
+            : Pitch { pitchClass: D, accidental: Sharp }
+            : Pitch { pitchClass: A, accidental: Sharp }
+            : Nil
+        )
     test "Db Major" do
       assertEquivalentKeys
         (keySet { pitchClass: D, accidental: Flat, mode: Major })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Pitch  { pitchClass: D, accidental: Flat }
-        : Pitch  { pitchClass: G, accidental: Flat }
-        : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Pitch { pitchClass: D, accidental: Flat }
+            : Pitch { pitchClass: G, accidental: Flat }
+            : Nil
+        )
     test "D Major" do
       assertEquivalentKeys
         (keySet { pitchClass: D, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Nil
+        )
     test "Eb Major" do
       assertEquivalentKeys
         (keySet { pitchClass: E, accidental: Flat, mode: Major })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Nil
+        )
     test "E Major" do
       assertEquivalentKeys
         (keySet { pitchClass: E, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Sharp}
-        : Pitch  { pitchClass: D, accidental: Sharp}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Sharp }
+            : Pitch { pitchClass: D, accidental: Sharp }
+            : Nil
+        )
     test "F Major" do
       assertEquivalentKeys
         (keySet { pitchClass: F, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: B, accidental: Flat} : Nil)
+        (Pitch { pitchClass: B, accidental: Flat } : Nil)
     test "F# Major" do
       assertEquivalentKeys
         (keySet { pitchClass: F, accidental: Sharp, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Sharp}
-        : Pitch  { pitchClass: D, accidental: Sharp}
-        : Pitch  { pitchClass: A, accidental: Sharp}
-        : Pitch  { pitchClass: E, accidental: Sharp}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Sharp }
+            : Pitch { pitchClass: D, accidental: Sharp }
+            : Pitch { pitchClass: A, accidental: Sharp }
+            : Pitch { pitchClass: E, accidental: Sharp }
+            : Nil
+        )
     test "Gb Major" do
       assertEquivalentKeys
         (keySet { pitchClass: G, accidental: Flat, mode: Major })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Pitch  { pitchClass: D, accidental: Flat }
-        : Pitch  { pitchClass: G, accidental: Flat }
-        : Pitch  { pitchClass: C, accidental: Flat }
-        : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Pitch { pitchClass: D, accidental: Flat }
+            : Pitch { pitchClass: G, accidental: Flat }
+            : Pitch { pitchClass: C, accidental: Flat }
+            : Nil
+        )
 
 minorModeSuite :: Free TestF Unit
 minorModeSuite =
@@ -147,8 +159,10 @@ minorModeSuite =
     test "G Minor" do
       assertEquivalentKeys
         (keySet { pitchClass: G, accidental: Natural, mode: Minor })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat } : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Nil
+        )
 
 klezmerModeSuite :: Free TestF Unit
 klezmerModeSuite =
@@ -156,10 +170,11 @@ klezmerModeSuite =
     test "D Phrygian with sharpened f" do
       assertEquivalentKeys
         (modifiedKeySet dPhrygianSharpenedF)
-          ( Pitch  { pitchClass: B, accidental: Flat }
-          : Pitch  { pitchClass: E, accidental: Flat }
-          : Pitch  { pitchClass: F, accidental: Sharp }
-          : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Nil
+        )
 
 otherModeSuite :: Free TestF Unit
 otherModeSuite =
@@ -167,8 +182,10 @@ otherModeSuite =
     test "C Dorian" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Dorian })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch { pitchClass: E, accidental: Flat } : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Nil
+        )
     test "D Dorian" do
       assertEquivalentKeys
         (keySet { pitchClass: D, accidental: Natural, mode: Dorian })
@@ -176,10 +193,12 @@ otherModeSuite =
     test "C Phrygian" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Phrygian })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Pitch  { pitchClass: D, accidental: Flat } : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Pitch { pitchClass: D, accidental: Flat }
+            : Nil
+        )
     test "E Phrygian" do
       assertEquivalentKeys
         (keySet { pitchClass: E, accidental: Natural, mode: Phrygian })
@@ -187,7 +206,7 @@ otherModeSuite =
     test "C Lydian" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Lydian })
-        (Pitch  { pitchClass: F, accidental: Sharp} : Nil)
+        (Pitch { pitchClass: F, accidental: Sharp } : Nil)
     test "F Lydian" do
       assertEquivalentKeys
         (keySet { pitchClass: F, accidental: Natural, mode: Lydian })
@@ -195,7 +214,7 @@ otherModeSuite =
     test "C Mixolydian" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Mixolydian })
-        (Pitch  { pitchClass: B, accidental: Flat} : Nil)
+        (Pitch { pitchClass: B, accidental: Flat } : Nil)
     test "G Mixolydian" do
       assertEquivalentKeys
         (keySet { pitchClass: G, accidental: Natural, mode: Mixolydian })
@@ -203,10 +222,11 @@ otherModeSuite =
     test "C Aeolian" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Aeolian })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Nil
+        )
     test "A Aeolian" do
       assertEquivalentKeys
         (keySet { pitchClass: A, accidental: Natural, mode: Aeolian })
@@ -214,12 +234,13 @@ otherModeSuite =
     test "C Locrian" do
       assertEquivalentKeys
         (keySet { pitchClass: C, accidental: Natural, mode: Locrian })
-        ( Pitch  { pitchClass: B, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Pitch  { pitchClass: D, accidental: Flat }
-        : Pitch  { pitchClass: G, accidental: Flat }
-        : Nil )
+        ( Pitch { pitchClass: B, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Pitch { pitchClass: D, accidental: Flat }
+            : Pitch { pitchClass: G, accidental: Flat }
+            : Nil
+        )
     test "B Locrian" do
       assertEquivalentKeys
         (keySet { pitchClass: B, accidental: Natural, mode: Locrian })
@@ -246,7 +267,6 @@ otherModeSuite =
       Assert.equal D newks.pitchClass
       Assert.equal Natural newks.accidental
       Assert.equal Major newks.mode
-
 
 keySuite :: Free TestF Unit
 keySuite =
@@ -296,21 +316,21 @@ transposeSignatureSuite =
     test "D phrygian sharpened F up 1 tone" do
       let
         newks = transposeKeySignatureBy 2 dPhrygianSharpenedF
-        modification = fromMaybe (Pitch { pitchClass : C, accidental : Natural })
-            $ head newks.modifications
+        modification = fromMaybe (Pitch { pitchClass: C, accidental: Natural })
+          $ head newks.modifications
       Assert.equal E newks.keySignature.pitchClass
       Assert.equal Natural newks.keySignature.accidental
       Assert.equal Phrygian newks.keySignature.mode
-      Assert.equal (Pitch { pitchClass : G, accidental : Sharp }) modification
+      Assert.equal (Pitch { pitchClass: G, accidental: Sharp }) modification
     test "E phrygian sharpened G down 1 tone" do
       let
         newks = transposeKeySignatureBy (-2) ePhrygianSharpenedG
-        modification = fromMaybe (Pitch { pitchClass : C, accidental : Natural })
-            $ head newks.modifications
+        modification = fromMaybe (Pitch { pitchClass: C, accidental: Natural })
+          $ head newks.modifications
       Assert.equal D newks.keySignature.pitchClass
       Assert.equal Natural newks.keySignature.accidental
       Assert.equal Phrygian newks.keySignature.mode
-      Assert.equal (Pitch { pitchClass : F, accidental : Sharp }) modification
+      Assert.equal (Pitch { pitchClass: F, accidental: Sharp }) modification
 
 scaleSuite :: Free TestF Unit
 scaleSuite =
@@ -318,104 +338,108 @@ scaleSuite =
     test "C Major" do
       assertEquivalentKeys
         (diatonicScale { pitchClass: C, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Natural}
-        : Pitch  { pitchClass: D, accidental: Natural}
-        : Pitch  { pitchClass: E, accidental: Natural}
-        : Pitch  { pitchClass: F, accidental: Natural}
-        : Pitch  { pitchClass: G, accidental: Natural}
-        : Pitch  { pitchClass: A, accidental: Natural}
-        : Pitch  { pitchClass: B, accidental: Natural}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Natural }
+            : Pitch { pitchClass: D, accidental: Natural }
+            : Pitch { pitchClass: E, accidental: Natural }
+            : Pitch { pitchClass: F, accidental: Natural }
+            : Pitch { pitchClass: G, accidental: Natural }
+            : Pitch { pitchClass: A, accidental: Natural }
+            : Pitch { pitchClass: B, accidental: Natural }
+            : Nil
+        )
     test "G Major" do
       assertEquivalentKeys
         (diatonicScale { pitchClass: G, accidental: Natural, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Natural}
-        : Pitch  { pitchClass: D, accidental: Natural}
-        : Pitch  { pitchClass: E, accidental: Natural}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Natural}
-        : Pitch  { pitchClass: A, accidental: Natural}
-        : Pitch  { pitchClass: B, accidental: Natural}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Natural }
+            : Pitch { pitchClass: D, accidental: Natural }
+            : Pitch { pitchClass: E, accidental: Natural }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Natural }
+            : Pitch { pitchClass: A, accidental: Natural }
+            : Pitch { pitchClass: B, accidental: Natural }
+            : Nil
+        )
     test "E Minor" do
       assertEquivalentKeys
         (diatonicScale { pitchClass: E, accidental: Natural, mode: Minor })
-        (Pitch  { pitchClass: C, accidental: Natural}
-        : Pitch  { pitchClass: D, accidental: Natural}
-        : Pitch  { pitchClass: E, accidental: Natural}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Natural}
-        : Pitch  { pitchClass: A, accidental: Natural}
-        : Pitch  { pitchClass: B, accidental: Natural}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Natural }
+            : Pitch { pitchClass: D, accidental: Natural }
+            : Pitch { pitchClass: E, accidental: Natural }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Natural }
+            : Pitch { pitchClass: A, accidental: Natural }
+            : Pitch { pitchClass: B, accidental: Natural }
+            : Nil
+        )
     test "B Minor" do
       assertEquivalentKeys
         (diatonicScale { pitchClass: B, accidental: Natural, mode: Minor })
-        (Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: D, accidental: Natural}
-        : Pitch  { pitchClass: E, accidental: Natural}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Natural}
-        : Pitch  { pitchClass: A, accidental: Natural}
-        : Pitch  { pitchClass: B, accidental: Natural}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: D, accidental: Natural }
+            : Pitch { pitchClass: E, accidental: Natural }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Natural }
+            : Pitch { pitchClass: A, accidental: Natural }
+            : Pitch { pitchClass: B, accidental: Natural }
+            : Nil
+        )
     test "F# Major" do
       assertEquivalentKeys
         (diatonicScale { pitchClass: F, accidental: Sharp, mode: Major })
-        (Pitch  { pitchClass: C, accidental: Sharp}
-        : Pitch  { pitchClass: D, accidental: Sharp}
-        : Pitch  { pitchClass: E, accidental: Sharp}
-        : Pitch  { pitchClass: F, accidental: Sharp}
-        : Pitch  { pitchClass: G, accidental: Sharp}
-        : Pitch  { pitchClass: A, accidental: Sharp}
-        : Pitch  { pitchClass: B, accidental: Natural}
-        : Nil)
+        ( Pitch { pitchClass: C, accidental: Sharp }
+            : Pitch { pitchClass: D, accidental: Sharp }
+            : Pitch { pitchClass: E, accidental: Sharp }
+            : Pitch { pitchClass: F, accidental: Sharp }
+            : Pitch { pitchClass: G, accidental: Sharp }
+            : Pitch { pitchClass: A, accidental: Sharp }
+            : Pitch { pitchClass: B, accidental: Natural }
+            : Nil
+        )
     test "Gb Major" do
       assertEquivalentKeys
         (diatonicScale { pitchClass: G, accidental: Flat, mode: Major })
-        ( Pitch  { pitchClass: C, accidental: Flat }
-        : Pitch  { pitchClass: D, accidental: Flat }
-        : Pitch  { pitchClass: E, accidental: Flat }
-        : Pitch  { pitchClass: F, accidental: Natural }
-        : Pitch  { pitchClass: G, accidental: Flat }
-        : Pitch  { pitchClass: A, accidental: Flat }
-        : Pitch  { pitchClass: B, accidental: Flat }
-        : Nil )
-
+        ( Pitch { pitchClass: C, accidental: Flat }
+            : Pitch { pitchClass: D, accidental: Flat }
+            : Pitch { pitchClass: E, accidental: Flat }
+            : Pitch { pitchClass: F, accidental: Natural }
+            : Pitch { pitchClass: G, accidental: Flat }
+            : Pitch { pitchClass: A, accidental: Flat }
+            : Pitch { pitchClass: B, accidental: Flat }
+            : Nil
+        )
 
 -- key signatures
 gMajor :: KeySignature
 gMajor =
-    { pitchClass: G, accidental: Natural, mode: Major }
-
+  { pitchClass: G, accidental: Natural, mode: Major }
 
 gMajorM :: ModifiedKeySignature
 gMajorM =
-    { keySignature : gMajor, modifications : Nil, properties: empty }
+  { keySignature: gMajor, modifications: Nil, properties: empty }
 
 gMinor :: KeySignature
 gMinor =
-    { pitchClass: G, accidental: Natural, mode: Minor }
+  { pitchClass: G, accidental: Natural, mode: Minor }
 
 gMinorM :: ModifiedKeySignature
 gMinorM =
-    { keySignature : gMinor, modifications : Nil, properties: empty }
+  { keySignature: gMinor, modifications: Nil, properties: empty }
 
 cMajor :: KeySignature
 cMajor =
-    { pitchClass: C, accidental: Natural, mode: Major }
+  { pitchClass: C, accidental: Natural, mode: Major }
 
 cSharp :: Mode -> KeySignature
 cSharp mode =
-    { pitchClass: C, accidental: Sharp, mode: mode }
+  { pitchClass: C, accidental: Sharp, mode: mode }
 
 cSharpM :: Mode -> ModifiedKeySignature
 cSharpM mode =
-    { keySignature : cSharp mode, modifications : Nil, properties: empty }
+  { keySignature: cSharp mode, modifications: Nil, properties: empty }
 
 dMajor :: KeySignature
 dMajor =
-    { pitchClass: D, accidental: Natural, mode: Major }
+  { pitchClass: D, accidental: Natural, mode: Major }
 
 mix :: PitchClass -> KeySignature
 mix pc =
@@ -427,22 +451,22 @@ dor pc =
 
 fMajor :: KeySignature
 fMajor =
-    { pitchClass: F, accidental: Natural, mode: Major }
+  { pitchClass: F, accidental: Natural, mode: Major }
 
 fMajorM :: ModifiedKeySignature
 fMajorM =
-    { keySignature: fMajor, modifications: Nil, properties: empty }
+  { keySignature: fMajor, modifications: Nil, properties: empty }
 
 dPhrygianSharpenedF :: ModifiedKeySignature
 dPhrygianSharpenedF =
   { keySignature: { pitchClass: D, accidental: Natural, mode: Phrygian }
-  , modifications: ( Pitch  { pitchClass: F, accidental: Sharp } : Nil )
+  , modifications: (Pitch { pitchClass: F, accidental: Sharp } : Nil)
   , properties: empty
-  } 
+  }
 
 ePhrygianSharpenedG :: ModifiedKeySignature
 ePhrygianSharpenedG =
   { keySignature: { pitchClass: E, accidental: Natural, mode: Phrygian }
-  , modifications: ( Pitch  { pitchClass: G, accidental: Sharp } : Nil ) 
+  , modifications: (Pitch { pitchClass: G, accidental: Sharp } : Nil)
   , properties: empty
   }

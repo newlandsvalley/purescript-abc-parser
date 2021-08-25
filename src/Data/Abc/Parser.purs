@@ -1,8 +1,8 @@
 -- | An ABC Parser.
 module Data.Abc.Parser
-        ( parse
-        , parseKeySignature
-        ) where
+  ( parse
+  , parseKeySignature
+  ) where
 
 import Data.Abc
 
@@ -30,14 +30,12 @@ import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
 import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
 import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
 
-
 {- transient data type just used for parsing the awkward Tempo syntax
   a list of time signatures expressed as rationals and a bpm expressed as an Int
 -}
 data TempoDesignation = TempoDesignation (Nel.NonEmptyList Rational) Int
 
 {- use for debug like this:
-
    traceParse "manySlashes" <$>
     (
       parseRule
@@ -51,37 +49,37 @@ traceParse s p =
 
 abc :: Parser AbcTune
 abc =
-    buildAbcTune <$> headers <*> body
+  buildAbcTune <$> headers <*> body
 
 body :: Parser (List BodyPart)
 body =
-    (:)
-        <$> score
-        <*> manyTill
-                {- there is unfortunately ambiguity between a score item and
-                   an in-score header.  For example 'M' may introduce both a
-                   decoration or a meter.  We probably don't pay too much for
-                   trying the header because they are only short sequences
-                -}
-                (try tuneBodyHeader <|> score)
-                eof
+  (:)
+    <$> score
+    <*> manyTill
+      {- there is unfortunately ambiguity between a score item and
+         an in-score header.  For example 'M' may introduce both a
+         decoration or a meter.  We probably don't pay too much for
+         trying the header because they are only short sequences
+      -}
+      (try tuneBodyHeader <|> score)
+      eof
 
 score :: Parser BodyPart
 score =
-    Score <$>
-      {- there is potential ambiguity here betweeb 'fullyBarredLine' and
-         'inline' both of which commence with '[' making this order in the
-         pairing necessary.  To do it in the other order would involve:
-           (try fullyBarredLine <|> introLine)
-      -}
-      ( introLine <|> fullyBarredLine )
-       <?> "score"
+  Score <$>
+    {- there is potential ambiguity here betweeb 'fullyBarredLine' and
+       'inline' both of which commence with '[' making this order in the
+       pairing necessary.  To do it in the other order would involve:
+         (try fullyBarredLine <|> introLine)
+    -}
+    (introLine <|> fullyBarredLine)
+    <?> "score"
 
 bar :: Parser Bar
 bar =
-  buildBar 
+  buildBar
     <$> decorations
-    <*> barline 
+    <*> barline
     <*> (many scoreItem)
     <?> "bar"
 
@@ -89,69 +87,67 @@ bar =
 introBar :: Parser Bar
 introBar =
   buildBar Nil invisibleBarType <$> many scoreItem
-   <?> "intro bar"
+    <?> "intro bar"
 
 -- | an intro line as a full line of bars thus introduced
 introLine :: Parser (List Bar)
 introLine =
   (:) <$> introBar <*> manyTill bar eol
-   <?> "intro line"
+    <?> "intro line"
 
 -- | a fully barred line has bar lines both at begin and end
 fullyBarredLine :: Parser (List Bar)
 fullyBarredLine =
   manyTill bar eol
-   <?> "fully barred line"
+    <?> "fully barred line"
 
 scoreItem :: Parser Music
 scoreItem =
   choice
-    [
-      try chord -- potential ambiguity with (inline) in-score headers and slur brackets
+    [ try chord -- potential ambiguity with (inline) in-score headers and slur brackets
     , try inline
     , continuation
-    , try decoratedSpace   -- potential ambiguity with a decorated note
+    , try decoratedSpace -- potential ambiguity with a decorated note
     , ignore
     , spacer
-    , try annotation       -- potential ambiguity with chordSymbol
+    , try annotation -- potential ambiguity with chordSymbol
     , chordSymbol
-    , try tuplet           -- potential ambiguity with slurs inside a note
+    , try tuplet -- potential ambiguity with slurs inside a note
     , rest
     , try brokenRhythmPair -- potential ambiguity with note
-    , try note             -- potential ambiguity with decorations on bars
+    , try note -- potential ambiguity with decorations on bars
     ]
-      <?> "score item"
+    <?> "score item"
 
 chord :: Parser Music
 chord =
-    Chord
-        <$> abcChord
-        <?> "chord"
+  Chord
+    <$> abcChord
+    <?> "chord"
 
 abcChord :: Parser AbcChord
 abcChord =
-    buildChord
-        <$> leftSlurBrackets
-        <*> decorations
-        <*> (between (char '[') (char ']') (many1 abcNote))
-        <*> optionMaybe noteDur
-        <*> rightSlurBrackets
-        <?> "ABC chord"
+  buildChord
+    <$> leftSlurBrackets
+    <*> decorations
+    <*> (between (char '[') (char ']') (many1 abcNote))
+    <*> optionMaybe noteDur
+    <*> rightSlurBrackets
+    <?> "ABC chord"
 
 inline :: Parser Music
 inline =
-    Inline
-        <$> between (char '[') (char ']') (tuneBodyInfo true)
-        <?> "inline header"
+  Inline
+    <$> between (char '[') (char ']') (tuneBodyInfo true)
+    <?> "inline header"
 
 barline :: Parser BarLine
 barline =
-    choice
-        [
-          try normalBarline      -- ambiguity of :: caused by degenerateDoubleColon
-        , degenerateDoubleColon
-        , degenerateBarVolta
-        ]
+  choice
+    [ try normalBarline -- ambiguity of :: caused by degenerateDoubleColon
+    , degenerateDoubleColon
+    , degenerateBarVolta
+    ]
 
 {- a normal bar line (plus optional repeat iteration marker)
    see comments in 4.8 Repeat/bar symbols:
@@ -162,11 +158,11 @@ barline =
 normalBarline :: Parser BarLine
 normalBarline =
   buildBarLine
-     <$> repeatMarkers
-     <*> barlineThickness
-     <*> repeatMarkers
-     <*> optionMaybe repeatSection
-     <?> "bartype"          
+    <$> repeatMarkers
+    <*> barlineThickness
+    <*> repeatMarkers
+    <*> optionMaybe repeatSection
+    <?> "bartype"
 
 {- sometimes in the wild we get a degenerate volta marker at the start of a line 
    of music like this:
@@ -175,22 +171,20 @@ normalBarline =
      _[1 ....
    again we have to be careful about ambiguity between this and inline headers by 
    making sure we parse '[' immediately followed by '1' etc.
-
    We treat this as a bar on its own.  If you try to treat it as a free-standing volta
    then you are beset by the ambiguity issues.
 -}
 degenerateBarVolta :: Parser BarLine
 degenerateBarVolta =
   buildBarLine 0 Thin 0
-    <$> (Just <$> (whiteSpace *> char '[' *> repeatSection)  )
- 
+    <$> (Just <$> (whiteSpace *> char '[' *> repeatSection))
+
 {- Parse a degenerate barline with no bar line!  Just :: on its own -}
 degenerateDoubleColon :: Parser BarLine
-degenerateDoubleColon = 
+degenerateDoubleColon =
   buildBarLine 1 Thin 1 Nothing
     <$ char ':'
-    <* char ':'     
-
+    <* char ':'
 
 {- a repeat section at the start of a bar.  We have just parsed a bar marker (say |) and so the combination of this and the repeat may be:
       |1
@@ -200,28 +194,27 @@ degenerateDoubleColon =
       | 1
   
    repeats of the form 1,2,3 are also accepted
-
    associating the digit with the bracket bar number should remove ambiguity with respect to other productions that use the bracket
    (in particular, inline headers and chords).
 -}
 repeatSection :: Parser (Nel.NonEmptyList Volta)
-repeatSection =   
-   sepBy1 volta (char ',')
+repeatSection =
+  sepBy1 volta (char ',')
 
-volta :: Parser Volta 
-volta = 
-  try voltaRange 
-      <|> simpleVolta
+volta :: Parser Volta
+volta =
+  try voltaRange
+    <|> simpleVolta
 
-voltaRange :: Parser Volta 
-voltaRange = 
+voltaRange :: Parser Volta
+voltaRange =
   VoltaRange <$> digit <*> (char '-' *> digit)
-             <?> "volta range"          
+    <?> "volta range"
 
-simpleVolta :: Parser Volta 
+simpleVolta :: Parser Volta
 simpleVolta =
   Volta <$> digit
-        <?> "simple volta"          
+    <?> "simple volta"
 
 barlineThickness :: Parser Thickness
 barlineThickness =
@@ -230,17 +223,17 @@ barlineThickness =
     , ThinThick <$ string "|]"
     , ThickThin <$ string "]|"
     , ThinThin <$ string "||"
-    , Thin <$ string "|"     
-    ]       
+    , Thin <$ string "|"
+    ]
 
-repeatMarkers :: Parser Int 
-repeatMarkers = 
-  L.length <$> many (char ':')   
+repeatMarkers :: Parser Int
+repeatMarkers =
+  L.length <$> many (char ':')
 
 -- spec is unclear if spaces are allowed after a broken rhythm operator but it's easy to support, is more permissive and doesn't break anything
 brokenRhythmTie :: Parser Broken
 brokenRhythmTie =
-    buildBrokenOperator <$> degenerateBrokenRhythmOperator <* whiteSpace
+  buildBrokenOperator <$> degenerateBrokenRhythmOperator <* whiteSpace
 
 -- | In the wild, we can see slurs encompassing the operator.  For example,
 -- | instead of A>(BC) we can see  A(>BC)
@@ -252,11 +245,11 @@ degenerateBrokenRhythmOperator =
 
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
-    BrokenRhythmPair
-        <$> graceableNote
-        <*> brokenRhythmTie
-        <*> graceableNote
-        <?> "broken rhythm pair"
+  BrokenRhythmPair
+    <$> graceableNote
+    <*> brokenRhythmTie
+    <*> graceableNote
+    <?> "broken rhythm pair"
 
 note :: Parser Music
 note =
@@ -264,13 +257,13 @@ note =
 
 abcNote :: Parser AbcNote
 abcNote =
-    buildNote
-        <$> maybeAccidental
-        <*> pitch
-        <*> moveOctave
-        <*> optionMaybe noteDur
-        <*> maybeTie
-        <?> "ABC note"
+  buildNote
+    <$> maybeAccidental
+    <*> pitch
+    <*> moveOctave
+    <*> optionMaybe noteDur
+    <*> maybeTie
+    <?> "ABC note"
 
 graceableNote :: Parser GraceableNote
 graceableNote =
@@ -285,53 +278,51 @@ graceableNote =
 {- maybe an accidental defining a note's pitch -}
 maybeAccidental :: Parser (Maybe Accidental)
 maybeAccidental =
-    optionMaybe accidental
+  optionMaybe accidental
 
 accidental :: Parser Accidental
 accidental =
-    buildAccidental
-        <$> (choice
-                [
-                  string "^^"
-                , string "__"
-                , string "^"
-                , string "_"
-                , string "="
-                ]
-            )
+  buildAccidental
+    <$>
+      ( choice
+          [ string "^^"
+          , string "__"
+          , string "^"
+          , string "_"
+          , string "="
+          ]
+      )
 
 {- an upper or lower case note ([A-Ga-g]) -}
 pitch :: Parser String
 pitch =
-    regex "[A-Ga-g]"
+  regex "[A-Ga-g]"
 
 moveOctave :: Parser Int
 moveOctave =
-    octaveShift <$> regex "[',]*"
-
+  octaveShift <$> regex "[',]*"
 
 {- count the number of apostrophe (up) or comma (down) characters in the string
    and give the result a value of (up-down)
 -}
 octaveShift :: String -> Int
 octaveShift s =
-    let
-      up = Array.length $ Array.filter ( (==) '\'') (toCharArray s)
-      down = Array.length $ Array.filter ( (==) ',') (toCharArray s)
-    in
-      up - down
+  let
+    up = Array.length $ Array.filter ((==) '\'') (toCharArray s)
+    down = Array.length $ Array.filter ((==) ',') (toCharArray s)
+  in
+    up - down
 
 {- the duration of a note in the body
    order of choices here is important to remove ambiguity
 -}
 noteDur :: Parser Rational
 noteDur =
-    choice
-      [
-        try manySlashes
-      , try anyRat
-      , integralAsRational
-      ]
+  choice
+    [ try manySlashes
+    , try anyRat
+    , integralAsRational
+    ]
 
 {-| this matches:
        1/2
@@ -347,13 +338,12 @@ anyRat =
 {-| this matches //  or /// etc. -}
 manySlashes :: Parser Rational
 manySlashes =
-    buildRationalFromSlashList
-      <$> (Nel.cons <$> char '/' <*> many1 (char '/'))
-
+  buildRationalFromSlashList
+    <$> (Nel.cons <$> char '/' <*> many1 (char '/'))
 
 integralAsRational :: Parser Rational
 integralAsRational =
-    fromInt <$> int
+  fromInt <$> int
 
 {-}
 -- | this implements the spec - a tie attaches to the end of the note and is
@@ -372,7 +362,7 @@ maybeTie :: Parser (Maybe Char)
 maybeTie =
   map (\_ -> '-') <$>
     (optionMaybe (regex " *-"))
-        <?> "tie"
+    <?> "tie"
 
 rest :: Parser Music
 rest =
@@ -383,16 +373,16 @@ rest =
 abcRest :: Parser AbcRest
 abcRest =
   buildRest
-      <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
-      <?> "abcRest"
+    <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
+    <?> "abcRest"
 
 tuplet :: Parser Music
 tuplet = do
   maybeGrace <- optionMaybe graceBracket
   leftBracketCount <- tupletBrackets
   -- calculate the number of slurs by subtracting the tuplet bracket
-  let 
-    leftSlurs = max 0 (leftBracketCount -1)
+  let
+    leftSlurs = max 0 (leftBracketCount - 1)
   signature <- tupletSignature
   -- ensure that the contents match the signature count
   restsOrNotes <- counted signature.r restOrNote
@@ -410,22 +400,21 @@ restOrNote =
    (3::           --> {3,2,3}
    (3:2:4         --> {3,2,4}
    (3::2          --> {3,2,2}
-
    note, space is allowed after the tuplet signature but before the notes in the tuplet
 -}
 tupletSignature :: Parser TupletSignature
 tupletSignature =
-    buildTupletSignature
-        <$> tupletLength
-        <*> tup
-        <*> tup
-        <* whiteSpace
+  buildTupletSignature
+    <$> tupletLength
+    <*> tup
+    <*> tup
+    <* whiteSpace
 
 tup :: Parser (Maybe String)
 tup =
-    join
-        <$> optionMaybe
-                (char ':' *> optionMaybe tupletLength)
+  join
+    <$> optionMaybe
+      (char ':' *> optionMaybe tupletLength)
 
 -- | left and right slurs.  We now attach the (optional) slur brackets to thr
 -- | actual target note which respectively starts or ends the slurred sequence
@@ -442,7 +431,7 @@ tupletBrackets :: Parser Int
 tupletBrackets =
   Nel.length
     <$> many1 leftBracket
-    <?> "tuplet + slurs"      
+    <?> "tuplet + slurs"
 
 leftBracket :: Parser Char
 leftBracket =
@@ -460,12 +449,12 @@ rightBracket =
 
 graceBracket :: Parser Grace
 graceBracket =
-    between (char '{') (char '}') grace
-        <?> "grace bracket"
+  between (char '{') (char '}') grace
+    <?> "grace bracket"
 
 grace :: Parser Grace
 grace =
-    buildGrace <$> acciaccatura <*> (many1 abcNote)
+  buildGrace <$> acciaccatura <*> (many1 abcNote)
 
 {- acciaccaturas are indicated with an optional forward slash
    was
@@ -473,42 +462,38 @@ grace =
 -}
 acciaccatura :: Parser Boolean
 acciaccatura =
-    (\_ -> true) <$> optionMaybe (char '/')
+  (\_ -> true) <$> optionMaybe (char '/')
 
 {- an annotation to the score
    4.19 Annotations
-
    General text annotations can be added above, below or on the staff in a similar way to chord symbols. In this case, the string within double quotes
    is preceded by one of five symbols ^, _, <, > or @ which controls where the annotation is to be placed; above, below, to the left or right respectively
    of the following note, rest or bar line. Using the @ symbol leaves the exact placing of the string to the discretion of the interpreting program.
    These placement specifiers distinguish annotations from chord symbols, and should prevent programs from attempting to play or transpose them.
    All text that follows the placement specifier is treated as a text string.
-
    Example:
-
    "<(" ">)" C
-
 -}
 annotation :: Parser Music
 annotation =
-    buildAnnotation
-        <$> annotationString
-        <?> "annotation"
+  buildAnnotation
+    <$> annotationString
+    <?> "annotation"
 
 annotationString :: Parser String
 annotationString =
   -- (\s -> "\"" <> s <> "\"") <$>
-    string "\""
-        *> regex "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
-        <* string "\""
-        <?> "annotation"
+  string "\""
+    *> regex "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
+    <* string "\""
+    <?> "annotation"
 
-{- a free - format chord symbol - see 4.18 Chord symbols -}
+-- | a free - format chord symbol - see 4.18 Chord symbols.  Drop the quotes round the string.
 chordSymbol :: Parser Music
 chordSymbol =
-    ChordSymbol
-        <$> literalQuotedString
-        <?> "chord symbol"
+  ChordSymbol
+    <$> literalQuotedString false
+    <?> "chord symbol"
 
 decorations :: Parser (List String)
 decorations =
@@ -516,33 +501,33 @@ decorations =
 
 decoration :: Parser String
 decoration =
-   (shortDecoration <|> longDecoration)
-     <* whiteSpace
-      <?> "decoration"
+  (shortDecoration <|> longDecoration)
+    <* whiteSpace
+    <?> "decoration"
 
 shortDecoration :: Parser String
 shortDecoration =
-    regex "[\\.~HLMOPSTuv]"
-        <?> "short decoration"
+  regex "[\\.~HLMOPSTuv]"
+    <?> "short decoration"
 
 longDecoration :: Parser String
 longDecoration =
-    between (char '!') (char '!') (regex "[^\x0D\n!]+")
-      <?> "long decoration"
+  between (char '!') (char '!') (regex "[^\x0D\n!]+")
+    <?> "long decoration"
 
 -- | our whiteSpace differs from that of the string parser we do NOT want to
 -- |consume carriage returns or newlines
 whiteSpace :: Parser String
 whiteSpace =
-  foldMap (singleton <<< codePointFromChar ) <$>
-     many scoreSpace
+  foldMap (singleton <<< codePointFromChar) <$>
+    many scoreSpace
 
 -- at least one (intended) space somewhere inside the music body
 spacer :: Parser Music
 spacer =
-    Spacer
-        <$> (Nel.length <$> (many1 scoreSpace))
-        <?> "space"
+  Spacer
+    <$> (Nel.length <$> (many1 scoreSpace))
+    <?> "space"
 
 -- | see section 6.1.2 Typesetting extra space
 -- | y can be used to add extra space between the surrounding notes; moreover,
@@ -557,27 +542,23 @@ scoreSpace =
   -- tab <|> space
   (char '\t') <|> space
 
-space :: Parser Char--
+space :: Parser Char --
 space = char ' '
 
 {- characters to ignore
-
    Section 8.1 Tune Body:
-
    The following characters are currently reserved: # * ; ? @
    In future standards they may be used to extend the abc syntax. To ensure forward compatibility,
    current software should ignore these characters when they appear inside or between note groups.
-
    section 4.7 Beams:
-
    Back quotes ` may be used freely between notes to be beamed, to increase legibility.
    They are ignored by computer programs. For example, A2``B``C is equivalent to A2BC.
 -}
 ignore :: Parser Music
 ignore =
-    Ignore <$
-        (regex "[#@;`\\*\\?]+")
-        <?> "ignored character"
+  Ignore <$
+    (regex "[#@;`\\*\\?]+")
+    <?> "ignored character"
 
 {- This is an area where the spec is uncertain.  See 6.1.1 Typesetting line-breaks
    The forward slash is used to indicate 'continuation of input lines' often because
@@ -585,65 +566,58 @@ ignore =
    beyond the limit of an old email system.  All very out of date, but nevertheless
    still prevalent in the wild.  We take the view that we must do our best to recognise
    them and then throw them away (along with any other later stuff in the line)
-
    Any text between the forward slash and eol is treated as comment.
-
    Return  (Continuation comment) if we have a continuation.  Now we consume the
    eol character at the end of the continuation so that the parser will continue
    to accumulate the following line into the ADT as a continuation of this line.
 -}
 continuation :: Parser Music
 continuation =
-    Continuation
-        <$ char '\\'
-        <*> regex "[^\x0D\n]*"
-        <* eol
-        <?> "continuation"
+  Continuation
+    <$ char '\\'
+    <*> regex "[^\x0D\n]*"
+    <* eol
+    <?> "continuation"
 
 -- tune headers
 
 headers :: Parser TuneHeaders
 headers =
-    many header <?> "headers"
+  many header <?> "headers"
 
 header :: Parser Header
 header =
-    informationField false <* eol
+  informationField false <* eol
 
 {- headers that may appear in the tune body -}
 tuneBodyHeader :: Parser BodyPart
 tuneBodyHeader =
-    BodyInfo
-        <$> tuneBodyInfo true
-        <* eol
-        <?> "tune body header"
+  BodyInfo
+    <$> tuneBodyInfo true
+    <* eol
+    <?> "tune body header"
 
 tuneBodyInfo :: Boolean -> Parser Header
 tuneBodyInfo isInline =
-    choice
-        [
-          tuneBodyOnlyInfo isInline
-        , anywhereInfo isInline
-        ]
-        <?> "tune body info"
+  choice
+    [ tuneBodyOnlyInfo isInline
+    , anywhereInfo isInline
+    ]
+    <?> "tune body info"
 
 tuneBodyOnlyInfo :: Boolean -> Parser Header
 tuneBodyOnlyInfo isInline =
-    choice
-        [
-          symbolLine isInline
-        , wordsAligned isInline
-        ]
-        <?> "tune body only info"
-
+  choice
+    [ symbolLine isInline
+    , wordsAligned isInline
+    ]
+    <?> "tune body only info"
 
 {- Headers/Information fields.  These can be used in three different ways:
      1) As a normal tune header
      2) As an 'inline' header inside the tune body on a separate line
      3) Embedded inside a tune score between '[' and ']'
-
    Only a named subset of headers can be used inline in this way.
-
    One subtlety is therefore that header information that accepts simple text content
    should not be allowed to incorporate '[' or ']' because of the potential ambiguity.
    Thus, headers functions are given a parameter 'inline' which is the inline context
@@ -656,66 +630,63 @@ tuneBodyOnlyInfo isInline =
 -}
 informationField :: Boolean -> Parser Header
 informationField isInline =
-    choice
-        [
-          anywhereInfo isInline
-        , tuneInfo
-        ]
-        <?> "header"
-
+  choice
+    [ anywhereInfo isInline
+    , tuneInfo
+    ]
+    <?> "header"
 
 anywhereInfo :: Boolean -> Parser Header
 anywhereInfo isInline =
-    choice
-        [ instruction isInline
-        , key
-        , unitNoteLength
-        , meter
-        , macro isInline
-        , notes isInline
-        , parts isInline
-        , tempo
-        , rhythm isInline
-        , remark isInline
-        , title isInline
-        , userDefined isInline
-        , voice
-        , wordsAfter isInline
-        , fieldContinuation
-        , commentLine
-        ]
-        <?> "anywhere info"
+  choice
+    [ instruction isInline
+    , key
+    , unitNoteLength
+    , meter
+    , macro isInline
+    , notes isInline
+    , parts isInline
+    , tempo
+    , rhythm isInline
+    , remark isInline
+    , title isInline
+    , userDefined isInline
+    , voice
+    , wordsAfter isInline
+    , fieldContinuation
+    , commentLine
+    ]
+    <?> "anywhere info"
 
 tuneInfo :: Parser Header
 tuneInfo =
-    choice
-        [
-          area
-        , book
-        , composer
-        , discography
-        , fileUrl
-        , group
-        , history
-        , origin
-        , source
-        , referenceNumber
-        , transcription
-        , unsupportedHeader  -- headers that are currently unsupported but must be recognized and ignored
-        ]
-        <?> "tune info"
+  choice
+    [ area
+    , book
+    , composer
+    , discography
+    , fileUrl
+    , group
+    , history
+    , origin
+    , source
+    , referenceNumber
+    , transcription
+    , unsupportedHeader -- headers that are currently unsupported but must be recognized and ignored
+    ]
+    <?> "tune info"
 
 headerCode :: Char -> Parser String
 headerCode c =
   let
     pattern =
-       fromCharArray [ c, ':' ]
+      fromCharArray [ c, ':' ]
   in
     string pattern <* whiteSpace
 
 unsupportedHeaderCode :: Parser String
 unsupportedHeaderCode =
-    regex "[a-qt-vx-zEJ]:" <* whiteSpace
+  regex "[a-qt-vx-zEJ]:" <* whiteSpace
 
 {- Full comment lines.  Comments are introduced with '%' and can occur anywhere
    and carry on thill the end of the line. We'll treat single line comments 
@@ -725,9 +696,9 @@ unsupportedHeaderCode =
 -}
 commentLine :: Parser Header
 commentLine =
-    Comment
-        <$> comment
-        <?> "comment line"
+  Comment
+    <$> comment
+    <?> "comment line"
 
 {- parse an information item String - note that, because these can be used inline
    (bracketed by '[' and ']') it behoves us not to use the framing characters in the string
@@ -736,205 +707,196 @@ commentLine =
 -}
 inlineInfo :: Boolean -> Parser String
 inlineInfo isInline =
-    let
-        pattern =
-            if isInline then
-                "[^\x0D\n\\[\\]]*"
-            else
-                "[^\x0D\n]*"
-    in
-        regex pattern
+  let
+    pattern =
+      if isInline then
+        "[^\x0D\n\\[\\]]*"
+      else
+        "[^\x0D\n]*"
+  in
+    regex pattern
 
 area :: Parser Header
 area =
-    Area
-        <$> ((headerCode 'A') *> strToEol)
-        <?> "A header"
-
+  Area
+    <$> ((headerCode 'A') *> strToEol)
+    <?> "A header"
 
 book :: Parser Header
 book =
-    Book
-        <$> ((headerCode 'B') *> strToEol)
-        <?> "B Header"
-
+  Book
+    <$> ((headerCode 'B') *> strToEol)
+    <?> "B Header"
 
 composer :: Parser Header
 composer =
-    Composer
-        <$> ((headerCode 'C') *> strToEol)
-        <?> "C header"
-
+  Composer
+    <$> ((headerCode 'C') *> strToEol)
+    <?> "C header"
 
 discography :: Parser Header
 discography =
-    Discography
-        <$> ((headerCode 'D') *> strToEol)
-        <?> "D header"
-
+  Discography
+    <$> ((headerCode 'D') *> strToEol)
+    <?> "D header"
 
 fileUrl :: Parser Header
 fileUrl =
-    FileUrl
-        <$> ((headerCode 'F') *> strToEol)
-        <?> "F header"
-
+  FileUrl
+    <$> ((headerCode 'F') *> strToEol)
+    <?> "F header"
 
 group :: Parser Header
 group =
-    Group
-        <$> ((headerCode 'G') *> strToEol)
-        <?> "G header"
-
+  Group
+    <$> ((headerCode 'G') *> strToEol)
+    <?> "G header"
 
 history :: Parser Header
 history =
-    History
-        <$> ((headerCode 'H') *> strToEol)
-        <?> "H header"
-
+  History
+    <$> ((headerCode 'H') *> strToEol)
+    <?> "H header"
 
 instruction :: Boolean -> Parser Header
 instruction isInline =
-    Instruction
-        <$> ((headerCode 'I') *> (inlineInfo isInline))
-        <?> "I header"
-
+  Instruction
+    <$> ((headerCode 'I') *> (inlineInfo isInline))
+    <?> "I header"
 
 key :: Parser Header
 key =
-    buildKey
-        <$> (headerCode 'K')
-        <*> keySignature
-        <*> keyAccidentals
-        <*> amorphousProperties
-        <?> "K header"
-
+  buildKey
+    <$> (headerCode 'K')
+    <*> keySignature
+    <*> keyAccidentals
+    <*> amorphousProperties
+    <?> "K header"
 
 unitNoteLength :: Parser Header
 unitNoteLength =
-    UnitNoteLength
-        <$> ((headerCode 'L') *> noteDuration)
-        <?> "L header"
+  UnitNoteLength
+    <$> ((headerCode 'L') *> noteDuration)
+    <?> "L header"
 
 meter :: Parser Header
 meter =
-    Meter
-        <$> ((headerCode 'M') *> meterDefinition)
-        <?> "M header"
+  Meter
+    <$> ((headerCode 'M') *> meterDefinition)
+    <?> "M header"
 
 macro :: Boolean -> Parser Header
 macro isInline =
-    Macro
-        <$> ((headerCode 'm') *> (inlineInfo isInline))
-        <?> "m header"
+  Macro
+    <$> ((headerCode 'm') *> (inlineInfo isInline))
+    <?> "m header"
 
 notes :: Boolean -> Parser Header
 notes isInline =
-    Notes
-        <$> ((headerCode 'N') *> (inlineInfo isInline))
-        <?> "N header"
+  Notes
+    <$> ((headerCode 'N') *> (inlineInfo isInline))
+    <?> "N header"
 
 origin :: Parser Header
 origin =
-    Origin
-        <$> ((headerCode 'O') *> strToEol)
-        <?> "O header"
+  Origin
+    <$> ((headerCode 'O') *> strToEol)
+    <?> "O header"
 
 parts :: Boolean -> Parser Header
 parts isInline =
-    Parts
-        <$> ((headerCode 'P') *> (inlineInfo isInline))
-        <?> "P header"
+  Parts
+    <$> ((headerCode 'P') *> (inlineInfo isInline))
+    <?> "P header"
 
 tempo :: Parser Header
 tempo =
-    Tempo
-        <$> ((headerCode 'Q') *> tempoSignature)
-        <?> "Q header"
+  Tempo
+    <$> ((headerCode 'Q') *> tempoSignature)
+    <?> "Q header"
 
 rhythm :: Boolean -> Parser Header
 rhythm isInline =
-    Rhythm
-        <$> ((headerCode 'R') *> (inlineInfo isInline))
-        <?> "R header"
+  Rhythm
+    <$> ((headerCode 'R') *> (inlineInfo isInline))
+    <?> "R header"
 
 remark :: Boolean -> Parser Header
 remark isInline =
-    Remark
-        <$> ((headerCode 'r') *> (inlineInfo isInline))
-        <?> "r header"
+  Remark
+    <$> ((headerCode 'r') *> (inlineInfo isInline))
+    <?> "r header"
 
 source :: Parser Header
 source =
-    Source
-        <$> ((headerCode 'S') *> strToEol)
-        <?> "S header"
+  Source
+    <$> ((headerCode 'S') *> strToEol)
+    <?> "S header"
 
 symbolLine :: Boolean -> Parser Header
 symbolLine isInline =
-    SymbolLine
-        <$> ((headerCode 's') *> (inlineInfo isInline))
-        <?> "s header"
+  SymbolLine
+    <$> ((headerCode 's') *> (inlineInfo isInline))
+    <?> "s header"
 
 title :: Boolean -> Parser Header
 title isInline =
-    Title
-        <$> ((headerCode 'T') *> (inlineInfo isInline))
-        <?> "T header"
+  Title
+    <$> ((headerCode 'T') *> (inlineInfo isInline))
+    <?> "T header"
 
 userDefined :: Boolean -> Parser Header
 userDefined isInline =
-    UserDefined
-        <$> ((headerCode 'U') *> (inlineInfo isInline))
-        <?> "U header"
+  UserDefined
+    <$> ((headerCode 'U') *> (inlineInfo isInline))
+    <?> "U header"
 
 voice :: Parser Header
 voice =
-    buildVoice
-        <$> (headerCode 'V')
-        <*> alphaNumPlusString
-        <*> amorphousProperties
-        <?> "V header"
+  buildVoice
+    <$> (headerCode 'V')
+    <*> alphaNumPlusString
+    <*> amorphousProperties
+    <?> "V header"
 
 wordsAfter :: Boolean -> Parser Header
 wordsAfter isInline =
-    WordsAfter
-        <$> ((headerCode 'W') *> (inlineInfo isInline))
-        <?> "W header"
+  WordsAfter
+    <$> ((headerCode 'W') *> (inlineInfo isInline))
+    <?> "W header"
 
 wordsAligned :: Boolean -> Parser Header
 wordsAligned isInline =
-    WordsAligned
-        <$> ((headerCode 'w') *> (inlineInfo isInline))
-        <?> "w header"
+  WordsAligned
+    <$> ((headerCode 'w') *> (inlineInfo isInline))
+    <?> "w header"
 
 referenceNumber :: Parser Header
 referenceNumber =
-    ReferenceNumber
-        <$> ((headerCode 'X') *> (optionMaybe int)) <* whiteSpace
-        <?> "x header"
+  ReferenceNumber
+    <$> ((headerCode 'X') *> (optionMaybe int))
+    <* whiteSpace
+    <?> "x header"
 
 transcription :: Parser Header
 transcription =
-    Transcription
-        <$> ((headerCode 'Z') *> strToEol)
-        <?> "Z header"
+  Transcription
+    <$> ((headerCode 'Z') *> strToEol)
+    <?> "Z header"
 
 fieldContinuation :: Parser Header
 fieldContinuation =
-    FieldContinuation
-        <$> ((headerCode '+') *> strToEol)
-        <?> "field continuation"
+  FieldContinuation
+    <$> ((headerCode '+') *> strToEol)
+    <?> "field continuation"
 
 {- unsupported header reserved for future use -}
 unsupportedHeader :: Parser Header
 unsupportedHeader =
-    UnsupportedHeader
-        <$ unsupportedHeaderCode
-        <* strToEol
-        <?> "unsupported header"
-
+  UnsupportedHeader
+    <$ unsupportedHeaderCode
+    <* strToEol
+    <?> "unsupported header"
 
 -- HEADER ATTRIBUTES
 
@@ -943,55 +905,49 @@ rational :: Parser Rational
 rational =
   (%) <$> int <* char '/' <*> int
 
-
 -- rational with trailing optional spaces
 headerRational :: Parser Rational
 headerRational =
-    rational <* whiteSpace
-
+  rational <* whiteSpace
 
 noteDuration :: Parser NoteDuration
 noteDuration =
-    rational <* whiteSpace
+  rational <* whiteSpace
 
 meterDefinition :: Parser (Maybe MeterSignature)
 meterDefinition =
-    choice
-        [
-          cutTime
-        , commonTime
-        , meterSignature
-        , nometer
-        ]
-
+  choice
+    [ cutTime
+    , commonTime
+    , meterSignature
+    , nometer
+    ]
 
 commonTime :: Parser (Maybe MeterSignature)
 commonTime =
-    (Just (Tuple 4 4 )) <$ char 'C'
-
+  (Just (Tuple 4 4)) <$ char 'C'
 
 cutTime :: Parser (Maybe MeterSignature)
 cutTime =
-    (Just (Tuple 2 2 )) <$ string "C|"
+  (Just (Tuple 2 2)) <$ string "C|"
 
 -- can't use Rationals for these because they cancel
 meterSignature :: Parser (Maybe MeterSignature)
 meterSignature =
-    Just <$> (Tuple <$> int <* char '/' <*> int <* whiteSpace)
+  Just <$> (Tuple <$> int <* char '/' <*> int <* whiteSpace)
 
 nometer :: Parser (Maybe MeterSignature)
 nometer =
-    Nothing <$ string "none"
+  Nothing <$ string "none"
 
 tempoSignature :: Parser TempoSignature
 tempoSignature =
-  (choice
-    [
-      try suffixedTempoDesignation    -- tempo suffixed with a label
-    , try unlabelledTempoDesignation  -- unlabelled tempo
-    , degenerateTempo                 -- only bpm (deprecated but still prominent)
-    , prefixedTempoDesignation        -- tempo prefixed with a label
-    ]
+  ( choice
+      [ try suffixedTempoDesignation -- tempo suffixed with a label
+      , try unlabelledTempoDesignation -- unlabelled tempo
+      , degenerateTempo -- only bpm (deprecated but still prominent)
+      , prefixedTempoDesignation -- tempo prefixed with a label
+      ]
   ) <* whiteSpace
 
 {- we have for example 1/4=120 -}
@@ -1003,14 +959,16 @@ unlabelledTempoDesignation =
 {- we have for example "lento" 1/4=120 -}
 prefixedTempoDesignation :: Parser TempoSignature
 prefixedTempoDesignation =
-  buildTempoSignature2 <$>
-    spacedQuotedString <*> tempoDesignation
+  buildTempoSignature2
+    <$> spacedQuotedString
+    <*> tempoDesignation
 
 {- we have for example 1/4=120 "lento" -}
 suffixedTempoDesignation :: Parser TempoSignature
 suffixedTempoDesignation =
-  flip buildTempoSignature2 <$>
-    tempoDesignation <*> spacedQuotedString
+  flip buildTempoSignature2
+    <$> tempoDesignation
+    <*> spacedQuotedString
 
 {-\ we have for example 120 -}
 degenerateTempo :: Parser TempoSignature
@@ -1020,23 +978,25 @@ degenerateTempo =
 
 tempoDesignation :: Parser TempoDesignation
 tempoDesignation =
-  TempoDesignation <$>
-      many1 headerRational <* (char '=') <*> int
+  TempoDesignation
+    <$> many1 headerRational
+    <* (char '=')
+    <*> int
 
 sharpOrFlat :: Parser Accidental
 sharpOrFlat =
-    map
-        (\x ->
-            if x == '#' then
-                Sharp
-            else
-                Flat
-        )
-        (char '#' <|> char 'b' )
+  map
+    ( \x ->
+        if x == '#' then
+          Sharp
+        else
+          Flat
+    )
+    (char '#' <|> char 'b')
 
 keyName :: Parser String
 keyName =
-    regex "[A-G]"
+  regex "[A-G]"
 
 keySignature :: Parser KeySignature
 keySignature =
@@ -1051,91 +1011,86 @@ keyAccidental =
 -- | each is separated by a single space
 keyAccidentals :: Parser KeySet
 keyAccidentals =
-    whiteSpace *> sepBy keyAccidental space
+  whiteSpace *> sepBy keyAccidental space
 
 -- | (optional) properties for the Voice or Key header
 amorphousProperties :: Parser (Map String String)
 amorphousProperties =
-  Map.fromFoldable <$>
-    many kvPair <* whiteSpace
+  Map.fromFoldable
+    <$> many kvPair
+    <* whiteSpace
 
 -- | a key-value pair as used in a voice property
 kvPair :: Parser (Tuple String String)
 kvPair =
-  Tuple <$>
-    alphaNumPlusString
-      <*> ((char '=')
-        *> (spacedQuotedString <|> alphaNumPlusString))
+  Tuple
+    <$> alphaNumPlusString
+    <*>
+      ( (char '=')
+          *> (spacedQuotedString <|> alphaNumPlusString)
+      )
 
 mode :: Parser Mode
 mode =
-    choice
-        [
-          try major
-        , ionian
-        , dorian
-        , phrygian
-        , lydian
-        , mixolydian
-        , aeolian
-        , locrian
-        , minor -- place 'last' because of potential ambiguity
-        ]
-
+  choice
+    [ try major
+    , ionian
+    , dorian
+    , phrygian
+    , lydian
+    , mixolydian
+    , aeolian
+    , locrian
+    , minor -- place 'last' because of potential ambiguity
+    ]
 
 minor :: Parser Mode
 minor =
-    Minor <$ whiteSpace <* regex "[M|m][A-Za-z]*"
+  Minor <$ whiteSpace <* regex "[M|m][A-Za-z]*"
 
 major :: Parser Mode
 major =
-    Major <$ whiteSpace <* regex "[M|m][A|a][J|j][A-Za-z]*"
+  Major <$ whiteSpace <* regex "[M|m][A|a][J|j][A-Za-z]*"
 
 ionian :: Parser Mode
 ionian =
-    -- Ionian <$ whiteSpace <* regex "(I|i)(O|o)(N|n)([A-Za-z])*"
-    Ionian <$ whiteSpace <* regex "[I|i][O|o][N|n][A-Za-z]*"
-
+  -- Ionian <$ whiteSpace <* regex "(I|i)(O|o)(N|n)([A-Za-z])*"
+  Ionian <$ whiteSpace <* regex "[I|i][O|o][N|n][A-Za-z]*"
 
 dorian :: Parser Mode
 dorian =
-    Dorian <$ whiteSpace <* regex "[D|d][O|o][R|r][A-Za-z]*"
-
+  Dorian <$ whiteSpace <* regex "[D|d][O|o][R|r][A-Za-z]*"
 
 phrygian :: Parser Mode
 phrygian =
-    Phrygian <$ whiteSpace <* regex "[P|p][H|h][R|r][A-Za-z]*"
-
+  Phrygian <$ whiteSpace <* regex "[P|p][H|h][R|r][A-Za-z]*"
 
 lydian :: Parser Mode
 lydian =
-    Lydian <$ whiteSpace <* regex "[L|l][Y|y][D|d][A-Za-z]*"
-
+  Lydian <$ whiteSpace <* regex "[L|l][Y|y][D|d][A-Za-z]*"
 
 mixolydian :: Parser Mode
 mixolydian =
-    Mixolydian <$ whiteSpace <* regex "[M|m][I|i][X|x][A-Za-z]*"
-
+  Mixolydian <$ whiteSpace <* regex "[M|m][I|i][X|x][A-Za-z]*"
 
 aeolian :: Parser Mode
 aeolian =
-    Aeolian <$ whiteSpace <* regex "[A|a][E|e][O|o][A-Za-z]*"
-
+  Aeolian <$ whiteSpace <* regex "[A|a][E|e][O|o][A-Za-z]*"
 
 locrian :: Parser Mode
 locrian =
-    Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
+  Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
 
 -- builders
 buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
 buildAbcTune hs b =
-  { headers : hs, body : b}
+  { headers: hs, body: b }
 
 buildBar :: List String -> BarLine -> List Music -> Bar
 buildBar decs bl m =
-  { decorations : decs
-  , startLine : bl
-  , music : m
+  { decorations: decs
+  , startLine: bl
+  , music: m
   }
 
 buildBarLine :: Int -> Thickness -> Int -> Maybe (Nel.NonEmptyList Volta) -> BarLine
@@ -1145,22 +1100,22 @@ buildBarLine endRepeats thickness startRepeats iteration =
 -- | a bar type for an introductory 'bar' where there is no opening bar line
 invisibleBarType :: BarLine
 invisibleBarType =
-    { endRepeats : 0
-    , thickness : Invisible
-    , startRepeats : 0
-    , iteration : Nothing
-    }
+  { endRepeats: 0
+  , thickness: Invisible
+  , startRepeats: 0
+  , iteration: Nothing
+  }
 
 buildBrokenOperator :: String -> Broken
 buildBrokenOperator s =
-    if startsWith "<" s then
-        LeftArrow (length s)
-    else
-        RightArrow (length s)
+  if startsWith "<" s then
+    LeftArrow (length s)
+  else
+    RightArrow (length s)
 
 buildRest :: Rational -> AbcRest
 buildRest r =
-  { duration : r }
+  { duration: r }
 
 buildGrace :: Boolean -> Nel.NonEmptyList AbcNote -> Grace
 buildGrace isAcciaccatura ns =
@@ -1168,7 +1123,7 @@ buildGrace isAcciaccatura ns =
 
 buildGraceableNote :: Maybe Grace -> Int -> List String -> AbcNote -> Int -> GraceableNote
 buildGraceableNote maybeGrace leftSlurs decs n rightSlurs =
-  { maybeGrace, leftSlurs, decorations : decs, abcNote : n, rightSlurs }
+  { maybeGrace, leftSlurs, decorations: decs, abcNote: n, rightSlurs }
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =
@@ -1191,7 +1146,7 @@ buildNote macc pitchStr octave ml mt =
         Nothing -> Implicit
         Just a -> a
   in
-    { pitchClass : pc, accidental : acc, octave : spn, duration : l, tied : tied }
+    { pitchClass: pc, accidental: acc, octave: spn, duration: l, tied: tied }
 
 buildAccidental :: String -> Accidental
 buildAccidental s =
@@ -1213,7 +1168,7 @@ buildAccidental s =
 
 buildPitch :: Accidental -> String -> Pitch
 buildPitch a pitchStr =
-    Pitch { pitchClass : lookupPitch pitchStr, accidental : a }
+  Pitch { pitchClass: lookupPitch pitchStr, accidental: a }
 
 buildChord :: Int -> List String -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
 buildChord leftSlurs decs ns ml rightSlurs =
@@ -1221,7 +1176,7 @@ buildChord leftSlurs decs ns ml rightSlurs =
     l =
       fromMaybe (fromInt 1) ml
   in
-    { leftSlurs, decorations : decs, notes : ns, duration : l, rightSlurs }
+    { leftSlurs, decorations: decs, notes: ns, duration: l, rightSlurs }
 
 {- investigate a note/octave pair and return the octave
    in scientific pitch notation relative to MIDI pitches
@@ -1229,12 +1184,12 @@ buildChord leftSlurs decs ns ml rightSlurs =
 -}
 scientificPitchNotation :: String -> Int -> Int
 scientificPitchNotation pc oct =
-    if includes pc "ABCDEFG" then
-        -- pitch class inhabits octave of middle C, oct <= 0
-        middlecOctave + oct
-    else
-        -- pitch class inhabits octave above middle C, oct >= 0
-        middlecOctave + 1 + oct
+  if includes pc "ABCDEFG" then
+    -- pitch class inhabits octave of middle C, oct <= 0
+    middlecOctave + oct
+  else
+    -- pitch class inhabits octave above middle C, oct >= 0
+    middlecOctave + 1 + oct
 
 {- used in counting slashes exponentially -}
 buildRationalFromSlashList :: forall a. Nel.NonEmptyList a -> Rational
@@ -1251,7 +1206,7 @@ buildTupletSignature :: String -> Maybe String -> Maybe String -> TupletSignatur
 buildTupletSignature ps mq mr =
   let
     p =
-       toTupletInt ps
+      toTupletInt ps
 
     -- default values for q.  Not quite in accordance with spec where q varies
     -- between 2 and 3 for odd values of p, dependent on the time signature
@@ -1276,91 +1231,90 @@ buildTupletSignature ps mq mr =
 
 toTupletInt :: String -> Int
 toTupletInt s =
-    fromMaybe 3 (fromString s)
+  fromMaybe 3 (fromString s)
 
 buildAnnotation :: String -> Music
 buildAnnotation s =
-    let
-        firstChar =
-            charAt 0 s
+  let
+    firstChar =
+      charAt 0 s
 
-        placement =
-            case firstChar of
-                Just '^' ->
-                    AboveNextSymbol
+    placement =
+      case firstChar of
+        Just '^' ->
+          AboveNextSymbol
 
-                Just '_' ->
-                    BelowNextSymbol
+        Just '_' ->
+          BelowNextSymbol
 
-                Just '<' ->
-                    LeftOfNextSymbol
+        Just '<' ->
+          LeftOfNextSymbol
 
-                Just '>' ->
-                    RightOfNextSymbol
+        Just '>' ->
+          RightOfNextSymbol
 
-                _ ->
-                    Discretional
-    in
-        Annotation placement (drop 1 s)
+        _ ->
+          Discretional
+  in
+    Annotation placement (drop 1 s)
 
 {- default tempo signature builder which builds from
      an optional label
      a tempo designation such as (1/4=120) or (1/3 1/6=120)
 -}
-buildTempoSignature :: Maybe String -> TempoDesignation ->  TempoSignature
-buildTempoSignature marking td  =
- case td of
-   TempoDesignation noteLengths bpm ->
-    { noteLengths : noteLengths
-    , bpm : bpm
-    , marking : marking
-    }
+buildTempoSignature :: Maybe String -> TempoDesignation -> TempoSignature
+buildTempoSignature marking td =
+  case td of
+    TempoDesignation noteLengths bpm ->
+      { noteLengths: noteLengths
+      , bpm: bpm
+      , marking: marking
+      }
 
 {-| equivalent builder where we have a defined label -}
-buildTempoSignature2 :: String -> TempoDesignation ->  TempoSignature
-buildTempoSignature2 marking td  =
+buildTempoSignature2 :: String -> TempoDesignation -> TempoSignature
+buildTempoSignature2 marking td =
   buildTempoSignature (Just marking) td
 
 {- builder for a degenerate tempo signature where we only have bpm -}
-buildTempoSignature3 :: Int ->  TempoSignature
-buildTempoSignature3 bpm  =
+buildTempoSignature3 :: Int -> TempoSignature
+buildTempoSignature3 bpm =
   let
     noteLengths =
       Nel.singleton (1 % 4)
   in
-   { noteLengths : noteLengths
-   , bpm : bpm
-   , marking : Nothing
-   }
+    { noteLengths: noteLengths
+    , bpm: bpm
+    , marking: Nothing
+    }
 
 {- build a key signature -}
 buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
 buildKeySignature pStr ma mm =
-    { pitchClass : lookupPitch pStr, accidental : ma, mode : fromMaybe Major mm }
+  { pitchClass: lookupPitch pStr, accidental: ma, mode: fromMaybe Major mm }
 
 {- build a complete key designation (key signature plus modifying accidentals) -}
 buildKey :: String -> KeySignature -> List Pitch -> AmorphousProperties -> Header
 buildKey _ ks pitches properties =
-    Key { keySignature: ks, modifications: pitches, properties }
-
+  Key { keySignature: ks, modifications: pitches, properties }
 
 buildVoice :: String -> String -> AmorphousProperties -> Header
-buildVoice _ id properties  =
-    Voice { id, properties }
+buildVoice _ id properties =
+  Voice { id, properties }
 
 -- lookups
 
 lookupPitch :: String -> PitchClass
 lookupPitch p =
-   case (toUpper p) of
-     "A" -> A
-     "B" -> B
-     "C" -> C
-     "D" -> D
-     "E" -> E
-     "F" -> F
-     "G" -> G
-     _ -> C
+  case (toUpper p) of
+    "A" -> A
+    "B" -> B
+    "C" -> C
+    "D" -> D
+    "E" -> E
+    "F" -> F
+    "G" -> G
+    _ -> C
 
 -- regex parsers.  
 brokenRhythmOperator :: Parser String
@@ -1377,7 +1331,7 @@ anyInt =
 
 anyDigit :: Parser String
 anyDigit =
-  regex "([0-9])"    
+  regex "([0-9])"
 
 -- low level
 
@@ -1385,7 +1339,7 @@ anyDigit =
 alphaNumPlusString :: Parser String
 alphaNumPlusString =
   (fromCharArray <<< Array.fromFoldable <<< Nel.toList)
-    <$> (many1 (alphaNum <|> char '-' <|> char '+' <|> char '_' ) <* whiteSpace)
+    <$> (many1 (alphaNum <|> char '-' <|> char '+' <|> char '_') <* whiteSpace)
 
 {-| Parse a `\n` character which may terminate a line in some systems. -}
 newline :: Parser Char
@@ -1405,13 +1359,13 @@ crlf = '\n' <$ regex "!?\r(\n)?" <?> "expected crlf"
     Before the actual end of line, we can have comments, which are discarded
 -}
 eol :: Parser Char
-eol = 
-   optional comment *>
-   crlf <|> newline
+eol =
+  optional comment *>
+    crlf <|> newline
 
 {- Parse a comment.  These can only occur at the end of a line-}
 comment :: Parser String
-comment = 
+comment =
   char '%' *> commentStrToEol
 
 {- parse a remaining string up to but not including the end of line
@@ -1419,51 +1373,53 @@ comment =
 -}
 strToEol :: Parser String
 strToEol =
-    regex "[^\x0D\n%]*" 
+  regex "[^\x0D\n%]*"
 
 {- as above but with further comment characters allowed -}
 commentStrToEol :: Parser String
 commentStrToEol =
-    regex "[^\x0D\n]*" 
+  regex "[^\x0D\n]*"
 
 {-| Parse a positive integer (with no sign). -}
 int :: Parser Int
 int =
-  fromMaybe 1 <$>  -- the anyInt regex will always provide an integer if it parses
-    fromString <$>
-    anyInt
+  fromMaybe 1
+    <$> -- the anyInt regex will always provide an integer if it parses
+      fromString
+    <$>
+      anyInt
     <?> "expected a positive integer"
 
-
-{-| Parse a digit (with no sign). -}  
+{-| Parse a digit (with no sign). -}
 digit :: Parser Int
 digit =
-  fromMaybe 1 <$>  
-    fromString <$>
-    anyDigit
-    <?> "expected a digit"    
+  fromMaybe 1
+    <$> fromString
+    <$>
+      anyDigit
+    <?> "expected a digit"
 
--- | literal quoted String retains the quotes surrounding the returned String
-literalQuotedString :: Parser String
-literalQuotedString =
+-- | literal quoted String. Optionally retain the quotes surrounding the returned String
+literalQuotedString :: Boolean -> Parser String
+literalQuotedString retainQuotes =
   let
     quotedString :: Parser String
     quotedString =
       string "\""
-         *> regex "(\\\\\"|[^\"\n])*"
-         <* string "\""
-         <?> "quoted string"
+        *> regex "(\\\\\"|[^\"\n])*"
+        <* string "\""
+        <?> "quoted string"
   in
-    -- replace the framing quotes
-    (\s -> "\"" <> s <> "\"") <$>
+    if retainQuotes then
+      (\s -> "\"" <> s <> "\"") <$> quotedString
+    else
       quotedString
 
 -- | ditto where it may be bracketed by spaces
 spacedQuotedString :: Parser String
 spacedQuotedString =
-    try -- whitespace can crop up anywhere
-      (whiteSpace *> literalQuotedString <* whiteSpace)
-
+  try -- whitespace can crop up anywhere
+    (whiteSpace *> (literalQuotedString true) <* whiteSpace)
 
 -- utility Functions
 
@@ -1476,7 +1432,6 @@ counted num parser =
 {-}
 concatenate :: List String -> String
 concatenate = foldr (<>) ""
-
 invert :: Rational -> Rational
 invert r =
   -- (denominator r % numerator r)
@@ -1498,21 +1453,21 @@ runParser1 (Parser p) s =
 -- | Entry point - Parse an ABC tune image.
 parse :: String -> Either ParseError AbcTune
 parse s =
-    case runParser abc s of
-        Right n ->
-            Right n
+  case runParser abc s of
+    Right n ->
+      Right n
 
-        Left e ->
-            Left e
+    Left e ->
+      Left e
 
 parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
-    case runParser keySignature s of
-        Right ks ->
-          let
-             emptyList = Nil :: List Pitch
-          in
-             Right { keySignature: ks, modifications: emptyList, properties : empty }
+  case runParser keySignature s of
+    Right ks ->
+      let
+        emptyList = Nil :: List Pitch
+      in
+        Right { keySignature: ks, modifications: emptyList, properties: empty }
 
-        Left e ->
-            Left e
+    Left e ->
+      Left e

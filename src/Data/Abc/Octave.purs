@@ -1,9 +1,9 @@
 -- | Conversion to a new octave.
 module Data.Abc.Octave
-        ( move
-        , up
-        , down
-        ) where
+  ( move
+  , up
+  , down
+  ) where
 
 import Prelude ((+), map, negate)
 import Data.List (List)
@@ -28,7 +28,6 @@ up :: AbcTune -> AbcTune
 up t =
   moveTune 1 t
 
-
 -- | Move the tune down octave.
 down :: AbcTune -> AbcTune
 down t =
@@ -39,19 +38,18 @@ moveTune :: Int -> AbcTune -> AbcTune
 moveTune i t =
   { headers: t.headers, body: (moveTuneBody i t.body) }
 
-
 moveTuneBody :: Int -> TuneBody -> TuneBody
 moveTuneBody i =
-    map (moveBodyPart i)
+  map (moveBodyPart i)
 
 moveBodyPart :: Int -> BodyPart -> BodyPart
 moveBodyPart i bp =
-    case bp of
-        Score ms ->
-            Score (moveBarList i ms)
+  case bp of
+    Score ms ->
+      Score (moveBarList i ms)
 
-        _ ->
-            bp
+    _ ->
+      bp
 
 moveOctave :: Int -> Music -> Music
 moveOctave i m =
@@ -63,13 +61,13 @@ moveOctave i m =
       BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
 
     Tuplet tuplet ->
-      let 
+      let
         maybeGrace = moveMaybeGraceBy i tuplet.maybeGrace
         leftSlurs = tuplet.leftSlurs
         signature = tuplet.signature
-        restsOrNotes = moveRestOrNoteList i tuplet.restsOrNotes 
-      in          
-       Tuplet { maybeGrace, leftSlurs, signature, restsOrNotes }
+        restsOrNotes = moveRestOrNoteList i tuplet.restsOrNotes
+      in
+        Tuplet { maybeGrace, leftSlurs, signature, restsOrNotes }
 
     Chord c ->
       Chord (moveChord i c)
@@ -96,9 +94,9 @@ moveMaybeGraceBy :: Int -> Maybe Grace -> Maybe Grace
 moveMaybeGraceBy i mGrace =
   map moveGraceBy mGrace
   where
-    moveGraceBy :: Grace -> Grace
-    moveGraceBy g =
-       g { notes = moveNoteList i g.notes  }
+  moveGraceBy :: Grace -> Grace
+  moveGraceBy g =
+    g { notes = moveNoteList i g.notes }
 
 moveBarList :: Int -> List Bar -> List Bar
 moveBarList i =
@@ -114,7 +112,7 @@ moveBar i bar =
 
 moveNoteList :: Int -> NonEmptyList AbcNote -> NonEmptyList AbcNote
 moveNoteList i =
-    map (moveNoteBy i)
+  map (moveNoteBy i)
 
 -- | tuples may now contain either rests or notes
 moveRestOrNoteList :: Int -> NonEmptyList RestOrNote -> NonEmptyList RestOrNote
@@ -130,4 +128,4 @@ moveRestOrNoteList i =
 
 moveChord :: Int -> AbcChord -> AbcChord
 moveChord i c =
-    c { notes = moveNoteList i c.notes }
+  c { notes = moveNoteList i c.notes }

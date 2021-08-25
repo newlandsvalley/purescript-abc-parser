@@ -4,12 +4,29 @@ module Data.Abc.Midi
   , toMidi
   , toMidiAtBpm
   , toMidiPitch
-  , midiPitchOffset) where
+  , midiPitchOffset
+  ) where
 
 import Control.Monad.State (State, get, put, evalState)
-import Data.Abc (AbcTune, AbcNote, Bar, RestOrNote, Pitch(..), Accidental(..), BarLine, 
-    Broken(..), Header(..), TuneBody, BodyPart(..), Grace, GraceableNote, 
-    MusicLine, Music(..), ModifiedKeySignature, TempoSignature)
+import Data.Abc
+  ( AbcTune
+  , AbcNote
+  , Bar
+  , RestOrNote
+  , Pitch(..)
+  , Accidental(..)
+  , BarLine
+  , Broken(..)
+  , Header(..)
+  , TuneBody
+  , BodyPart(..)
+  , Grace
+  , GraceableNote
+  , MusicLine
+  , Music(..)
+  , ModifiedKeySignature
+  , TempoSignature
+  )
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.KeySignature (defaultKey, modifiedKeySet, pitchNumber, notesInChromaticScale)
 import Data.Abc.Metadata (dotFactor, getKeySig)
@@ -35,7 +52,7 @@ import Prelude (bind, identity, map, pure, ($), (&&), (*), (+), (-), (<), (>), (
 
 -- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
-    Int
+  Int
 
 -- | the fraction  of the duration of a note that is 'stolen' by any
 -- | preceding grace note that it has
@@ -69,8 +86,8 @@ midiPitchOffset n mks barAccidentals =
     accidental =
       case n.accidental of
         Implicit ->
-          fromMaybe Natural $ oneOf ( inBarAccidental: inKeyAccidental: Nil )
-        _ ->  -- explict
+          fromMaybe Natural $ oneOf (inBarAccidental : inKeyAccidental : Nil)
+        _ -> -- explict
           n.accidental
 
     {-}
@@ -80,7 +97,7 @@ midiPitchOffset n mks barAccidentals =
     -}
 
     pattern =
-      Pitch { pitchClass : n.pitchClass, accidental : accidental }
+      Pitch { pitchClass: n.pitchClass, accidental: accidental }
   in
     pitchNumber pattern
 
@@ -101,15 +118,15 @@ toMidiAtBpm originalTune bpm =
 
 -- | the state to thread through the computation
 type TState =
-    { modifiedKeySignature ::  ModifiedKeySignature    -- the current key signature
-    , abcTempo ::  AbcTempo                            -- the current tempo
-    , currentBar :: MidiBar                            -- the current bar being translated
-    , currentBarAccidentals :: Accidentals.Accidentals -- can't put this in MidiBar because of typeclass constraints
-                                                       -- any notes marked explicitly as accidentals in the current bar
-    , lastNoteTied :: Maybe AbcNote                    -- the last note, if it was tied?
-    , repeatState :: RepeatState                       -- the repeat state of the tune
-    , rawTrack :: List MidiBar                         -- the growing list of completed bars
-    }
+  { modifiedKeySignature :: ModifiedKeySignature -- the current key signature
+  , abcTempo :: AbcTempo -- the current tempo
+  , currentBar :: MidiBar -- the current bar being translated
+  , currentBarAccidentals :: Accidentals.Accidentals -- can't put this in MidiBar because of typeclass constraints
+  -- any notes marked explicitly as accidentals in the current bar
+  , lastNoteTied :: Maybe AbcNote -- the last note, if it was tied?
+  , repeatState :: RepeatState -- the repeat state of the tune
+  , rawTrack :: List MidiBar -- the growing list of completed bars
+  }
 
 type TransformationState =
   Tuple TState Midi.Recording
@@ -119,38 +136,39 @@ skeletalRecording :: Midi.Recording
 skeletalRecording =
   let
     header = Midi.Header
-     { formatType : 0
-     , trackCount : 1
-     , ticksPerBeat : standardMidiTick
-     }
-  in Midi.Recording
-    { header : header
-    , tracks : Nil
-    }
+      { formatType: 0
+      , trackCount: 1
+      , ticksPerBeat: standardMidiTick
+      }
+  in
+    Midi.Recording
+      { header: header
+      , tracks: Nil
+      }
 
 -- | The very first bar has a default tempo as the only message
 initialBar :: Midi.Message -> MidiBar
 initialBar initialMsg =
-  { number : 0
-  , endRepeats : 0
-  , startRepeats : 0
-  , iteration : Nothing
-  , midiMessages : initialMsg : Nil
+  { number: 0
+  , endRepeats: 0
+  , startRepeats: 0
+  , iteration: Nothing
+  , midiMessages: initialMsg : Nil
   }
 
 -- | build a new bar from a bar number and an ABC bar
 buildNewBar :: Int -> BarLine -> MidiBar
 buildNewBar i barLine =
-  {  number : i
-  ,  endRepeats : barLine.endRepeats
-  ,  startRepeats : barLine.startRepeats
-  ,  iteration : barLine.iteration
-  ,  midiMessages : Nil
+  { number: i
+  , endRepeats: barLine.endRepeats
+  , startRepeats: barLine.startRepeats
+  , iteration: barLine.iteration
+  , midiMessages: Nil
   }
 
 -- the default MIDI volume (velocity)
 defaultVolume :: Int
-defaultVolume =  80
+defaultVolume = 80
 
 -- | this initial state is then threaded through the computation
 -- | but will be altered when ABC headers are encountered
@@ -161,17 +179,19 @@ initialState tune =
     keySignature :: ModifiedKeySignature
     keySignature = fromMaybe defaultKey (getKeySig tune)
     initialMsg = midiTempoMsg abcTempo
-    -- we must have a tempo indication at the very start
-    -- startTrack = RawTrack $ (initialBar initialMsg) : Nil
+  -- we must have a tempo indication at the very start
+  -- startTrack = RawTrack $ (initialBar initialMsg) : Nil
   in
-    Tuple { modifiedKeySignature: keySignature
-          , abcTempo : abcTempo
-          , currentBar : initialBar initialMsg
-          , currentBarAccidentals : Accidentals.empty
-          , lastNoteTied : Nothing
-          , repeatState : initialRepeatState
-          , rawTrack : Nil
-          } skeletalRecording
+    Tuple
+      { modifiedKeySignature: keySignature
+      , abcTempo: abcTempo
+      , currentBar: initialBar initialMsg
+      , currentBarAccidentals: Accidentals.empty
+      , lastNoteTied: Nothing
+      , repeatState: initialRepeatState
+      , rawTrack: Nil
+      }
+      skeletalRecording
 
 transformTune :: AbcTune -> State TransformationState Midi.Recording
 transformTune tune =
@@ -288,26 +308,27 @@ addBarToState tstate barLine =
         -- the current bar is not empty so we aggregate the new bar into the track
         currentBar : tstate.rawTrack
     in
-      tstate { currentBar = buildNewBar (currentBar.number + 1) barLine
-             , currentBarAccidentals = Accidentals.empty
-             , repeatState = repeatState
-             , rawTrack = rawTrack
-             }
+      tstate
+        { currentBar = buildNewBar (currentBar.number + 1) barLine
+        , currentBarAccidentals = Accidentals.empty
+        , repeatState = repeatState
+        , rawTrack = rawTrack
+        }
 
 -- | coalesce the new bar from ABC with the current one held in the state
 -- | (which has previously been tested for emptiness)
-coalesceBar :: TState -> BarLine-> TState
+coalesceBar :: TState -> BarLine -> TState
 coalesceBar tstate barLine =
   let
     endRepeats = tstate.currentBar.endRepeats + barLine.endRepeats
     startRepeats = tstate.currentBar.startRepeats + barLine.startRepeats
-    bar' = tstate.currentBar { endRepeats = endRepeats
-                             , startRepeats = startRepeats
-                             , iteration = barLine.iteration 
-                             }
+    bar' = tstate.currentBar
+      { endRepeats = endRepeats
+      , startRepeats = startRepeats
+      , iteration = barLine.iteration
+      }
   in
     tstate { currentBar = bar' }
-
 
 -- | The unit note length and tempo headers affect tempo
 -- | The key signature header affects pitch
@@ -327,7 +348,7 @@ transformHeader h =
         tpl <- get
         pure $ snd tpl
 
-addGraceableNoteToState :: Boolean -> Rational -> TState-> GraceableNote -> TState
+addGraceableNoteToState :: Boolean -> Rational -> TState -> GraceableNote -> TState
 addGraceableNoteToState chordal tempoModifier tstate graceableNote =
   addNoteToState chordal tempoModifier graceableNote.maybeGrace tstate graceableNote.abcNote
 
@@ -336,7 +357,7 @@ addGraceableNoteToState chordal tempoModifier tstate graceableNote =
 -- | there are other implications for state - if the note has an explicit
 -- | accidental, overriding the key then it is added to state because it
 -- | influences other notes later in the bar
-addNoteToState :: Boolean -> Rational -> Maybe Grace -> TState-> AbcNote -> TState
+addNoteToState :: Boolean -> Rational -> Maybe Grace -> TState -> AbcNote -> TState
 addNoteToState chordal tempoModifier maybeGrace tstate abcNote =
   let
     Tuple msgs newTie =
@@ -347,13 +368,14 @@ addNoteToState chordal tempoModifier maybeGrace tstate abcNote =
     barAccidentals =
       addNoteToBarAccidentals abcNote tstate.currentBarAccidentals
   in
-    tstate { currentBar = tstate.currentBar { midiMessages = msgs }
-           , lastNoteTied = newTie
-           , currentBarAccidentals = barAccidentals
-           }
+    tstate
+      { currentBar = tstate.currentBar { midiMessages = msgs }
+      , lastNoteTied = newTie
+      , currentBarAccidentals = barAccidentals
+      }
 
 -- | tuplets can now contain rests
-addRestOrNoteToState :: Boolean -> Rational -> TState-> RestOrNote -> TState
+addRestOrNoteToState :: Boolean -> Rational -> TState -> RestOrNote -> TState
 addRestOrNoteToState chordal tempoModifier tstate restOrNote =
   case restOrNote of
     Left r ->
@@ -365,7 +387,7 @@ addRestOrNoteToState chordal tempoModifier tstate restOrNote =
 -- | process the incoming  note that is part of a chord.
 -- | Here, ties and grace notes preceding the note
 -- | are not supported
-processChordalNote ::  Rational -> TState -> AbcNote -> Tuple (List Midi.Message) (Maybe AbcNote)
+processChordalNote :: Rational -> TState -> AbcNote -> Tuple (List Midi.Message) (Maybe AbcNote)
 processChordalNote tempoModifier tstate abcNote =
   let
     msgOn = emitNoteOn tstate abcNote
@@ -439,8 +461,8 @@ emitNoteOnOff tempoModifier tstate abcNote =
       toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
     ticks =
       noteTicks (abcNote.duration * tempoModifier)
-    in
-      ((midiNoteOff ticks pitch) : (midiNoteOn 0 pitch) : Nil )
+  in
+    ((midiNoteOff ticks pitch) : (midiNoteOn 0 pitch) : Nil)
 
 -- | emit a sequence of on off MIDI messages from a sequence of ABC notes
 -- | used for grace notes
@@ -462,10 +484,9 @@ emitNoteOn tstate abcNote =
   in
     midiNoteOn 0 pitch
 
-
 -- | chordal means that the notes form a chord and thus do not need
 -- | NoteOff messages to be generated after each note
-addNotesToState :: Boolean -> Rational -> TState-> List AbcNote -> TState
+addNotesToState :: Boolean -> Rational -> TState -> List AbcNote -> TState
 addNotesToState chordal tempoModifier tstate abcNotes =
   foldl (addNoteToState chordal tempoModifier Nothing) tstate abcNotes
 
@@ -473,7 +494,7 @@ addNotesToState chordal tempoModifier tstate abcNotes =
 -- | plus a list of either rests or notes.
 -- | tempo modifier is the modification of the tempo indicate donly by the
 -- | tuplet signature (e.g. 3 notes in the time of two)
-addTupletContentsToState :: Maybe Grace -> Rational -> TState-> NonEmptyList RestOrNote -> TState
+addTupletContentsToState :: Maybe Grace -> Rational -> TState -> NonEmptyList RestOrNote -> TState
 addTupletContentsToState mGrace tempoModifier tstate restsOrNotes =
   let
     -- move the grace notes from external to internal
@@ -490,55 +511,60 @@ addNoteOffToState duration tstate abcNote =
     pitch =
       toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
     msg = midiNoteOff (noteTicks duration) pitch
-    bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages) }
   in
     tstate { currentBar = bar' }
 
 -- | add a bunch of NoteOffs at the same duration
-addNoteOffsToState :: Rational -> TState -> List AbcNote  -> TState
+addNoteOffsToState :: Rational -> TState -> List AbcNote -> TState
 addNoteOffsToState duration tstate abcNotes =
   foldl (addNoteOffToState duration) tstate abcNotes
 
 -- | add a pitchless NoteOn which indicates a rest
-addRestToState :: TState-> Rational -> TState
+addRestToState :: TState -> Rational -> TState
 addRestToState tstate duration =
   let
     -- a rest is a note without a pitch
     msg = midiNoteOn (noteTicks duration) 0
-    bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages) }
   in
     tstate { currentBar = bar' }
 
 -- | cater for a change in key signature
-addKeySigToState :: TState-> ModifiedKeySignature -> TState
+addKeySigToState :: TState -> ModifiedKeySignature -> TState
 addKeySigToState tstate mks =
   tstate { modifiedKeySignature = mks }
 
 -- | cater for a change in unit note length
-addUnitNoteLenToState :: TState-> Rational -> TState
+addUnitNoteLenToState :: TState -> Rational -> TState
 addUnitNoteLenToState tstate d =
   let
-    abcTempo' = tstate.abcTempo { unitNoteLength = d}
+    abcTempo' = tstate.abcTempo { unitNoteLength = d }
     tempoMsg = midiTempoMsg abcTempo'
-    bar' = tstate.currentBar { midiMessages = (tempoMsg : tstate.currentBar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (tempoMsg : tstate.currentBar.midiMessages) }
   in
-    tstate { abcTempo = abcTempo'
-           , currentBar = bar' }
+    tstate
+      { abcTempo = abcTempo'
+      , currentBar = bar'
+      }
 
 -- | cater for a change in unit note length
 -- | this not only changes state but adds a change tempo message
-addTempoToState :: TState-> TempoSignature -> TState
+addTempoToState :: TState -> TempoSignature -> TState
 addTempoToState tstate tempoSig =
   let
     abcTempo' =
-      tstate.abcTempo { tempoNoteLength = foldl (+) (fromInt 0) tempoSig.noteLengths
-                      , bpm = tempoSig.bpm
-                      }
+      tstate.abcTempo
+        { tempoNoteLength = foldl (+) (fromInt 0) tempoSig.noteLengths
+        , bpm = tempoSig.bpm
+        }
     tempoMsg = midiTempoMsg abcTempo'
-    bar' = tstate.currentBar { midiMessages = (tempoMsg : tstate.currentBar.midiMessages)}
+    bar' = tstate.currentBar { midiMessages = (tempoMsg : tstate.currentBar.midiMessages) }
   in
-    tstate { abcTempo = abcTempo'
-           , currentBar = bar' }
+    tstate
+      { abcTempo = abcTempo'
+      , currentBar = bar'
+      }
 
 -- utility functions
 
@@ -582,7 +608,7 @@ isBarEmpty mb =
 -- | generic function to update the State
 -- | a is an ABC value
 -- | f is a function that transforms the ABC value and adds it to the state
-updateState :: forall a. (TState -> a -> TState ) -> a -> State TransformationState Midi.Recording
+updateState :: forall a. (TState -> a -> TState) -> a -> State TransformationState Midi.Recording
 updateState f abc =
   do
     tpl <- get
@@ -608,8 +634,10 @@ finaliseMelody =
       repeatState =
         finalBar currentBar tstate.repeatState
       -- ensure we incorporate the very last bar
-      tstate' = tstate { rawTrack = tstate.currentBar : tstate.rawTrack
-                       , repeatState = repeatState }
+      tstate' = tstate
+        { rawTrack = tstate.currentBar : tstate.rawTrack
+        , repeatState = repeatState
+        }
       track = buildRepeatedMelody tstate'.rawTrack tstate'.repeatState.sections
       recording' :: Midi.Recording
       recording' = Midi.Recording recording { tracks = singleton $ track }
@@ -637,27 +665,26 @@ barSelector :: Int -> Int -> MidiBar -> Boolean
 barSelector strt fin mb =
   mb.number >= strt && mb.number < fin
 
-
 -- | build a repeat section
 -- | this function is intended for use within foldl
-repeatedSection ::  MidiBars -> List Midi.Message -> Section -> List Midi.Message 
-repeatedSection mbs acc section = 
-  if (variantCount section > 1) then 
+repeatedSection :: MidiBars -> List Midi.Message -> Section -> List Midi.Message
+repeatedSection mbs acc section =
+  if (variantCount section > 1) then
     (variantSlices mbs section) <> acc
-  else 
-    simpleRepeatedSection mbs acc section    
+  else
+    simpleRepeatedSection mbs acc section
 
 -- | simple repeated sections with no variants
-simpleRepeatedSection ::  MidiBars -> List Midi.Message -> Section -> List Midi.Message
+simpleRepeatedSection :: MidiBars -> List Midi.Message -> Section -> List Midi.Message
 -- we could represent this with the next, but I think it's clearer having them separate
-simpleRepeatedSection mbs acc (Section { start: Just a, end: Just d, repeatCount : 0 }) =
-  (trackSlice a d mbs ) <> acc
+simpleRepeatedSection mbs acc (Section { start: Just a, end: Just d, repeatCount: 0 }) =
+  (trackSlice a d mbs) <> acc
 -- a repeated section
-simpleRepeatedSection mbs acc (Section { start: Just a,  end: Just d, repeatCount : n }) =
-  let 
-    slice = trackSlice a d mbs 
-    slices = replicate (n+1) slice
-  in 
+simpleRepeatedSection mbs acc (Section { start: Just a, end: Just d, repeatCount: n }) =
+  let
+    slice = trackSlice a d mbs
+    slices = replicate (n + 1) slice
+  in
     (concat slices) <> acc
 -- something else (unexpected)
 simpleRepeatedSection _ acc _ =
@@ -673,8 +700,8 @@ trackSlice start finish mbs =
 -- index is the current index into the array of varianty endings 
 -- pos is the value at the current index
 -- we need to use indexed methods because we need to look up the next index position
-variantSlice :: Int -> Int -> Section -> MidiBars -> Tuple Int Int -> List Midi.Message 
-variantSlice start end section sectionBars (Tuple index pos) = 
+variantSlice :: Int -> Int -> Section -> MidiBars -> Tuple Int Int -> List Midi.Message
+variantSlice start end section sectionBars (Tuple index pos) =
   let
     -- the first slice is the main tune section which is always from the 
     -- start to the first volta 
@@ -705,37 +732,37 @@ variantSlice start end section sectionBars (Tuple index pos) =
 
     -- find the end bar number position of the repeat at this index
     nextEnding = findEndingPosition (unwrap section).variantPositions index end
-    {- 
-    _ = spy "index" index
-    _ = spy "variant count" (variantCount section)
-    _ = spy "veryfirstEnding" firstEnding
-    _ = spy "thisEnding" thisEnding
-    _ = spy "nextEnding" nextEnding
-    -}
+  {- 
+  _ = spy "index" index
+  _ = spy "variant count" (variantCount section)
+  _ = spy "veryfirstEnding" firstEnding
+  _ = spy "thisEnding" thisEnding
+  _ = spy "nextEnding" nextEnding
+  -}
   in
-    trackSlice start firstEnding sectionBars 
-      <> trackSlice thisEnding nextEnding sectionBars 
+    trackSlice start firstEnding sectionBars
+      <> trackSlice thisEnding nextEnding sectionBars
 
 variantSlices :: MidiBars -> Section -> List Midi.Message
 variantSlices mbs section =
-  case section of 
-    Section { start: Just start, end: Just end } ->       
+  case section of
+    Section { start: Just start, end: Just end } ->
       accumulateSlices mbs start end section
-    _ -> 
+    _ ->
       Nil
 
 -- accumulate all the slices for the variant endings
-accumulateSlices :: MidiBars -> Int -> Int -> Section ->  List Midi.Message
-accumulateSlices mbs start end section  = 
-  let 
+accumulateSlices :: MidiBars -> Int -> Int -> Section -> List Midi.Message
+accumulateSlices mbs start end section =
+  let
     sectionBars :: MidiBars
     sectionBars = filter (barSelector start end) mbs
     slices :: Array (List Midi.Message)
     slices = map
-              (variantSlice start end section sectionBars)
-              (activeVariants section)
-  in 
-    concat $ Array.toUnfoldable slices  
+      (variantSlice start end section sectionBars)
+      (activeVariants section)
+  in
+    concat $ Array.toUnfoldable slices
 
 -- | Curtail the duration of the note by taking account of any grace notes
 -- | that it may have
@@ -760,8 +787,8 @@ individualGraceNote abcNote graceNote =
 -- | build any repeated section into an extended melody with all repeats realised -}
 buildRepeatedMelody :: List MidiBar -> Sections -> Midi.Track
 buildRepeatedMelody mbs sections =
-   -- trace "Sections" \_ ->
-   -- traceShow sections \_ ->
+  -- trace "Sections" \_ ->
+  -- traceShow sections \_ ->
   if (null sections) then
     Midi.Track Nil
   else
@@ -778,15 +805,14 @@ gracifyFirstNote maybeGrace restsOrNotes =
     f :: RestOrNote -> RestOrNote
     f =
       bimap identity (\gn -> gn { maybeGrace = maybeGrace })
-    in
-      Cons (f hd) tl
+  in
+    Cons (f hd) tl
 
 -- temp debug
 {-
 showBar :: MidiBar -> String
 showBar mb =
   "barnum: " <> show (mb.number) <>  " message count: " <> show (length mb.midiMessages) <> " repeat " <>  show mb.repeat <>" "
-
 showBars :: List MidiBar -> String
 showBars mbs =
   let

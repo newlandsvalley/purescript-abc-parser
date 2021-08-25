@@ -2,13 +2,14 @@
 -- | number indexes and repeat indicators which are either
 -- | simple repeats or variant repeats (voltas)
 
-module Data.Abc.Repeats.Types 
+module Data.Abc.Repeats.Types
   ( BarNo
   , Label(..)
   , Section(..)
   , Sections
   , RepeatState
-  , VariantPositions ) where
+  , VariantPositions
+  ) where
 
 import Prelude (class Eq, class Show)
 import Data.Generic.Rep
@@ -19,9 +20,9 @@ import Data.Newtype (class Newtype)
 import Data.Eq.Generic (genericEq)
 import Data.Show.Generic (genericShow)
 
-data Label =
-    LeadIn     -- lead-in bars existing in the tune
-  | Intro      --- artificially generated Intro
+data Label
+  = LeadIn -- lead-in bars existing in the tune
+  | Intro --- artificially generated Intro
   | APart
   | OtherPart
 
@@ -31,7 +32,7 @@ instance showLabel :: Show Label where
   show APart = "A Part"
   show OtherPart = "Other Part"
 
-derive instance eqLabel :: Eq Label      
+derive instance eqLabel :: Eq Label
 
 -- a bar number in the melody
 type BarNo = Int
@@ -43,24 +44,26 @@ type VariantPositions = Map Int BarNo
 -- | a section of the tune (possibly repeated)
 -- | with indices given by the bar number where the feature lives
 newtype Section = Section
-    { start :: Maybe BarNo
-    , variantPositions :: VariantPositions
-    , end :: Maybe BarNo
-    , repeatCount :: Int 
-    , label :: Label
-    }
- 
+  { start :: Maybe BarNo
+  , variantPositions :: VariantPositions
+  , end :: Maybe BarNo
+  , repeatCount :: Int
+  , label :: Label
+  }
+
 derive instance newtypeSection :: Newtype Section _
 derive instance genericSection :: Generic Section _
-instance eqSection :: Eq Section where  eq = genericEq
-instance showSection :: Show Section where show = genericShow   
+instance eqSection :: Eq Section where
+  eq = genericEq
+instance showSection :: Show Section where
+  show = genericShow
 
 -- | a set of sections
 type Sections = List Section
 
 -- | the current repeat state
 type RepeatState =
-    { current :: Section
-    , sections :: Sections
-    , intro :: Array Int    -- only used whenever we intend to support intros
-    }  
+  { current :: Section
+  , sections :: Sections
+  , intro :: Array Int -- only used whenever we intend to support intros
+  }

@@ -3,15 +3,15 @@
 -- | the accidental nature of a note may depend on the existence of a previous
 -- | note of the same pitch within the bar.
 module Data.Abc.Accidentals
-        ( Accidentals
-        , empty
-        , add
-        , fromKeySet
-        , lookup
-        , member
-        , fromKeySig
-        , implicitInKeySet
-        ) where
+  ( Accidentals
+  , empty
+  , add
+  , fromKeySet
+  , lookup
+  , member
+  , fromKeySig
+  , implicitInKeySet
+  ) where
 
 import Prelude ((==), map)
 import Data.Abc (PitchClass, Accidental, Pitch(..), KeySet, KeySignature)
@@ -47,7 +47,7 @@ fromKeySet ks =
 
 -- | lookup a pitch class and see of it exists in the Accidentals set
 lookup :: PitchClass -> Accidentals -> Maybe Accidental
-lookup  =
+lookup =
   Map.lookup
 
 -- | lookup a KeyAccidental (represented as a Pitch) and see if it's a member of
@@ -56,16 +56,17 @@ member :: Pitch -> Accidentals -> Boolean
 member (Pitch p) accs =
   let
     macc =
-       lookup p.pitchClass accs
+      lookup p.pitchClass accs
   in
     (Just p.accidental) == macc
 
 -- | extract the KeyAccidental Pitch from a KeySignature
 fromKeySig :: KeySignature -> Pitch
 fromKeySig ks =
-  Pitch { pitchClass : ks.pitchClass
-                , accidental : ks.accidental
-                }
+  Pitch
+    { pitchClass: ks.pitchClass
+    , accidental: ks.accidental
+    }
 
 -- | Return an accidental if it is implicitly there in the supplied KeySet
 -- | (which is obtained from a key signature)

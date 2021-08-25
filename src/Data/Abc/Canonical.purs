@@ -1,13 +1,13 @@
 -- | A canonical representation of an ABC tune as a string.
 module Data.Abc.Canonical
-        ( fromTune
-        , fromEither
-        , abcNote
-        , abcChord
-        , tupletSignature
-        , bars
-        , keySignatureAccidental
-        ) where
+  ( fromTune
+  , fromEither
+  , abcNote
+  , abcChord
+  , tupletSignature
+  , bars
+  , keySignatureAccidental
+  ) where
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
@@ -43,12 +43,12 @@ tupletSignature { p: 2, q: 3, r: 2 } = "(2"
 tupletSignature { p: 3, q: 2, r: 3 } = "(3"
 tupletSignature { p: 4, q: 3, r: 4 } = "(4"
 tupletSignature { p: p, q: q, r: r } =
-    "("
-        <> (show p)
-        <> ":"
-        <> (show q)
-        <> ":"
-        <> (show r)
+  "("
+    <> (show p)
+    <> ":"
+    <> (show q)
+    <> ":"
+    <> (show r)
 
 tempo :: TempoSignature -> String
 tempo t =
@@ -67,20 +67,20 @@ showRatio r =
 
 ratlist :: NonEmptyList Rational -> String
 ratlist rs =
-    let
-        f r acc =
-          (showRatio r) <> " " <> acc
-    in
-      Str.trim $ foldr f "" rs
+  let
+    f r acc =
+      (showRatio r) <> " " <> acc
+  in
+    Str.trim $ foldr f "" rs
 
 meter :: Maybe MeterSignature -> String
 meter ms =
-    case ms of
-        Nothing ->
-            "none"
+  case ms of
+    Nothing ->
+      "none"
 
-        Just (Tuple n d) ->
-            show n <> "/" <> show d
+    Just (Tuple n d) ->
+      show n <> "/" <> show d
 
 -- we optimise durations in tune bodies to the most compact form
 -- just use showRatio in headers
@@ -98,13 +98,12 @@ key k =
 
 keyAccidentals :: List Pitch -> String
 keyAccidentals =
-    concatenate <<< map (\ka -> " " <> (show ka))
+  concatenate <<< map (\ka -> " " <> (show ka))
 
 -- amorphous properties of either the Key or Voice header
 amorphousProperties :: AmorphousProperties -> String
 amorphousProperties properties =
-  if (size properties == 0)
-    then ""
+  if (size properties == 0) then ""
   else
     let
       kvs = toUnfoldable properties
@@ -115,24 +114,24 @@ amorphousProperties properties =
 
 octave :: Int -> String
 octave i =
-    let
-        octaveAboveMiddleC =
-            middlecOctave + 1
-    in
-        if ((i == middlecOctave) || (i == octaveAboveMiddleC)) then
-            ""
-        else if (i > octaveAboveMiddleC) then
-            -- catChars $ replicate (i - octaveAboveMiddleC) '\''
-            Str.take (i - octaveAboveMiddleC) "''''''''''"
-        else
-            Str.take (middlecOctave - i) ",,,,,,,,,,"
+  let
+    octaveAboveMiddleC =
+      middlecOctave + 1
+  in
+    if ((i == middlecOctave) || (i == octaveAboveMiddleC)) then
+      ""
+    else if (i > octaveAboveMiddleC) then
+      -- catChars $ replicate (i - octaveAboveMiddleC) '\''
+      Str.take (i - octaveAboveMiddleC) "''''''''''"
+    else
+      Str.take (middlecOctave - i) ",,,,,,,,,,"
 
 pitch :: Int -> PitchClass -> String
 pitch octaveNumber p =
-    if (octaveNumber <= middlecOctave) then
-        show p
-    else
-        Str.toLower (show p)
+  if (octaveNumber <= middlecOctave) then
+    show p
+  else
+    Str.toLower (show p)
 
 -- | Pretty-print a note which may be prefaced by grace notes and/or decorations.
 graceableNote :: GraceableNote -> String
@@ -180,21 +179,21 @@ abcNote a =
 -- | Pretty-print a chord.
 abcChord :: AbcChord -> String
 abcChord c =
-   leftSlurs c.leftSlurs
-   <> decorate c.decorations
-   <> "["
-   <> (notes c.notes)
-   <> "]"
-   <> duration c.duration
-   <> rightSlurs c.rightSlurs
+  leftSlurs c.leftSlurs
+    <> decorate c.decorations
+    <> "["
+    <> (notes c.notes)
+    <> "]"
+    <> duration c.duration
+    <> rightSlurs c.rightSlurs
 
 notes :: NonEmptyList AbcNote -> String
 notes ns =
-    let
-        f a acc =
-            (abcNote a) <> acc
-    in
-        foldr f "" ns
+  let
+    f a acc =
+      (abcNote a) <> acc
+  in
+    foldr f "" ns
 
 restsOrNotes :: NonEmptyList RestOrNote -> String
 restsOrNotes rns =
@@ -211,7 +210,7 @@ restsOrNotes rns =
 
 abcRest :: AbcRest -> String
 abcRest r =
-    "z" <> (duration r.duration)
+  "z" <> (duration r.duration)
 
 decorate :: List String -> String
 decorate ds =
@@ -219,18 +218,18 @@ decorate ds =
 
 decorate1 :: String -> String
 decorate1 s =
-    if (Str.length s == 1) then
-        s
-    else
-        "!" <> s <> "! "
+  if (Str.length s == 1) then
+    s
+  else
+    "!" <> s <> "! "
 
 bars :: List Bar -> String
 bars bs =
-    let
-        f b acc =
-            (bar b) <> acc
-    in
-        foldr f "" bs
+  let
+    f b acc =
+      (bar b) <> acc
+  in
+    foldr f "" bs
 
 bar :: Bar -> String
 bar b =
@@ -238,9 +237,10 @@ bar b =
     f m acc =
       (music m) <> acc
   in
-    decorate b.decorations <>
-    barLine b.startLine <>
-    foldr f "" b.music
+    decorate b.decorations
+      <> barLine b.startLine
+      <>
+        foldr f "" b.music
 
 barLine :: BarLine -> String
 barLine b =
@@ -258,180 +258,180 @@ mBarLine mbl =
   fromMaybe "" $ map barLine mbl
 -}
 
-voltas :: NonEmptyList Volta -> String 
+voltas :: NonEmptyList Volta -> String
 voltas vs =
   intercalateMap "," show vs
 
 broken :: Broken -> String
 broken b =
-    case b of
-        LeftArrow i ->
-            Str.take i "<<<<<<<<<<"
+  case b of
+    LeftArrow i ->
+      Str.take i "<<<<<<<<<<"
 
-        RightArrow i ->
-            Str.take i ">>>>>>>>>>"
+    RightArrow i ->
+      Str.take i ">>>>>>>>>>"
 
 music :: Music -> String
 music m =
-    case m of
+  case m of
 
-        Note gn ->
-            graceableNote gn
+    Note gn ->
+      graceableNote gn
 
-        BrokenRhythmPair g1 b g2 ->
-            graceableNote g1 <> (broken b) <> graceableNote g2
+    BrokenRhythmPair g1 b g2 ->
+      graceableNote g1 <> (broken b) <> graceableNote g2
 
-        Rest r ->
-            abcRest r
+    Rest r ->
+      abcRest r
 
-        Tuplet t {- mGrace bracks tup rns -} ->
-            (maybeGrace t.maybeGrace) 
-            <> leftSlurs t.leftSlurs
-            <> tupletSignature t.signature
-            <> restsOrNotes t.restsOrNotes
-            <> " "
+    Tuplet t {- mGrace bracks tup rns -} ->
+      (maybeGrace t.maybeGrace)
+        <> leftSlurs t.leftSlurs
+        <> tupletSignature t.signature
+        <> restsOrNotes t.restsOrNotes
+        <> " "
 
-        DecoratedSpace decorations ->
-            (decorate decorations) <> "y"
+    DecoratedSpace decorations ->
+      (decorate decorations) <> "y"
 
-        Annotation placement s ->
-            "\"" <> show placement <> s <> "\""
+    Annotation placement s ->
+      "\"" <> show placement <> s <> "\""
 
-        ChordSymbol s ->
-            s
+    ChordSymbol s ->
+      "\"" <> s <> "\""
 
-        Chord a ->
-            abcChord a
+    Chord a ->
+      abcChord a
 
-        Inline h ->
-            "[" <> header h <> "]"
+    Inline h ->
+      "[" <> header h <> "]"
 
-        Spacer _ ->
-            " "
+    Spacer _ ->
+      " "
 
-        Ignore ->
-            ""
+    Ignore ->
+      ""
 
-        Continuation comment ->
-            ("\\" <> comment <> "\r\n")
+    Continuation comment ->
+      ("\\" <> comment <> "\r\n")
 
 header :: Header -> String
 header h =
-    case h of
-        Area s ->
-            "A: " <> s
+  case h of
+    Area s ->
+      "A: " <> s
 
-        Book s ->
-            "B: " <> s
+    Book s ->
+      "B: " <> s
 
-        Composer s ->
-            "C: " <> s
+    Composer s ->
+      "C: " <> s
 
-        Discography s ->
-            "D: " <> s
+    Discography s ->
+      "D: " <> s
 
-        FileUrl s ->
-            "F: " <> s
+    FileUrl s ->
+      "F: " <> s
 
-        Group s ->
-            "G: " <> s
+    Group s ->
+      "G: " <> s
 
-        History s ->
-            "H: " <> s
+    History s ->
+      "H: " <> s
 
-        Instruction s ->
-            "I: " <> s
+    Instruction s ->
+      "I: " <> s
 
-        Key mks ->
-            "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
-                  <> amorphousProperties mks.properties
+    Key mks ->
+      "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
+        <> amorphousProperties mks.properties
 
-        UnitNoteLength d ->
-            "L: " <> (showRatio d)
+    UnitNoteLength d ->
+      "L: " <> (showRatio d)
 
-        Meter m ->
-            "M: " <> (meter m)
+    Meter m ->
+      "M: " <> (meter m)
 
-        Macro s ->
-            "m: " <> s
+    Macro s ->
+      "m: " <> s
 
-        Notes s ->
-            "N: " <> s
+    Notes s ->
+      "N: " <> s
 
-        Origin s ->
-            "O: " <> s
+    Origin s ->
+      "O: " <> s
 
-        Parts s ->
-            "P: " <> s
+    Parts s ->
+      "P: " <> s
 
-        Rhythm s ->
-            "R: " <> s
+    Rhythm s ->
+      "R: " <> s
 
-        Remark s ->
-            "r: " <> s
+    Remark s ->
+      "r: " <> s
 
-        Source s ->
-            "S: " <> s
+    Source s ->
+      "S: " <> s
 
-        Title s ->
-            "T: " <> s
+    Title s ->
+      "T: " <> s
 
-        Tempo t ->
-            "Q: " <> (tempo t)
+    Tempo t ->
+      "Q: " <> (tempo t)
 
-        UserDefined s ->
-            "U: " <> s
+    UserDefined s ->
+      "U: " <> s
 
-        Voice voiceDescription ->
-            "V: " <> voiceDescription.id
-                  <> amorphousProperties voiceDescription.properties
+    Voice voiceDescription ->
+      "V: " <> voiceDescription.id
+        <> amorphousProperties voiceDescription.properties
 
-        WordsAfter s ->
-            "W: " <> s
+    WordsAfter s ->
+      "W: " <> s
 
-        WordsAligned s ->
-            "w: " <> s
+    WordsAligned s ->
+      "w: " <> s
 
-        ReferenceNumber mi ->
-            "X: " <> (maybe "" show mi)
+    ReferenceNumber mi ->
+      "X: " <> (maybe "" show mi)
 
-        Transcription s ->
-            "Z: " <> s
+    Transcription s ->
+      "Z: " <> s
 
-        FieldContinuation s ->
-            "+: " <> s
+    FieldContinuation s ->
+      "+: " <> s
 
-        Comment s ->
-            "%" <> s
+    Comment s ->
+      "%" <> s
 
-        _ ->
-            ""
+    _ ->
+      ""
 
 tuneHeaders :: List Header -> String
 tuneHeaders hs =
-    let
-        f h acc =
-            (header h) <> "\x0D\n" <> acc
-    in
-        foldr f "" hs
+  let
+    f h acc =
+      (header h) <> "\x0D\n" <> acc
+  in
+    foldr f "" hs
 
 bodyPart :: BodyPart -> String
 bodyPart bp =
-    case bp of
-        Score bs ->
-            bars bs
+  case bp of
+    Score bs ->
+      bars bs
 
-        BodyInfo h ->
-            header h
+    BodyInfo h ->
+      header h
 
 tuneBody :: TuneBody -> String
 tuneBody b =
--- import Data.Either (Either(..))
-    let
-        f bp acc =
-            (bodyPart bp) <> "\x0D\n" <> acc
-    in
-        foldr f "" b
+  -- import Data.Either (Either(..))
+  let
+    f bp acc =
+      (bodyPart bp) <> "\x0D\n" <> acc
+  in
+    foldr f "" b
 
 concatenate :: List String -> String
 concatenate = foldr (<>) ""
@@ -441,9 +441,9 @@ concatenate = foldr (<>) ""
 -- | Translate an ABC Tune parse tree to a canonical ABC String.
 fromTune :: AbcTune -> String
 fromTune abcTune =
-    tuneHeaders abcTune.headers <> tuneBody abcTune.body
+  tuneHeaders abcTune.headers <> tuneBody abcTune.body
 
 -- | Translate a parse Result containing an ABC Tune parse tree to a Result containing a canonical ABC String.
 fromEither :: Either String AbcTune -> Either String String
 fromEither r =
-    map fromTune r
+  map fromTune r

@@ -1,17 +1,15 @@
 -- | Transposition of an ABC note or tune to a new key.
 module Data.Abc.Transposition
-        ( defaultKey
-        , keyDistance
-        , transposeNote
-        , transposeTo
-        ) where
-
+  ( defaultKey
+  , keyDistance
+  , transposeNote
+  , transposeTo
+  ) where
 
 {- A parse tree score contains pitches with accidentals of type Implicit in cases where no accidental is explitly marked
    (sharp, flat, natural etc.).  Such pitches inherit their accidental nature firstly from any preceding note of the same pitch
    in the same bar which has an explicit marking and secondly from the key signature.  During transposition we must firstly
    make such accidentals explicit, transpose them and finally return to their implicit nature.
-
    This means we have to thread state through the transposition
 -}
 
@@ -33,20 +31,20 @@ import Data.Tuple (Tuple(..), fst)
 import Prelude (($), (+), (-), (==), (/=), (&&), (||), (<), (<=), (>=), bind, map, mod, negate, pure)
 
 type TranspositionState =
-    { keyDistance :: Int  -- semitone distance between keys - may be positive or negative
-    , sourcemks :: ModifiedKeySignature -- source key signature
-    , sourceKeyProps :: AmorphousProperties -- source key properties
-    , sourceBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune source
-    , targetmks :: ModifiedKeySignature   -- target key signature
-    , targetKeySet :: KeySet -- the set of accidental keys in the target key signature
-    , targetScale :: KeySet -- diatonic scale in the target key
-    , targetBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune target
-    }
+  { keyDistance :: Int -- semitone distance between keys - may be positive or negative
+  , sourcemks :: ModifiedKeySignature -- source key signature
+  , sourceKeyProps :: AmorphousProperties -- source key properties
+  , sourceBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune source
+  , targetmks :: ModifiedKeySignature -- target key signature
+  , targetKeySet :: KeySet -- the set of accidental keys in the target key signature
+  , targetScale :: KeySet -- diatonic scale in the target key
+  , targetBarAccidentals :: Accidentals.Accidentals -- any accidental defined locally to the current bar in the tune target
+  }
 
 type Transposition a = State TranspositionState a
 
 type NoteIndex =
-  { notePosition :: Int    -- note position in the appropriate diatonic scale
+  { notePosition :: Int -- note position in the appropriate diatonic scale
   , octaveIncrement :: Int -- octave increment -1 <= i <= 1
   }
 
@@ -57,7 +55,7 @@ defaultKey :: ModifiedKeySignature
 defaultKey =
   { keySignature: { pitchClass: C, accidental: Natural, mode: Major }
   , modifications: Nil
-  , properties: empty 
+  , properties: empty
   }
 
 -- | Calculate the distance between the keys (target - source) measured in semitones.
@@ -81,10 +79,11 @@ keyDistance targetmks srcmks =
     if (target.mode /= src.mode) then
       Left "incompatible modes"
     else
-      Right (transpositionDistance
-              ( Pitch { pitchClass: target.pitchClass, accidental: targetAcc })
-              ( Pitch { pitchClass: src.pitchClass, accidental: srcAcc })
-            )
+      Right
+        ( transpositionDistance
+            (Pitch { pitchClass: target.pitchClass, accidental: targetAcc })
+            (Pitch { pitchClass: src.pitchClass, accidental: srcAcc })
+        )
 
 runNote :: TranspositionState -> AbcNote -> AbcNote
 runNote state note =
@@ -121,7 +120,7 @@ transposeNote targetmks srcKey note =
           transpositionState =
             { keyDistance: d
             , sourcemks: srcKey
-            , sourceKeyProps : empty::AmorphousProperties
+            , sourceKeyProps: empty :: AmorphousProperties
             , sourceBarAccidentals: Accidentals.empty
             , targetmks: targetmks
             , targetKeySet: modifiedKeySet targetmks
@@ -130,7 +129,6 @@ transposeNote targetmks srcKey note =
             }
         in
           Right $ runNote transpositionState note
-
 
 -- | transposition where the target mode is taken from the source tune's key signature
 -- | (it doesn't make any sense to transpose to a different mode)
@@ -146,14 +144,14 @@ transposeTo (Pitch targetP) t =
     targetAcc = targetP.accidental
     targetPc = targetP.pitchClass
     targetmks =
-        { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }
-        , modifications: Nil
-        , properties : mks.properties
-        }
+      { keySignature: { pitchClass: targetPc, accidental: targetAcc, mode: mks.keySignature.mode }
+      , modifications: Nil
+      , properties: mks.properties
+      }
     -- work out the distance between them
     d = transpositionDistance
-           (Pitch targetP)
-           (Pitch { pitchClass: srcPc, accidental: srcAcc })
+      (Pitch targetP)
+      (Pitch { pitchClass: srcPc, accidental: srcAcc })
   in
     -- don't bother transposing if there's no distance between the keys
     if (d == 0) then
@@ -163,7 +161,7 @@ transposeTo (Pitch targetP) t =
         transpositionState =
           { keyDistance: d
           , sourcemks: mks
-          , sourceKeyProps : keyProps
+          , sourceKeyProps: keyProps
           , sourceBarAccidentals: Accidentals.empty
           , targetmks: targetmks
           , targetKeySet: modifiedKeySet targetmks
@@ -242,8 +240,10 @@ transposeBar bar =
     state <- get
     let
       -- initialise accidentals list
-      state' = state  { sourceBarAccidentals = Accidentals.empty
-                    , targetBarAccidentals = Accidentals.empty }
+      state' = state
+        { sourceBarAccidentals = Accidentals.empty
+        , targetBarAccidentals = Accidentals.empty
+        }
     _ <- put state'
     newMusic <- transposeMusicList bar.music
     let
@@ -272,8 +272,8 @@ transposeMusic m =
       do
         maybeGrace <- transposeGrace tuplet.maybeGrace
         restsOrNotes <- transposeRestOrNoteList tuplet.restsOrNotes
-        let 
-          leftSlurs = tuplet.leftSlurs 
+        let
+          leftSlurs = tuplet.leftSlurs
           signature = tuplet.signature
         pure $ Tuplet { maybeGrace, leftSlurs, signature, restsOrNotes }
 
@@ -286,7 +286,7 @@ transposeMusic m =
     ChordSymbol _ ->
       pure Ignore
 
-      -- an inline header
+    -- an inline header
     Inline h ->
       do
         newH <- processHeader h
@@ -318,7 +318,6 @@ transposeRestOrNoteBy restOrNote =
       newN <- transposeGraceableNoteBy n
       pure $ Right newN
 
-
 transposeGraceableNoteBy :: GraceableNote -> Transposition GraceableNote
 transposeGraceableNoteBy gn =
   do
@@ -333,18 +332,17 @@ transposeGraceableNoteBy gn =
 transposeGrace :: Maybe Grace -> Transposition (Maybe Grace)
 transposeGrace mGrace =
   case
-    mGrace of
-      Just grace ->
-        do
-          newNotes <- transposeNoteList grace.notes
-          pure $ Just grace { notes = newNotes }
-      _ ->
-         pure Nothing
-
+    mGrace
+    of
+    Just grace ->
+      do
+        newNotes <- transposeNoteList grace.notes
+        pure $ Just grace { notes = newNotes }
+    _ ->
+      pure Nothing
 
 {-| transpose a note by the required distance which may be positive or negative
     transposition distance and source and target keys are taken from the state.  This is the heart of the module.
-
     The strategy is:
       * does the source note have an explicit accidental?
       * if not, does it have an implicit accidental?  i.e. implied firstly by an earlier explicit in the bar or secondly by the key signature
@@ -368,7 +366,7 @@ transposeNoteBy note =
 
       -- we must do the lookup of the source accidental in this order - local bar overrides key
       maybeSourceAccidental =
-        oneOf ( inSourceBarAccidental : inSourceKeyAccidental : Nil)
+        oneOf (inSourceBarAccidental : inSourceKeyAccidental : Nil)
 
       implicitSourceAccidental = fromMaybe Implicit maybeSourceAccidental
 
@@ -398,20 +396,22 @@ transposeNoteBy note =
         -- is it present in the local target bar accidentals
         if (Accidentals.member (Pitch safeKa) state.targetBarAccidentals) then
           Implicit
-          -- is it present in the local target bar accidentals but with a different value
-         -- else if (isJust (Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals)) then
+        -- is it present in the local target bar accidentals but with a different value
+        -- else if (isJust (Accidentals.lookup safeKa.pitchClass state.targetBarAccidentals)) then
         else if (isJust targetBarAcc) then
           safeKa.accidental
-            -- is it in the set of keys in the target diatonic scale
+        -- is it in the set of keys in the target diatonic scale
         else if (inKeySet (Pitch safeKa) state.targetScale) then
           Implicit
         else
           safeKa.accidental
 
       transposedNote =
-        note { pitchClass = safeKa.pitchClass
-             , accidental = targetAcc
-             , octave = note.octave + noteIdx.octaveIncrement }
+        note
+          { pitchClass = safeKa.pitchClass
+          , accidental = targetAcc
+          , octave = note.octave + noteIdx.octaveIncrement
+          }
 
       -- save any accidental nature of the original untransposed note
       newSourceAccs =
@@ -428,11 +428,12 @@ transposeNoteBy note =
 
       -- update the state with both the source an target bar accidentals
       newState =
-        state { sourceBarAccidentals = newSourceAccs
-              , targetBarAccidentals = newTargetAccs }
-    _ <-  put newState
+        state
+          { sourceBarAccidentals = newSourceAccs
+          , targetBarAccidentals = newTargetAccs
+          }
+    _ <- put newState
     pure transposedNote
-
 
 -- | enharmonic equivalence for flattened accidentals
 -- | We'll (for the moment) use the convention that most flat accidentals
@@ -461,28 +462,28 @@ addBarAccidental pc acc accs =
 
 -- | note pairs for the black and white notes of a piano,
 -- | designating black notes with the Sharp accidental
-sharpNoteNumbers :: List ( Tuple Pitch Int )
+sharpNoteNumbers :: List (Tuple Pitch Int)
 sharpNoteNumbers =
   let
     f nn =
       let
         Pitch p = fst nn
-        -- pos = snd nn
+      -- pos = snd nn
       in
         ((p.accidental == Sharp) && (p.pitchClass /= E && p.pitchClass /= B))
-            || (p.accidental == Natural)
+          || (p.accidental == Natural)
   in
     filter f pitchNumbers
 
 -- | note pairs for the black and white notes of a piano,
 -- | designating black notes with the Flat accidental
-flatNoteNumbers :: List ( Tuple Pitch  Int )
+flatNoteNumbers :: List (Tuple Pitch Int)
 flatNoteNumbers =
   let
     f nn =
       let
         Pitch p = fst nn
-        -- pos = snd nn
+      -- pos = snd nn
       in
         ((p.accidental == Flat) && (p.pitchClass /= F && p.pitchClass /= C))
           || (p.accidental == Natural)
@@ -500,7 +501,7 @@ pitchFromInt ks i =
       else
         flatNotedNumbers
   in
-    fromMaybe (Pitch  { pitchClass: C, accidental: Natural }) $ lookup i dict
+    fromMaybe (Pitch { pitchClass: C, accidental: Natural }) $ lookup i dict
 
 -- | the inverted lookup for sharp chromatic scales.  This dictionaary
 -- | allows you to enter a number (0 <= n < notesInChromaticScale) and return
@@ -509,7 +510,7 @@ sharpNotedNumbers :: Map Int Pitch
 sharpNotedNumbers =
   let
     invert (Tuple a b) =
-      (Tuple  b a )
+      (Tuple b a)
   in
     fromFoldable $ map invert sharpNoteNumbers
 
@@ -520,14 +521,14 @@ flatNotedNumbers :: Map Int Pitch
 flatNotedNumbers =
   let
     invert (Tuple a b) =
-      (Tuple  b a )
+      (Tuple b a)
   in
     fromFoldable $ map invert flatNoteNumbers
 
 -- | look up the note and return the number of its pitch in the range 0 <= n < notesInChromaticScale (0 is C Natural) -}
 noteNumber :: AbcNote -> Int
 noteNumber n =
-  pitchNumber ( Pitch  { pitchClass: n.pitchClass, accidental: n.accidental })
+  pitchNumber (Pitch { pitchClass: n.pitchClass, accidental: n.accidental })
 
 -- | inspect the current note index and the amount it is to be incremented by.
 -- | produce a new note index in the range (0 <= n < notesInChromaticScale)
@@ -546,7 +547,7 @@ noteIndex from increment =
       { notePosition: to, octaveIncrement: 0 }
 
 -- | work out the minimum transposition distance (target - source) or (source - target) measured in semitones
-transpositionDistance ::Pitch  -> Pitch  -> Int
+transpositionDistance :: Pitch -> Pitch -> Int
 transpositionDistance target source =
   let
     distance =
@@ -573,4 +574,4 @@ replaceKeyHeader newmks hs =
     newhs =
       filter f hs
   in
-    reverse $ ( Key newmks) : (reverse newhs)
+    reverse $ (Key newmks) : (reverse newhs)

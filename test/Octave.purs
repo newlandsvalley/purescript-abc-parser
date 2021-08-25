@@ -63,19 +63,19 @@ octaveSuite = do
         phrase2Low
 
 phrase1Low =
-    "K: CMajor\x0D\n| A,B, (3zDE [FG] |\x0D\n"
+  "K: CMajor\x0D\n| A,B, (3zDE [FG] |\x0D\n"
 
 phrase1Med =
-    "K: CMajor\x0D\n| AB (3zde [fg] |\x0D\n"
+  "K: CMajor\x0D\n| AB (3zde [fg] |\x0D\n"
 
 phrase1High =
-    "K: CMajor\x0D\n| ab (3zd'e' [f'g'] |\x0D\n"
+  "K: CMajor\x0D\n| ab (3zd'e' [f'g'] |\x0D\n"
 
 phrase2Low =
-    "| A,,,B,,, C,D,E, [fg] |\x0D\n| a'>b' |\x0D\n"
+  "| A,,,B,,, C,D,E, [fg] |\x0D\n| a'>b' |\x0D\n"
 
 phrase2Med =
-    "| A,,B,, CDE [f'g'] |\x0D\n| a''>b'' |\x0D\n"
+  "| A,,B,, CDE [f'g'] |\x0D\n| a''>b'' |\x0D\n"
 
 phrase2High =
-    "| A,B, cde [f''g''] |\x0D\n| a'''>b''' |\x0D\n"
+  "| A,B, cde [f''g''] |\x0D\n| a'''>b''' |\x0D\n"

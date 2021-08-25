@@ -16,7 +16,7 @@ import Test.Midi (midiSuite)
 import Test.Voice (voiceSuite)
 import Test.UnitNote (unitNoteSuite)
 
-main :: Effect  Unit
+main :: Effect Unit
 main = runTest do
   suite "parser" do
     abcSuite

@@ -1,19 +1,19 @@
 -- | A Ragbag of convenience functions for getting Metadata from ABC
 module Data.Abc.Metadata
-        ( getKeySet
-        , getKeySig
-        , getKeyProps
-        , getMeter
-        , getDefaultedMeter
-        , getTempoSig
-        , getTitle
-        , getUnitNoteLength
-        , dotFactor
-        , normaliseChord
-        , isEmptyStave
-        , thumbnail
-        , removeRepeatMarkers
-        ) where
+  ( getKeySet
+  , getKeySig
+  , getKeyProps
+  , getMeter
+  , getDefaultedMeter
+  , getTempoSig
+  , getTitle
+  , getUnitNoteLength
+  , dotFactor
+  , normaliseChord
+  , isEmptyStave
+  , thumbnail
+  , removeRepeatMarkers
+  ) where
 
 import Data.Abc
 
@@ -50,9 +50,8 @@ getKeySig tune =
 getKeyProps :: AbcTune -> AmorphousProperties
 getKeyProps tune =
   case (firstOf (_headers <<< traversed <<< _ModifiedKeySignature <<< _properties) tune) of
-    Just props -> props 
+    Just props -> props
     _ -> (empty :: AmorphousProperties)
-
 
 -- | Get the meter defaulting to 4/4
 getDefaultedMeter :: AbcTune -> MeterSignature
@@ -63,8 +62,7 @@ getDefaultedMeter tune =
 -- | For more flexibility, you should use the _Meter optic.
 getMeter :: AbcTune -> Maybe MeterSignature
 getMeter tune =
-  join $ (firstOf (_headers <<< traversed <<< _Meter) tune) 
-  
+  join $ (firstOf (_headers <<< traversed <<< _Meter) tune)
 
 -- | Get the tempo where present
 -- | For more flexibility, you should use the _Tempo optic.
@@ -113,22 +111,22 @@ dotFactor i =
 isEmptyStave :: List Bar -> Boolean
 isEmptyStave bars =
   all isEmptyBar bars
-    where
-      isEmptyBar :: Bar -> Boolean
-      isEmptyBar bar =
-        let
-          f music' =
-            case music' of
-              Spacer _ ->
-                true
-              Ignore ->
-                true
-              Continuation _ ->
-                true
-              _ ->
-                false
-        in
-          all f bar.music || null bar.music
+  where
+  isEmptyBar :: Bar -> Boolean
+  isEmptyBar bar =
+    let
+      f music' =
+        case music' of
+          Spacer _ ->
+            true
+          Ignore ->
+            true
+          Continuation _ ->
+            true
+          _ ->
+            false
+    in
+      all f bar.music || null bar.music
 
 -- | Normalise an ABC chord by placing the correct duration against each note
 -- | and setting the overall Chord length to Unit
@@ -138,12 +136,12 @@ normaliseChord abcChord =
     1.0 -> abcChord
     _ ->
       let
-        notes = map (\n -> n { duration = n.duration * abcChord.duration} ) abcChord.notes
+        notes = map (\n -> n { duration = n.duration * abcChord.duration }) abcChord.notes
         decorations = abcChord.decorations
         leftSlurs = abcChord.leftSlurs
         rightSlurs = abcChord.rightSlurs
       in
-        { leftSlurs, decorations, notes, duration : (1 % 1), rightSlurs }
+        { leftSlurs, decorations, notes, duration: (1 % 1), rightSlurs }
 
 -- filter the bars we need for the thumbnail and terminate properly with
 -- an empty bar.
@@ -156,23 +154,22 @@ filterBars bars =
         Nothing ->
           0
         Just bar ->
-          if (bar.startLine.thickness == Invisible)
-            then 3
-            else 2
+          if (bar.startLine.thickness == Invisible) then 3
+          else 2
 
     emptyBarLine :: BarLine
-    emptyBarLine =    
-      { endRepeats : 0
-      , thickness : Thin
-      , startRepeats : 0
-      , iteration : Nothing
+    emptyBarLine =
+      { endRepeats: 0
+      , thickness: Thin
+      , startRepeats: 0
+      , iteration: Nothing
       }
 
     emptyBar :: Bar
     emptyBar =
-      { decorations : Nil
-      , startLine : emptyBarLine
-      , music : Nil
+      { decorations: Nil
+      , startLine: emptyBarLine
+      , music: Nil
       }
   in
     snoc (take count bars) emptyBar
@@ -195,29 +192,29 @@ thumbnail t =
 removeRepeatMarkers :: AbcTune -> AbcTune
 removeRepeatMarkers abcTune =
 
-  { headers : abcTune.headers
-  , body : replaceBody abcTune.body
+  { headers: abcTune.headers
+  , body: replaceBody abcTune.body
   }
 
   where
 
-    removeRepeat :: Bar -> Bar
-    removeRepeat bar =
-      let
-        newStartLine = bar.startLine { startRepeats = 0, endRepeats = 0 }
-      in
-        bar { startLine = newStartLine }
+  removeRepeat :: Bar -> Bar
+  removeRepeat bar =
+    let
+      newStartLine = bar.startLine { startRepeats = 0, endRepeats = 0 }
+    in
+      bar { startLine = newStartLine }
 
-    replaceBars :: List Bar -> List Bar
-    replaceBars = map removeRepeat
+  replaceBars :: List Bar -> List Bar
+  replaceBars = map removeRepeat
 
-    replaceBodyPart :: BodyPart -> BodyPart
-    replaceBodyPart bp =
-      case bp of
-        Score bars ->
-          Score $ replaceBars bars
-        _ ->
-          bp
+  replaceBodyPart :: BodyPart -> BodyPart
+  replaceBodyPart bp =
+    case bp of
+      Score bars ->
+        Score $ replaceBars bars
+      _ ->
+        bp
 
-    replaceBody  :: List BodyPart -> List BodyPart
-    replaceBody = map replaceBodyPart
+  replaceBody :: List BodyPart -> List BodyPart
+  replaceBody = map replaceBodyPart
