@@ -30,6 +30,7 @@ module Data.Abc
   , Mode(..)
   , Accidental(..)
   , PitchClass(..)
+  , SymbolDefinition
   , Broken(..)
   , VoiceDescription(..)
   , AmorphousProperties
@@ -118,6 +119,15 @@ type AbcChord =
   , rightSlurs :: Int
   }
 
+-- | A Chord Symbol definition.  Note that in ABC, this is merely a free-format string 
+-- | with recommendations in the spec of how it might be properly formatted.
+-- | We include an optional duration.  This is ignored by the parser but can 
+-- | act as a placeholder for applications such as players to calculate a duration.
+type SymbolDefinition =
+  { name :: String
+  , duration :: Maybe NoteDuration
+  }
+
 -- | A tuplet signature:
 -- |    put p notes into the time of q the next r notes.
 type TupletSignature =
@@ -161,7 +171,7 @@ data Music
   | Tuplet AbcTuplet
   | DecoratedSpace (List String)
   | Annotation AnnotationPlacement String
-  | ChordSymbol String
+  | ChordSymbol SymbolDefinition
   | Chord AbcChord
   | Inline Header
   | Spacer Int

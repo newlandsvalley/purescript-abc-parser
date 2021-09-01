@@ -297,8 +297,8 @@ music m =
     Annotation placement s ->
       "\"" <> show placement <> s <> "\""
 
-    ChordSymbol s ->
-      "\"" <> s <> "\""
+    ChordSymbol symbol ->
+      "\"" <> symbol.name <> "\""
 
     Chord a ->
       abcChord a

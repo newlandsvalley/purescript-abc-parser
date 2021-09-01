@@ -491,7 +491,7 @@ annotationString =
 -- | a free - format chord symbol - see 4.18 Chord symbols.  Drop the quotes round the string.
 chordSymbol :: Parser Music
 chordSymbol =
-  ChordSymbol
+  (ChordSymbol <<< buildSymbol)
     <$> literalQuotedString false
     <?> "chord symbol"
 
@@ -1270,6 +1270,11 @@ buildTempoSignature marking td =
       , bpm: bpm
       , marking: marking
       }
+
+-- | build a chord symbol definition.  The duration is a placeholder for later applications.
+buildSymbol :: String -> SymbolDefinition
+buildSymbol name =
+  { name, duration: Nothing }
 
 {-| equivalent builder where we have a defined label -}
 buildTempoSignature2 :: String -> TempoDesignation -> TempoSignature
