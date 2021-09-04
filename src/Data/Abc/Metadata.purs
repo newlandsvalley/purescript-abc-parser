@@ -10,6 +10,8 @@ module Data.Abc.Metadata
   , getUnitNoteLength
   , dotFactor
   , normaliseChord
+  , chordDuration
+  , tupletDuration
   , isEmptyStave
   , thumbnail
   , removeRepeatMarkers
@@ -19,17 +21,17 @@ import Data.Abc
 
 import Data.Abc.KeySignature (modifiedKeySet)
 import Data.Abc.Optics (_headers, _properties, _Meter, _ModifiedKeySignature, _Tempo, _Title, _UnitNoteLength)
-import Data.Foldable (all)
+import Data.Either (Either(..))
+import Data.Foldable (all, foldr)
 import Data.Lens.Fold (firstOf)
 import Data.Lens.Traversal (traversed)
 import Data.List (List(..), head, null, singleton, snoc, take)
+import Data.List.NonEmpty (head) as NEL
 import Data.Map (empty)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
-import Data.Rational (Rational, (%), toNumber)
+import Data.Rational (Rational, (%), fromInt, toNumber)
 import Data.Tuple (Tuple(..))
-import Prelude (join, map, ($), (||), (==), (*), (<<<))
-
--- EXPORTED FUNCTIONS
+import Prelude (join, map, ($), (||), (==), (*), (+), (<<<))
 
 -- | Get the set of key accidentals from the (possibly modified) key (if there is one in the tune).
 getKeySet :: AbcTune -> KeySet
@@ -142,6 +144,31 @@ normaliseChord abcChord =
         rightSlurs = abcChord.rightSlurs
       in
         { leftSlurs, decorations, notes, duration: (1 % 1), rightSlurs }
+
+-- | Get the duration of a chord. We consider notes in a chord to have the same 
+-- | duration (as the first such note) and must also cater for the overall chord duration. 
+chordDuration :: AbcChord -> NoteDuration
+chordDuration chord =
+  (NEL.head chord.notes).duration * chord.duration
+
+restOrNoteDuration :: RestOrNote -> NoteDuration
+restOrNoteDuration =
+  case _ of
+    Left r ->
+      r.duration
+    Right gn ->
+      gn.abcNote.duration
+
+-- | Get the overall duration of a tuplet
+tupletDuration :: AbcTuplet -> NoteDuration
+tupletDuration t =
+  modifier * foldr adder (fromInt 0) t.restsOrNotes
+
+  where
+  adder :: RestOrNote -> NoteDuration -> NoteDuration
+  adder rorn acc = restOrNoteDuration rorn + acc
+
+  modifier = t.signature.q % t.signature.p
 
 -- filter the bars we need for the thumbnail and terminate properly with
 -- an empty bar.
