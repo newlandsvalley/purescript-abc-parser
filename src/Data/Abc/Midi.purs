@@ -97,21 +97,20 @@ midiPitchOffset n mks barAccidentals =
 
 -- | Transform ABC into a MIDI recording.
 toMidi :: AbcTune -> Midi.Recording
-toMidi tune = 
-  let 
+toMidi tune =
+  let
     tstate = execState (transformTune tune) (initialState tune)
-  in 
+  in
     makeRecording tstate
-  
 
 -- | Transform ABC into a MIDI recording but at the mdified tempo
 -- | defined by the new BPM  (beats per minute)
 toMidiAtBpm :: AbcTune -> Int -> Midi.Recording
 toMidiAtBpm originalTune bpm =
   let
-    tune = setBpm bpm originalTune  
+    tune = setBpm bpm originalTune
     tstate = execState (transformTune tune) (initialState tune)
-  in 
+  in
     makeRecording tstate
 
 -- | the state to thread through the computation
@@ -162,14 +161,14 @@ initialState tune =
   -- we must have a tempo indication at the very start
   -- startTrack = RawTrack $ (initialBar initialMsg) : Nil
   in
-      { modifiedKeySignature: keySignature
-      , abcTempo: abcTempo
-      , currentBar: initialBar initialMsg
-      , currentBarAccidentals: Accidentals.empty
-      , lastNoteTied: Nothing
-      , repeatState: initialRepeatState
-      , rawTrack: Nil
-      }
+    { modifiedKeySignature: keySignature
+    , abcTempo: abcTempo
+    , currentBar: initialBar initialMsg
+    , currentBarAccidentals: Accidentals.empty
+    , lastNoteTied: Nothing
+    , repeatState: initialRepeatState
+    , rawTrack: Nil
+    }
 
 transformTune :: AbcTune -> State TState Unit
 transformTune tune =
@@ -197,7 +196,7 @@ transformBodyPart bodyPart =
 
 transformBarList :: List Bar -> State TState Unit
 transformBarList Nil =
-    pure unit
+  pure unit
 transformBarList (b : bs) =
   do
     _ <- transformBar b
@@ -211,7 +210,7 @@ transformBar bar =
 
 transformMusicLine :: MusicLine -> State TState Unit
 transformMusicLine Nil =
-    pure unit
+  pure unit
 transformMusicLine (l : ls) =
   do
     _ <- transformMusic l
@@ -263,8 +262,8 @@ transformMusic m =
       pure unit
 
 -- | add a bar to the state.  index it and add it to the growing list of bars
-handleBar:: BarLine -> State TState Unit
-handleBar barLine = do 
+handleBar :: BarLine -> State TState Unit
+handleBar barLine = do
   tstate <- get
   -- the current bar held in state is empty so we coalesce
   if (isBarEmpty tstate.currentBar) then
@@ -319,7 +318,7 @@ transformHeader h =
     _ -> do
       pure unit
 
-handleGraceableNote :: Boolean -> Rational -> GraceableNote -> State TState Unit 
+handleGraceableNote :: Boolean -> Rational -> GraceableNote -> State TState Unit
 handleGraceableNote chordal tempoModifier graceableNote =
   handleNote chordal tempoModifier graceableNote.maybeGrace graceableNote.abcNote
 
@@ -459,7 +458,7 @@ emitNoteOn tstate abcNote =
 -- | chordal means that the notes form a chord and thus do not need
 -- | NoteOff messages to be generated after each note
 handleAddNotes :: Boolean -> Rational -> List AbcNote -> State TState Unit
-handleAddNotes chordal tempoModifier abcNotes = do 
+handleAddNotes chordal tempoModifier abcNotes = do
   foldM (const $ handleNote chordal tempoModifier Nothing) unit abcNotes
 
 -- | Add the contents of a tuplet to state.  This is an optional grace note
@@ -471,9 +470,8 @@ handleTupletContents :: Maybe Grace -> Rational -> NonEmptyList RestOrNote -> St
 handleTupletContents mGrace tempoModifier restsOrNotes = do
   let
     -- move the grace notes from external to internal
-    gracedRestsOrNotes = gracifyFirstNote mGrace restsOrNotes  
+    gracedRestsOrNotes = gracifyFirstNote mGrace restsOrNotes
   foldM (const $ handleRestOrNote false tempoModifier) unit gracedRestsOrNotes
-
 
 -- | add a NoteOff message which will terminate a chord
 handleNoteOff :: Rational -> AbcNote -> State TState Unit
@@ -590,17 +588,17 @@ finaliseMelody = do
     repeatState =
       finalBar currentBar tstate.repeatState
     -- ensure we incorporate the very last bar
-    newState = 
+    newState =
       tstate
         { rawTrack = tstate.currentBar : tstate.rawTrack
         , repeatState = repeatState
         }
   put newState
 
-makeRecording :: TState -> Midi.Recording 
-makeRecording tstate = 
+makeRecording :: TState -> Midi.Recording
+makeRecording tstate =
   let
-    track = buildRepeatedMelody tstate.rawTrack tstate.repeatState.sections   
+    track = buildRepeatedMelody tstate.rawTrack tstate.repeatState.sections
     header = Midi.Header
       { formatType: 0
       , trackCount: 1
