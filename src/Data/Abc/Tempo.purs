@@ -9,6 +9,7 @@ module Data.Abc.Tempo
   , beatsPerSecond
   , getBpm
   , setBpm
+  , playedNoteDuration
   , standardMidiTick
   , noteTicks
   , chordalNoteTicks
@@ -140,6 +141,18 @@ setBpm bpm tune =
         newHeaders = replaceTempoHeader newTempoHeader tune.headers
       in
         { headers: newHeaders, body: tune.body }
+
+-- Player support
+
+-- | calculate the note duration when it is played (in seconds)
+-- | from an ABC note duration and tempo
+playedNoteDuration :: AbcTempo -> Rational -> Number
+playedNoteDuration abcTempo noteLength =
+  let
+    bps = beatsPerSecond abcTempo
+    beatLength = abcTempo.unitNoteLength / (1 % 4)
+  in
+    toNumber $ beatLength * noteLength / bps  
 
 -- MIDI support
 
