@@ -152,7 +152,7 @@ playedNoteDuration abcTempo noteLength =
     bps = beatsPerSecond abcTempo
     beatLength = abcTempo.unitNoteLength / (1 % 4)
   in
-    toNumber $ beatLength * noteLength / bps  
+    toNumber $ beatLength * noteLength / bps
 
 -- MIDI support
 

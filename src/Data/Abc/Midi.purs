@@ -155,6 +155,7 @@ initialState :: AbcTune -> TState
 initialState tune =
   let
     abcTempo = getAbcTempo tune
+
     keySignature :: ModifiedKeySignature
     keySignature = fromMaybe defaultKey (getKeySig tune)
     initialMsg = midiTempoMsg abcTempo
@@ -714,6 +715,7 @@ accumulateSlices mbs start end section =
   let
     sectionBars :: MidiBars
     sectionBars = filter (barSelector start end) mbs
+
     slices :: Array (List Midi.Message)
     slices = map
       (variantSlice start end section sectionBars)
@@ -759,6 +761,7 @@ gracifyFirstNote maybeGrace restsOrNotes =
   let
     hd = Nel.head restsOrNotes
     tl = Nel.tail restsOrNotes
+
     f :: RestOrNote -> RestOrNote
     f =
       bimap identity (\gn -> gn { maybeGrace = maybeGrace })

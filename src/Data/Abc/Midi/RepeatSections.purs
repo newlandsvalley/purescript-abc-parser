@@ -132,6 +132,7 @@ endAndStartSection endPos isRepeatEnd repeatStartCount r =
         r.current
     -- now set the end position from the bar number position
     current' = setEndPos endPos current
+
     -- set the new current into the state
     endState :: RepeatState
     endState = r { current = current' }

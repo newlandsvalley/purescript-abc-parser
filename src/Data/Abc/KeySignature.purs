@@ -191,6 +191,7 @@ isCOrSharpKey ksig =
   let
     kset =
       keySet ksig
+
     isFlat :: Pitch -> Boolean
     isFlat (Pitch p) =
       p.accidental == Flat
@@ -347,6 +348,7 @@ blackKeySet :: PianoKey -> Mode -> Tuple PianoKey (Array PianoKey)
 blackKeySet keySig mode =
   let
     Tuple tonic fullScale = pianoKeyScale keySig mode
+
     -- filter only the black notes
     isBlackKey :: PianoKey -> Boolean
     isBlackKey (White _) = false

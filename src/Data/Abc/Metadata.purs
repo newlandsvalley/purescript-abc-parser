@@ -209,6 +209,7 @@ thumbnail t =
     f = case _ of
       Score bars -> bars
       _ -> Nil
+
     firstLine :: List Bar
     firstLine = maybe Nil f $ head t.body
     newBody = singleton (Score $ filterBars firstLine)

@@ -66,6 +66,7 @@ opticsSuite =
     test "set title" do
       let
         newTune = set (_headers <<< traversed <<< _Title) "new title" (getTune borddajnsijn)
+
         title :: Maybe String
         title = firstOf (_headers <<< traversed <<< _Title) newTune
       Assert.equal title (Just "new title")

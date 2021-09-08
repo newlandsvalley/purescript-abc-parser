@@ -107,6 +107,7 @@ amorphousProperties properties =
   else
     let
       kvs = toUnfoldable properties
+
       strs :: Array String
       strs = map (\(Tuple k v) -> k <> "=" <> v) kvs
     in

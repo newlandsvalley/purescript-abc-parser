@@ -55,6 +55,7 @@ derive instance newtypeSection :: Newtype Section _
 derive instance genericSection :: Generic Section _
 instance eqSection :: Eq Section where
   eq = genericEq
+
 instance showSection :: Show Section where
   show = genericShow
 

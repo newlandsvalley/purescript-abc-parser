@@ -253,6 +253,8 @@ noteSuite =
       assertRoundTrip "| \"Em\" EG \"Am\" AC |\x0D\n"
     test "chords" do
       assertRoundTrip "| [de^f]g [cda]b |\x0D\n"
+    test "chords with spaced notes" do
+      assertCanonical "| [d e ^f ]g [c d a]b |\x0D\n" "| [de^f]g [cda]b |\x0D\n"
     test "chord duration" do
       assertRoundTrip "| [cda]4 |\x0D\n"
 
@@ -334,6 +336,7 @@ slurSuite =
       assertCanonical "| A(>BC) |\x0D\n" "| A>BC) |\x0D\n"
     test "degenerate slurred broken rhythm finish" do
       assertCanonical "| (BC>)A |\x0D\n" "| (BC>A |\x0D\n"
+
 {- this test would fail.  We don't allow slurs to span mote sequences
    starting with a grace note.  Instead, users should start the slur at
    the first full note

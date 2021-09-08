@@ -53,6 +53,7 @@ assertVoice' s canonical ix =
       let
         partitionedVoices :: Array AbcTune
         partitionedVoices = partitionVoices tune
+
         indexedVoice :: Maybe AbcTune
         indexedVoice = index partitionedVoices ix
       in

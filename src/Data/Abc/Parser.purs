@@ -130,7 +130,7 @@ abcChord =
   buildChord
     <$> leftSlurBrackets
     <*> decorations
-    <*> (between (char '[') (char ']') (many1 abcNote))
+    <*> (between (char '[') (char ']') (many1 (abcNote <* whiteSpace)))
     <*> optionMaybe noteDur
     <*> rightSlurBrackets
     <?> "ABC chord"
