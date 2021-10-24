@@ -7,3 +7,5 @@
 /.psa*
 /.purs-repl
 /.spago/
+/.metals/
+/.vscode/

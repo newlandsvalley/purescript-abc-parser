@@ -217,10 +217,9 @@ firstVoiceOfTwoInline =
   "K: CMajor\x0D\n[V: T1]| AB (3zde [fg] |\x0D\n[V: T1]| AB EF FG |\x0D\n"
 
 -- the second voice of the twoVoices
--- note we get a redundant T1 voice in the headers but this is benign
 secondVoiceOfTwo :: String
 secondVoiceOfTwo =
-  "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\nV: T1\r\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
+  "X: 1\r\nT: voice T2\r\nK: CMajor\x0D\nV: T2\r\n| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
 
 -- the second voice of the twoVoices (inline representation)
 secondVoiceOfTwoInline :: String
@@ -245,8 +244,7 @@ fourVoices =
     <> "V: 3 clef=bass\r\n"
     <> "G,A,|G,G,|G,2|]\r\n"
     <> "V: 4 clef=bass\r\n"
-    <>
-      "C,F,|G,G,,|C,2|]\r\n"
+    <> "C,F,|G,G,,|C,2|]\r\n"
 
 {- This is the actual example and seems awkward and uses
    a variety of volatile features which will be regularized
@@ -277,7 +275,5 @@ fourthVoiceOfFour =
     <> "M: 4/4\r\n"
     <> "L: 1/2\r\n"
     <> "K: CMajor\r\n"
-    <> "V: 1 clef=treble foo=bar\r\n"
     <> "V: 4 clef=bass\r\n"
-    <>
-      "C,F,|G,G,,|C,2|]\r\n"
+    <> "C,F,|G,G,,|C,2|]\r\n"

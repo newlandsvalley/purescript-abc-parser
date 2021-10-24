@@ -52,7 +52,7 @@ import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
 import Data.Set (Set, empty, insert, toUnfoldable) as Set
 import Data.Tuple (Tuple(..), snd)
-import Prelude (class Eq, class Ord, ($), (<<<), (<>), bind, join, map, not, pure)
+import Prelude (class Eq, class Ord, ($), (==), (<<<), (<>), bind, join, map, not, pure)
 
 data VoiceLabel
   = VoiceLabel String
@@ -255,16 +255,34 @@ retitleFromVoiceLabel tune (Tuple k body) =
   retitle voiceName headers =
     case (firstOf (traversed <<< _Title) headers) of
       Just _ ->
-        set (traversed <<< _Title) ("voice " <> voiceName) headers
+        set (traversed <<< _Title) ("voice " <> voiceName) filteredHeaders
+
+        where 
+        predicate :: Header -> Boolean
+        predicate h =
+          case h of
+            -- remove any voice header for a different voice from the one we're handling
+            -- i.e. only keep the voice header we're handling
+            Voice voiceDescription -> voiceDescription.id == voiceName
+            _ -> true
+        filteredHeaders = filter predicate headers
+
       _ ->
-        ReferenceNumber (Just 1) : Title ("voice " <> voiceName) : filteredHeaders
+        ReferenceNumber (Just 1) : Title ("voice " <> voiceName) : filteredRetitledHeaders
 
         where
         predicate :: Header -> Boolean
         predicate h =
           case h of
+            -- remove the reference number
             ReferenceNumber _ -> false
+            -- remove the old title
             Title _ -> false
+            -- remove any voice header for a different voice from the one we're handling
+            -- i.e. only keep the voice header we're handling
+            Voice voiceDescription -> voiceDescription.id == voiceName
             _ -> true
-        filteredHeaders = filter predicate headers
+        filteredRetitledHeaders = filter predicate headers
+
+        
 
