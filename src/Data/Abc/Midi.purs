@@ -389,7 +389,7 @@ emitNoteOnOff :: Rational -> TState -> AbcNote -> List Midi.Message
 emitNoteOnOff tempoModifier tstate abcNote =
   let
     pitch =
-      toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
+      toMidiPitch tstate.modifiedKeySignature tstate.currentBarAccidentals abcNote
     ticks =
       noteTicks (abcNote.duration * tempoModifier)
   in
@@ -411,7 +411,7 @@ emitNoteOn :: TState -> AbcNote -> Midi.Message
 emitNoteOn tstate abcNote =
   let
     pitch =
-      toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
+      toMidiPitch tstate.modifiedKeySignature tstate.currentBarAccidentals abcNote
   in
     midiNoteOn 0 pitch
 
@@ -439,7 +439,7 @@ handleNoteOff duration abcNote = do
   tstate <- get
   let
     pitch =
-      toMidiPitch abcNote tstate.modifiedKeySignature tstate.currentBarAccidentals
+      toMidiPitch tstate.modifiedKeySignature tstate.currentBarAccidentals abcNote
     msg = midiNoteOff (noteTicks duration) pitch
     bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages) }
   put

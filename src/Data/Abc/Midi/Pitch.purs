@@ -24,13 +24,13 @@ type MidiPitch =
 -- | ModifiedKeySignature - the key signature (possibly modified by extra accidentals)
 -- | Accidentals - any notes in this bar which have previously been set explicitly to an accidental which are thus inherited by this note
 -- | MidiPitch - the resulting pitch of the MIDI note
-toMidiPitch :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> MidiPitch
-toMidiPitch n mks barAccidentals =
-  (n.octave * notesInChromaticScale) + midiPitchOffset n mks barAccidentals
+toMidiPitch :: ModifiedKeySignature -> Accidentals.Accidentals -> AbcNote -> MidiPitch
+toMidiPitch mks barAccidentals n =
+  (n.octave * notesInChromaticScale) + midiPitchOffset mks barAccidentals n
 
 -- | convert an AbcNote (pich class and accidental) to a pitch offset in a chromatic scale
-midiPitchOffset :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> Int
-midiPitchOffset n mks barAccidentals =
+midiPitchOffset :: ModifiedKeySignature -> Accidentals.Accidentals -> AbcNote -> Int
+midiPitchOffset mks barAccidentals n =
   let
     inBarAccidental =
       Accidentals.lookup n.pitchClass barAccidentals

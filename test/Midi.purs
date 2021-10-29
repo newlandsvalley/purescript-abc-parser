@@ -54,7 +54,7 @@ assertMidiPitch abcNote target =
 
   where 
     pitch = 
-      toMidiPitch abcNote gMajor empty
+      toMidiPitch gMajor empty abcNote
 
 midiSuite :: Free TestF Unit
 midiSuite = do
