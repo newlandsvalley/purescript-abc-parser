@@ -1,7 +1,8 @@
 module Test.Midi (midiSuite) where
 
 import Control.Monad.Free (Free)
-import Data.Abc.Midi (toMidi, toMidiAtBpm)
+import Data.Abc (AbcNote, Accidental(..), Mode(..), ModifiedKeySignature, PitchClass(..)) 
+import Data.Abc.Midi (MidiPitch, toMidi, toMidiAtBpm, toMidiPitch)
 import Data.Abc.Parser (parse)
 import Data.Abc.Repeats.Types (VariantPositions)
 import Data.Abc.Repeats.Variant (findEndingPosition)
@@ -9,12 +10,13 @@ import Data.Abc.Tempo (standardMidiTick)
 import Data.Either (Either(..))
 import Data.Int (round)
 import Data.List (List(..), head, (:))
-import Data.Map (fromFoldable)
+import Data.Map (empty, fromFoldable)
 import Data.Maybe (fromMaybe)
 import Data.Midi as Midi
 import Data.Rational (Rational, fromInt, toNumber, (%))
 import Data.Tuple (Tuple(..))
 import Prelude (Unit, discard, show, ($), (<>), (*), (<<<))
+import Test.Utils (buildKeySig)
 import Test.Unit (Test, TestF, suite, test, failure)
 import Test.Unit.Assert as Assert
 
@@ -44,6 +46,16 @@ assertMidiAtBpm s bpm midiTrack =
     Left err ->
       failure ("parse failed: " <> (show err))
 
+-- | assert the MIDI Pitch of an ABCNote in the context of G Major 
+-- | but with no accidentals occurring in the nominal bar where the note lives
+assertMidiPitch :: AbcNote -> MidiPitch -> Test
+assertMidiPitch abcNote target = 
+  Assert.equal pitch target
+
+  where 
+    pitch = 
+      toMidiPitch abcNote gMajor empty
+
 midiSuite :: Free TestF Unit
 midiSuite = do
   transformationSuite
@@ -51,6 +63,7 @@ midiSuite = do
   variantSuite
   graceSuite
   atTempoSuite
+  pitchSuite
 
 transformationSuite :: Free TestF Unit
 transformationSuite =
@@ -311,7 +324,7 @@ graceSuite =
     test "graces immediately preceding tuplets" do
       assertMidi "| {E}(3CDE |\r\n"
         (Midi.Track (standardTempo <> noteE (2 % 30) <> noteC (18 % 30) <> noteD (2 % 3) <> noteE (2 % 3)))
-    test "graces in broken rhythm >" do
+    
       assertMidi "| C>{E}D |\r\n"
         (Midi.Track (standardTempo <> noteC (3 % 2) <> noteE (1 % 20) <> noteD (9 % 20)))
 
@@ -324,6 +337,18 @@ atTempoSuite =
     test "half tempo" do
       assertMidiAtBpm "| CDE |\r\n" 60
         (Midi.Track (halfTempo <> noteC (fromInt 1) <> noteD (fromInt 1) <> noteE (fromInt 1)))
+
+pitchSuite :: Free TestF Unit
+pitchSuite =
+  suite "convert a note's pitch class to a MIDI pitch (in context)" do  
+    test "B natural to MIDI" do         
+      assertMidiPitch b 47 
+    test "B# to MIDI" do         
+      assertMidiPitch bSharp 48
+    test "B## to MIDI" do         
+      assertMidiPitch bDoubleSharp 49
+    test "C natural to MIDI" do         
+      assertMidiPitch c 48
 
 -- | the number of MIDI ticks that equates to 1/4=120
 standardTicks :: Int
@@ -393,6 +418,26 @@ chordC abcDuration =
     : Midi.Message 0 (Midi.NoteOff 0 64 80)
     : Midi.Message 0 (Midi.NoteOff 0 67 80)
     : Nil
+
+b :: AbcNote
+b =
+  { pitchClass: B, accidental: Implicit, octave: 3, duration: fromInt 1, tied: false }
+
+bSharp :: AbcNote
+bSharp =
+  { pitchClass: B, accidental: Sharp, octave: 3, duration: fromInt 1, tied: false }
+
+bDoubleSharp :: AbcNote
+bDoubleSharp =
+  { pitchClass: B, accidental: DoubleSharp, octave: 3, duration: fromInt 1, tied: false }
+
+c :: AbcNote
+c =
+  { pitchClass: C, accidental: Implicit, octave: 4, duration: fromInt 1, tied: false }
+
+gMajor :: ModifiedKeySignature
+gMajor =
+  buildKeySig G Natural Major
 
 --  |1,2,3 ...:|4.....|
 variant1 :: VariantPositions

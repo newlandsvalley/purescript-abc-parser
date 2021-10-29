@@ -263,6 +263,8 @@ transposeKeySignatureBy interval mks =
 
 -- | a relationship between a Pitch and a note number
 -- | i.e. C is 0, C Sharp is 1 B is 11 etc.
+-- | Note that B# and B# go above the 12 notes in the scale 
+-- | because they effectively jump octave
 pitchNumbers :: List (Tuple Pitch Int)
 pitchNumbers =
   ( Tuple (Pitch { pitchClass: C, accidental: Flat }) 11
@@ -303,8 +305,8 @@ pitchNumbers =
       : Tuple (Pitch { pitchClass: B, accidental: Flat }) 10
       : Tuple (Pitch { pitchClass: B, accidental: Natural }) 11
       : Tuple (Pitch { pitchClass: B, accidental: Implicit }) 11
-      : Tuple (Pitch { pitchClass: B, accidental: Sharp }) 0
-      : Tuple (Pitch { pitchClass: B, accidental: DoubleSharp }) 1
+      : Tuple (Pitch { pitchClass: B, accidental: Sharp }) 12
+      : Tuple (Pitch { pitchClass: B, accidental: DoubleSharp }) 13
       : Nil
   )
 

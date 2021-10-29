@@ -11,6 +11,7 @@ import Data.List (List(..))
 import Data.Map (empty)
 import Data.Rational (fromInt)
 import Prelude (Unit, ($), discard, map, negate)
+import Test.Utils (buildKeySig)
 import Test.Unit (Test, TestF, failure, suite, test)
 
 assertTranspositionMatches :: String -> Pitch -> String -> Test
@@ -215,14 +216,6 @@ keyChangeSuite = do
         keyChangeAmInline
 
 -- note C Sharp and D Sharp are in octave 5 all the other notes are in octave 4
-
-buildKeySig :: PitchClass -> Accidental -> Mode -> ModifiedKeySignature
-buildKeySig pc acc mode =
-  { keySignature: { pitchClass: pc, accidental: acc, mode: mode }
-  , modifications: Nil
-  , properties: empty
-  }
-
 cs :: AbcNote
 cs =
   { pitchClass: C, accidental: Sharp, octave: 5, duration: fromInt 1, tied: false }

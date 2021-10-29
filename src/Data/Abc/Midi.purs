@@ -1,10 +1,8 @@
 -- | Conversion of an ABC tune to MIDI.
 module Data.Abc.Midi
-  ( MidiPitch
+  ( module Data.Abc.Midi.Pitch
   , toMidi
   , toMidiAtBpm
-  , toMidiPitch
-  , midiPitchOffset
   ) where
 
 import Control.Monad.State (State, get, put, execState, modify_)
@@ -13,7 +11,6 @@ import Data.Abc
   , AbcNote
   , Bar
   , RestOrNote
-  , Pitch(..)
   , Accidental(..)
   , BarLine
   , Broken(..)
@@ -28,8 +25,9 @@ import Data.Abc
   , TempoSignature
   )
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.KeySignature (defaultKey, modifiedKeySet, pitchNumber, notesInChromaticScale)
+import Data.Abc.KeySignature (defaultKey)
 import Data.Abc.Metadata (dotFactor, getKeySig)
+import Data.Abc.Midi.Pitch (MidiPitch, toMidiPitch) 
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Repeats.Types (RepeatState, Section(..), Sections)
@@ -37,7 +35,7 @@ import Data.Abc.Repeats.Variant (activeVariants, findEndingPosition, variantPosi
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
-import Data.Foldable (foldl, foldM, oneOf)
+import Data.Foldable (foldl, foldM)
 import Data.Unfoldable (replicate)
 import Data.Array as Array
 import Data.List (List(..), (:), null, concat, concatMap, foldr, filter, reverse, singleton)
@@ -50,50 +48,11 @@ import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..))
 import Prelude (Unit, bind, const, identity, map, pure, unit, ($), (&&), (*), (+), (-), (<), (>), (<>), (>=))
 
--- | The pitch of a note expressed as a MIDI interval.
-type MidiPitch =
-  Int
-
 -- | the fraction  of the duration of a note that is 'stolen' by any
 -- | preceding grace note that it has
 graceFraction :: Rational
 graceFraction =
   (1 % 10)
-
--- | Convert an ABC note pitch to a MIDI pitch.
--- |
--- | AbcNote - the note in question
--- | ModifiedKeySignature - the key signature (possibly modified by extra accidentals)
--- | Accidentals - any notes in this bar which have previously been set explicitly to an accidental which are thus inherited by this note
--- | MidiPitch - the resulting pitch of the MIDI note
-toMidiPitch :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> MidiPitch
-toMidiPitch n mks barAccidentals =
-  (n.octave * notesInChromaticScale) + midiPitchOffset n mks barAccidentals
-
--- | convert an AbcNote (pich class and accidental) to a pitch offset in a chromatic scale
-midiPitchOffset :: AbcNote -> ModifiedKeySignature -> Accidentals.Accidentals -> Int
-midiPitchOffset n mks barAccidentals =
-  let
-    inBarAccidental =
-      Accidentals.lookup n.pitchClass barAccidentals
-
-    inKeyAccidental =
-      -- accidentalImplicitInKey n.pitchClass mks
-      Accidentals.implicitInKeySet n.pitchClass (modifiedKeySet mks)
-
-    -- look first for an explicit note accidental, then for an explicit for the same note that occurred earlier in the bar and
-    -- finally look for an implicit accidental attached to this key signature
-    accidental =
-      case n.accidental of
-        Implicit ->
-          fromMaybe Natural $ oneOf (inBarAccidental : inKeyAccidental : Nil)
-        _ -> -- explict
-          n.accidental
-
-    pattern =
-      Pitch { pitchClass: n.pitchClass, accidental: accidental }
-  in
-    pitchNumber pattern
 
 -- | Transform ABC into a MIDI recording.
 toMidi :: AbcTune -> Midi.Recording

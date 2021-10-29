@@ -3,8 +3,10 @@ module Test.Utils where
 import Prelude (($), map)
 import Data.Either (Either(..))
 import Data.Abc.Parser (parse)
-import Data.Abc (AbcTune)
+import Data.Abc (Accidental, AbcTune, Mode, ModifiedKeySignature, PitchClass)
 import Data.Abc.Canonical (fromTune)
+import Data.List (List(..))
+import Data.Map (empty)
 
 import Test.Unit (Test, failure)
 import Test.Unit.Assert as Assert
@@ -38,3 +40,11 @@ assertIntFuncMatches s f target =
 
       Left errs ->
         failure "unexpected error"
+
+
+buildKeySig :: PitchClass -> Accidental -> Mode -> ModifiedKeySignature
+buildKeySig pc acc mode =
+  { keySignature: { pitchClass: pc, accidental: acc, mode: mode }
+  , modifications: Nil
+  , properties: empty
+  }          
