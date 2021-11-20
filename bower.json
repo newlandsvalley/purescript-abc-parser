@@ -1,0 +1,41 @@
+{
+    "name": "purescript-abc-parser",
+    "license": [
+        "MIT"
+    ],
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/newlandsvalley/purescript-abc-parser"
+    },
+    "ignore": [
+        "**/.*",
+        "node_modules",
+        "bower_components",
+        "output"
+    ],
+    "dependencies": {
+        "purescript-arrays": "^v6.0.1",
+        "purescript-bifunctors": "^v5.0.0",
+        "purescript-control": "^v5.0.0",
+        "purescript-either": "^v5.0.0",
+        "purescript-enums": "^v5.0.0",
+        "purescript-foldable-traversable": "^v5.0.1",
+        "purescript-identity": "^v5.0.0",
+        "purescript-integers": "^v5.0.0",
+        "purescript-lists": "^v6.0.1",
+        "purescript-maybe": "^v5.0.0",
+        "purescript-midi": "^v3.0.0",
+        "purescript-newtype": "^v4.0.0",
+        "purescript-ordered-collections": "^v2.0.1",
+        "purescript-partial": "^v3.0.0",
+        "purescript-prelude": "^v5.0.1",
+        "purescript-profunctor-lenses": "^v7.0.1",
+        "purescript-rationals": "^v5.0.0",
+        "purescript-string-parsers": "^v6.0.1",
+        "purescript-strings": "^v5.0.0",
+        "purescript-stringutils": "^v0.0.11",
+        "purescript-transformers": "^v5.1.0",
+        "purescript-tuples": "^v6.0.1",
+        "purescript-unfoldable": "^v5.0.0"
+    }
+}
