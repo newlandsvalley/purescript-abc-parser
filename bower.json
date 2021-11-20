@@ -25,7 +25,8 @@
     "purescript-stringutils": "^0.0.11",
     "purescript-bifunctors": "^5.0.0",
     "purescript-ordered-collections": "^2.0.0",
-    "purescript-midi": "^3.0.0"
+    "purescript-midi": "^3.0.0",
+    "purescript-profunctor-lenses": "^7.0.1"
   },
   "devDependencies": {
     "purescript-psci-support": "^5.0.0",
