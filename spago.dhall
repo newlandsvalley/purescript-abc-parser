@@ -3,6 +3,8 @@ Welcome to a Spago project!
 You can edit this file as you like.
 -}
 { name = "abc-parser"
+, license = "MIT"
+, repository = "https://github.com/newlandsvalley/purescript-abc-parser"
 , dependencies =
   [ "arrays"
   , "bifunctors"
