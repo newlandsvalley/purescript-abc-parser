@@ -2,6 +2,7 @@
 module Data.Abc.Midi.Pitch 
  ( MidiPitch
  , toMidiPitch
+ , midiPitchOffset
  ) 
 
 where 
