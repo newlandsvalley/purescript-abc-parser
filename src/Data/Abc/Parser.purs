@@ -26,9 +26,9 @@ import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable1 (replicate1A)
 import Prelude (bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
-import Text.Parsing.StringParser (Parser, ParseError, runParser, try)
-import Text.Parsing.StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
-import Text.Parsing.StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
+import StringParser (Parser, ParseError, runParser, try)
+import StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
+import StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
 
 {- transient data type just used for parsing the awkward Tempo syntax
   a list of time signatures expressed as rationals and a bpm expressed as an Int
