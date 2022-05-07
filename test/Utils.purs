@@ -1,6 +1,7 @@
 module Test.Utils where
 
-import Prelude (($), map)
+import Prelude (Unit, ($), map)
+import Effect.Aff (Aff)
 import Data.Either (Either(..))
 import Data.Abc.Parser (parse)
 import Data.Abc (Accidental, AbcTune, Mode, ModifiedKeySignature, PitchClass)
@@ -8,11 +9,10 @@ import Data.Abc.Canonical (fromTune)
 import Data.List (List(..))
 import Data.Map (empty)
 
-import Test.Unit (Test, failure)
-import Test.Unit.Assert as Assert
+import Test.Spec.Assertions (fail, shouldEqual)
 
 {- assert the moved parsed input equals the target -}
-assertMoveMatches :: String -> (AbcTune -> AbcTune) -> String -> Test
+assertMoveMatches :: String -> (AbcTune -> AbcTune) -> String -> Aff Unit
 assertMoveMatches s move target =
   let
     movedResult =
@@ -21,13 +21,13 @@ assertMoveMatches s move target =
   in
     case movedResult of
       Right res ->
-        Assert.equal target (fromTune res)
+        target `shouldEqual` (fromTune res)
 
       Left errs ->
-        failure "unexpected error"
+        fail "unexpected error"
 
 {- assert the value of some Int producing function on a parsed tune -}
-assertIntFuncMatches :: String -> (AbcTune -> Int) -> Int -> Test
+assertIntFuncMatches :: String -> (AbcTune -> Int) -> Int -> Aff Unit
 assertIntFuncMatches s f target =
   let
     result =
@@ -36,10 +36,10 @@ assertIntFuncMatches s f target =
   in
     case result of
       Right res ->
-        Assert.equal target res
+        target `shouldEqual` res
 
       Left errs ->
-        failure "unexpected error"
+        fail "unexpected error"
 
 
 buildKeySig :: PitchClass -> Accidental -> Mode -> ModifiedKeySignature

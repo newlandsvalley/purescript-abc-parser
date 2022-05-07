@@ -1,9 +1,8 @@
-module Test.Optics (opticsSuite) where
+module Test.Optics (opticsSpec) where
 
 import Data.Abc
 import Data.Abc.Optics
 
-import Control.Monad.Free (Free)
 import Data.Abc.Parser (parse)
 import Data.Either (hush)
 import Data.Lens.Fold (firstOf, toListOf)
@@ -14,62 +13,62 @@ import Data.Maybe (Maybe(..), fromJust)
 import Data.Rational ((%))
 import Partial.Unsafe (unsafePartial)
 import Prelude (($), (<>), (<<<), Unit, discard)
-import Test.Unit (TestF, suite, test)
-import Test.Unit.Assert as Assert
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual)
 
-opticsSuite :: Free TestF Unit
-opticsSuite =
-  suite "optics" do
-    test "title" do
+opticsSpec :: Spec Unit
+opticsSpec =
+  describe "optics" do
+    it "fetches the title" do
       let
         title :: Maybe String
         title = firstOf (_headers <<< traversed <<< _Title) (getTune borddajnsijn)
-      Assert.equal title (Just "Borddajnsijn")
-    test "titles" do
+      title `shouldEqual` (Just "Borddajnsijn")
+    it "fetches all titles" do
       let
         titles :: List String
         titles = toListOf (_headers <<< traversed <<< _Title) (getTune borddajnsijn)
-      Assert.equal titles ("Borddajnsijn" : "Second title" : Nil)
-    test "unit note length" do
+      titles `shouldEqual` ("Borddajnsijn" : "Second title" : Nil)
+    it "fetches unit note length" do
       let
         duration :: Maybe NoteDuration
         duration = firstOf (_headers <<< traversed <<< _UnitNoteLength) (getTune borddajnsijn)
-      Assert.equal duration (Just (1 % 8))
-    test "mode" do
+      duration `shouldEqual` (Just (1 % 8))
+    it "fetches the mode" do 
       let
         mode :: Maybe Mode
         mode = firstOf
           (_headers <<< traversed <<< _ModifiedKeySignature <<< _keySignature <<< _mode)
           (getTune borddajnsijn)
-      Assert.equal mode (Just Major)
-    test "key pitch class" do
+      mode `shouldEqual` (Just Major)
+    it "fetches the key pitch class" do
       let
         pitchClass :: Maybe PitchClass
         pitchClass = firstOf
           (_headers <<< traversed <<< _ModifiedKeySignature <<< _keySignature <<< _pitchClass)
           (getTune borddajnsijn)
-      Assert.equal pitchClass (Just G)
-    test "tempo bpm" do
+      pitchClass `shouldEqual` (Just G)
+    it "fetches the tempo bpm" do
       let
         bpm :: Maybe Int
         bpm = firstOf
           (_headers <<< traversed <<< _Tempo <<< _bpm)
           (getTune borddajnsijn)
-      Assert.equal bpm (Just 150)
-    test "voice id" do
+      bpm `shouldEqual` (Just 150)
+    it "fetches the voice id" do
       let
         id :: Maybe String
         id = firstOf
           (_headers <<< traversed <<< _Voice <<< _id)
           (getTune borddajnsijn)
-      Assert.equal id (Just "1")
-    test "set title" do
+      id `shouldEqual` (Just "1")
+    it "sets the  title" do
       let
         newTune = set (_headers <<< traversed <<< _Title) "new title" (getTune borddajnsijn)
 
         title :: Maybe String
         title = firstOf (_headers <<< traversed <<< _Title) newTune
-      Assert.equal title (Just "new title")
+      title `shouldEqual` (Just "new title")
 
 getTune :: String -> AbcTune
 getTune s =

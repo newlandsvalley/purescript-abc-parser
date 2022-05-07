@@ -1,62 +1,61 @@
-module Test.Octave (octaveSuite) where
+module Test.Octave (octaveSpec) where
 
-import Prelude (Unit, bind, discard)
-import Control.Monad.Free (Free)
+import Prelude (Unit, discard)
 
 import Data.Abc.Octave (move, down, up)
 import Test.Utils
 
-import Test.Unit (TestF, suite, test)
+import Test.Spec (Spec, describe, it)
 
-octaveSuite :: Free TestF Unit
-octaveSuite = do
-  suite "octave" do
-    test "phrase 1 low to med" do
+octaveSpec :: Spec Unit
+octaveSpec = do
+  describe "octave" do
+    it "moves phrase 1 low to med" do
       assertMoveMatches
         phrase1Low
         up
         phrase1Med
-    test "phrase 1 med to high" do
+    it "moves phrase 1 med to high" do
       assertMoveMatches
         phrase1Med
         up
         phrase1High
-    test "phrase 1 med to low" do
+    it "moves phrase 1 med to low" do
       assertMoveMatches
         phrase1Med
         down
         phrase1Low
-    test "phrase 1 high to Med" do
+    it "moves phrase 1 high to Med" do
       assertMoveMatches
         phrase1High
         down
         phrase1Med
-    test "phrase 2 low to med" do
+    it "moves phrase 2 low to med" do
       assertMoveMatches
         phrase2Low
         up
         phrase2Med
-    test "phrase 2 med to high" do
+    it "moves phrase 2 med to high" do
       assertMoveMatches
         phrase2Med
         up
         phrase2High
-    test "phrase 2 med to low" do
+    it "moves phrase 2 med to low" do
       assertMoveMatches
         phrase2Med
         down
         phrase2Low
-    test "phrase 2 high to Med" do
+    it "moves phrase 2 high to Med" do
       assertMoveMatches
         phrase2High
         down
         phrase2Med
-    test "alternative octave API up" do
+    it "moves alternative octave API up" do
       assertMoveMatches
         phrase1Low
         (move true)
         phrase1Med
-    test "alternativeoctavee API down" do
+    it "moves alternative octavee API down" do
       assertMoveMatches
         phrase2Med
         (move false)

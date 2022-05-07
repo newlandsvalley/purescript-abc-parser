@@ -1,53 +1,54 @@
-module Test.Transposition (transpositionSuite) where
+module Test.Transposition (transpositionSpec) where
 
-import Test.Unit.Assert as Assert
+import Effect.Aff (Aff)
 import Data.Abc.Parser (parse)
 import Data.Abc.Canonical (abcNote, fromTune)
 import Data.Abc.Transposition
 import Data.Abc (AbcNote, Accidental(..), Pitch(..), PitchClass(..), Mode(..), ModifiedKeySignature)
-import Control.Monad.Free (Free)
 import Data.Either (Either(..))
 import Data.List (List(..))
 import Data.Map (empty)
 import Data.Rational (fromInt)
-import Prelude (Unit, ($), discard, map, negate)
+import Prelude (Unit, discard, map, negate)
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (fail, shouldEqual)
 import Test.Utils (buildKeySig)
-import Test.Unit (Test, TestF, failure, suite, test)
 
-assertTranspositionMatches :: String -> Pitch -> String -> Test
+
+assertTranspositionMatches :: String -> Pitch -> String -> Aff Unit
 assertTranspositionMatches s targetp target =
   case parse s of
     Right tune ->
-      Assert.equal target $ fromTune (transposeTo targetp tune)
+      target `shouldEqual` (fromTune  (transposeTo targetp tune))
     Left _ ->
-      failure "unexpected parse error"
+      fail "unexpected parse error"
 
-transpositionSuite :: Free TestF Unit
-transpositionSuite = do
-  suite "transposition" do
-    keySuite
-    noteSuite
-    phraseSuite
-    tuneSuite
-    keyChangeSuite
+transpositionSpec :: Spec Unit
+transpositionSpec = do
+  describe "transposition" do
+    keySpec
+    noteSpec
+    phraseSpec
+    tuneSpec
+    keyChangeSpec
 
-keySuite :: Free TestF Unit
-keySuite = do
-  suite "keys" do
-    test "C to G#" do
-      Assert.equal
+keySpec :: Spec Unit
+keySpec = do
+  describe "keys" do
+    it "moves C to G#" do
+      shouldEqual
         (Right 8)
         (keyDistance gSharpMajor cMajor)
-    test "G# to Bb" do
-      Assert.equal
+    it "moves G# to Bb" do
+      shouldEqual
         (Right 2)
         (keyDistance bFlat gSharpMajor)
-    test "Bb to G#" do
-      Assert.equal
+    it "moves Bb to G#" do
+      shouldEqual
         (Right (-2))
         (keyDistance gSharpMajor bFlat)
-    test "Bm to Am" do
-      Assert.equal
+    it "moves Bm to Am" do
+      shouldEqual
         (Left "incompatible modes")
         (keyDistance bFlatDorian cMajor)
 
@@ -56,102 +57,102 @@ keySuite = do
 -- | no derived instances are available for AbcNote because it's defined
 -- | as simply as possible as a record.  However we can 'show' an AbcNote
 -- | because it's there in Canonical.  So we compare the stringified versions.
-noteSuite :: Free TestF Unit
-noteSuite = do
-  suite "notes" do
-    test "F in FMaj to GMaj" do
-      Assert.equal
+noteSpec :: Spec Unit
+noteSpec = do
+  describe "notes" do
+    it "handles F in FMaj to GMaj" do
+      shouldEqual
         (map abcNote (Right g))
         (map abcNote (transposeNote gMajor fMajor f))
-    test "FNat in GMaj to FMaj" do
-      Assert.equal
+    it " handles FNat in GMaj to FMaj" do
+      shouldEqual
         (map abcNote (Right eb))
         (map abcNote (transposeNote fMajor gMajor fnat))
-    test "C# in AMaj to GMaj" do
-      Assert.equal
+    it "handles C# in AMaj to GMaj" do
+      shouldEqual
         (map abcNote (Right b))
         (map abcNote (transposeNote gMajor aMajor cs))
-    test "C# in GMaj to AMaj" do
-      Assert.equal
+    it "handles C# in GMaj to AMaj" do
+      shouldEqual
         (map abcNote (Right ds))
         (map abcNote (transposeNote aMajor gMajor cs))
-    test "G# in Amin to FMin" do
-      Assert.equal
+    it "handles G# in Amin to FMin" do
+      shouldEqual
         (map abcNote (Right enat))
         (map abcNote (transposeNote fMinor aMinor gs))
-    test "B in DMaj to CMaj" do
-      Assert.equal
+    it "handles B in DMaj to CMaj" do
+      shouldEqual
         (map abcNote (Right a))
         (map abcNote (transposeNote cMajor dMajor b))
-    test "C in BMin to EMin" do
-      Assert.equal
+    it "handles C in BMin to EMin" do
+      shouldEqual
         (map abcNote (Right f))
         (map abcNote (transposeNote eMinor bMinor c))
 
-phraseSuite :: Free TestF Unit
-phraseSuite = do
-  suite "phrases" do
-    test "C phrase to D phrase" do
+phraseSpec :: Spec Unit
+phraseSpec = do
+  describe "phrases" do
+    it "moves C phrase to D phrase" do
       assertTranspositionMatches
         cPhrase
         -- dMajor
         (Pitch { pitchClass: D, accidental: Natural })
         dPhrase
-    test "D phrase to C phrase" do
+    it "moves D phrase to C phrase" do
       assertTranspositionMatches
         dPhrase
         -- cMajor
         (Pitch { pitchClass: C, accidental: Natural })
         cPhrase
-    test "C phrase to F phrase" do
+    it "moves C phrase to F phrase" do
       assertTranspositionMatches
         cPhrase
         -- fMajor
         (Pitch { pitchClass: F, accidental: Natural })
         fPhrase
-    test "Gm phrase to Dm phrase" do
+    it "moves Gm phrase to Dm phrase" do
       assertTranspositionMatches
         gmPhrase
         -- dMinor
         (Pitch { pitchClass: D, accidental: Natural })
         dmPhrase
-    test "Gm phrase with in-bar accidental" do
+    it "moves Gm phrase with in-bar accidental" do
       assertTranspositionMatches
         gmPhraseLocal
         -- dMinor
         (Pitch { pitchClass: D, accidental: Natural })
         dmPhrase
-    test "Dm phrase to Gm phrase" do
+    it "moves Dm phrase to Gm phrase" do
       assertTranspositionMatches
         dmPhrase
         -- gMinor
         (Pitch { pitchClass: G, accidental: Natural })
         gmPhraseLocal
-    test "Bm phrase to Em phrase" do
+    it "moves Bm phrase to Em phrase" do
       assertTranspositionMatches
         bmPhrase
         -- eMinor
         (Pitch { pitchClass: E, accidental: Natural })
         emPhrase
-    test "Am phrase to Fm phrase" do
+    it "moves Am phrase to Fm phrase" do
       assertTranspositionMatches
         amPhrase
         -- fMinor
         (Pitch { pitchClass: F, accidental: Natural })
         fmPhrase
-    test "Am phrase to F#m phrase" do
+    it "moves Am phrase to F#m phrase" do
       assertTranspositionMatches
         amPhrase0
         -- fSharpMinor
         (Pitch { pitchClass: F, accidental: Sharp })
         fsharpmPhrase0
-    test "identity transposition" do
+    it "respects the identity transposition" do
       assertTranspositionMatches
         dmPhrase
         -- dMinor
         (Pitch { pitchClass: D, accidental: Natural })
         dmPhrase
-    test "Cm phrase to Am phrase" do
+    it "moves Cm phrase to Am phrase" do
       assertTranspositionMatches
         cmPhrase1
         -- aMinor
@@ -159,56 +160,56 @@ phraseSuite = do
         amPhrase1High
 
 -- | test that headers are ordered properly
-tuneSuite :: Free TestF Unit
-tuneSuite = do
-  suite "tunes" do
-    test "Bm to Am" do
+tuneSpec :: Spec Unit
+tuneSpec = do
+  describe"tunes" do
+    it "moves Bm tune to Am tune" do
       assertTranspositionMatches
         tuneBm
         -- aMinor
         (Pitch { pitchClass: A, accidental: Natural })
         tuneAm
 
-keyChangeSuite :: Free TestF Unit
-keyChangeSuite = do
-  suite "key changes" do
-    test "key change Bm to Am" do
+keyChangeSpec :: Spec Unit
+keyChangeSpec = do
+  describe"key changes" do
+    it "changes key Bm to Am" do
       assertTranspositionMatches
         keyChangeBm
         -- aMinor
         (Pitch { pitchClass: A, accidental: Natural })
         keyChangeAm
-    test "key change Am to Bm" do
+    it "changes key Am to Bm" do
       assertTranspositionMatches
         keyChangeAm
         -- bMinor
         (Pitch { pitchClass: B, accidental: Natural })
         keyChangeBm
-    test "key change Bm to Em" do
+    it "changes key Bm to Em" do
       assertTranspositionMatches
         keyChangeBm
         -- eMinor
         (Pitch { pitchClass: E, accidental: Natural })
         keyChangeEmHigh
-    test "key change Em to Bm" do
+    it "changes key Em to Bm" do
       assertTranspositionMatches
         keyChangeEm
         -- bMinor
         (Pitch { pitchClass: B, accidental: Natural })
         keyChangeBm
-    test "key change Bm to C#m" do
+    it "changes key Bm to C#m" do
       assertTranspositionMatches
         keyChangeBm
         -- cSharpMinor
         (Pitch { pitchClass: C, accidental: Sharp })
         keyChangeCSharpmHigh
-    test "key change C#m to Bm" do
+    it "changes key C#m to Bm" do
       assertTranspositionMatches
         keyChangeCSharpm
         -- bMinor
         (Pitch { pitchClass: B, accidental: Natural })
         keyChangeBm
-    test "key change Bm to Am inline" do
+    it "changes key Bm to Am inline" do
       assertTranspositionMatches
         keyChangeBmInline
         -- aMinor

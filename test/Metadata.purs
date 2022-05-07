@@ -1,8 +1,7 @@
-module Test.Metadata (metadataSuite) where
+module Test.Metadata (metadataSpec) where
 
-import Prelude (Unit, discard, ($), (<>), (<<<))
-import Control.Monad.Free (Free)
-
+import Prelude (Unit, discard, pure, unit, ($), (<>), (<<<))
+import Effect.Aff (Aff)
 import Data.Either (Either(..))
 import Data.Maybe (Maybe(..))
 import Data.Lens.Fold (toListOf)
@@ -30,23 +29,23 @@ import Data.Abc.Metadata
 import Data.Abc.Canonical (fromTune)
 import Data.Abc.Optics (_headers, _Title)
 
-import Test.Unit (Test, TestF, suite, test, success, failure)
-import Test.Unit.Assert as Assert
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (fail, shouldEqual)
 
-assertOkTitle :: String -> String -> Test
+assertOkTitle :: String -> String -> Aff Unit
 assertOkTitle source target =
   case parse source of
     Right tune ->
       case (getTitle tune) of
         Just title ->
-          Assert.equal target title
+          target `shouldEqual` title
 
         _ ->
-          failure "no title"
+          fail "no title"
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-assertAllTitles :: String -> List String -> Test
+assertAllTitles :: String -> List String -> Aff Unit
 assertAllTitles source target =
   case parse source of
     Right tune ->
@@ -54,24 +53,24 @@ assertAllTitles source target =
         titles =
           toListOf (_headers <<< traversed <<< _Title) tune
       in
-        Assert.equal target titles
+        target `shouldEqual` titles
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-assertOkKeySig :: String -> ModifiedKeySignature -> Test
+assertOkKeySig :: String -> ModifiedKeySignature -> Aff Unit
 assertOkKeySig source target =
   case parse source of
     Right tune ->
       case (getKeySig tune) of
         Just keySig ->
-          Assert.equal target.keySignature.pitchClass keySig.keySignature.pitchClass
+          target.keySignature.pitchClass `shouldEqual` keySig.keySignature.pitchClass
 
         _ ->
-          failure "no key signature"
+          fail "no key signature"
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-assertOkMeter :: String -> (Tuple Int Int) -> Test
+assertOkMeter :: String -> (Tuple Int Int) -> Aff Unit
 assertOkMeter source target =
   case parse source of
     Right tune ->
@@ -79,23 +78,23 @@ assertOkMeter source target =
         meter =
           getDefaultedMeter tune
       in
-        Assert.equal target meter
+        target `shouldEqual` meter
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-assertOkNoteLen :: String -> Rational -> Test
+assertOkNoteLen :: String -> Rational -> Aff Unit
 assertOkNoteLen source target =
   case parse source of
     Right tune ->
       case (getUnitNoteLength tune) of
         Just rat ->
-          Assert.equal target rat
+          target `shouldEqual` rat
         _ ->
-          failure "no unit note length"
+          fail "no unit note length"
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-assertNoHeader :: forall h. String -> (AbcTune -> Maybe h) -> Test
+assertNoHeader :: forall h. String -> (AbcTune -> Maybe h) -> Aff Unit
 assertNoHeader source getf =
   case parse source of
     Right tune ->
@@ -105,50 +104,33 @@ assertNoHeader source getf =
       in
         case mtitle of
           Just _ ->
-            failure "no title expected"
+            fail "no title expected"
           _ ->
-            success
+            pure unit
 
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-assertHeaderCount :: Int -> String -> Test
+assertHeaderCount :: Int -> String -> Aff Unit
 assertHeaderCount expectedCount source =
   case parse source of
     Right tune ->
-      Assert.equal expectedCount (length tune.headers)
+      expectedCount `shouldEqual` (length tune.headers)
 
     _ ->
-      failure "parse error"
+      fail "parse error"
 
-{-}
-assertEquivalentKeys :: KeySet -> KeySet -> Test
-assertEquivalentKeys actual expected =
-  let
-    intersection = intersect actual expected
-  in
-    -- debug 
-    if null expected then
-      failure $ "debug: " <> (show actual)
-    -- end of debug
-    if (length intersection == length expected) then
-      success
-    else
-      failure $ "non-equivalent keys: "
-         <> (show actual) <> " not equal to: " <> (show expected)
--}
-
-assertEmptyScore :: Boolean -> String -> Test
+assertEmptyScore :: Boolean -> String -> Aff Unit
 assertEmptyScore expected source =
   case parse source of
     Right tune ->
       case (head tune.body) of
         Just (Score bars) ->
-          Assert.equal expected (isEmptyStave bars)
+          expected `shouldEqual` (isEmptyStave bars)
         _ ->
-          failure "test has no Score BodyPart"
+          fail "test has no Score BodyPart"
     _ ->
-      failure "parse error"
+      fail "parse error"
 
 buildThumbnail :: String -> String
 buildThumbnail s =
@@ -166,66 +148,59 @@ buildThumbnailNoRepeats s =
     _ ->
       "parse error"
 
-{- It's such a pain to provide Eq, Show on what you'd like to be a somple record
-   so for testing purposes just collapse tp a string
-   Type class instances for type synonyms are disallowed
-showKeySig :: KeySignature -> String
-showKeySig ks =
-  show ks.pitchClass <> show ks.accidental <> show ks.mode
--}
+metadataSpec :: Spec Unit
+metadataSpec = do
+  describe "metadata" do
+    headerSpec
+    scoreSpec
+    thumbnailSpec
+    utilsSpec
 
-metadataSuite :: Free TestF Unit
-metadataSuite = do
-  headerSuite
-  scoreSuite
-  thumbnailSuite
-  utilsSuite
-
-headerSuite :: Free TestF Unit
-headerSuite =
-  suite "headers" do
-    test "get title" do
+headerSpec :: Spec Unit
+headerSpec =
+  describe "headers" do
+    it "gets title" do
       assertOkTitle titledTune "Gamal Reinlender"
-    test "no title" do
+    it "gets no title" do
       assertNoHeader keyedTune getTitle
-    test "get first of multiple titles" do
+    it "gets first of multiple titles" do
       assertOkTitle doublyTitledTune "Nancy Dawson"
-    test "get all titles" do
+    it "gets all titles" do
       assertAllTitles doublyTitledTune ("Nancy Dawson" : "Piss Upon the Grass" : Nil)
-    test "OK key header" do
+    it "gets key header" do
       assertOkKeySig keyedTune fMajorM
-    test "no key header" do
+    it "recognizes key header" do
       assertNoHeader titledTune getKeySig
-    test "multiple headers" do
+    it "gets multiple headers" do
       assertHeaderCount 8 manyHeaders
-    test "getMeter" do
+    it "gets meter" do
       assertOkMeter manyHeaders (Tuple 4 4)
-    test "getUnitNoteLen" do
+    it "gets UnitNoteLen" do
       assertOkNoteLen manyHeaders (1 % 16)
 
-scoreSuite :: Free TestF Unit
-scoreSuite =
-  suite "score" do
-    test "empty score" do
+scoreSpec :: Spec Unit
+scoreSpec =
+  describe "score" do
+    it "recognizes empty score" do
       assertEmptyScore true emptyScore
-    test "non empty score" do
+    it "recognizes a non empty score" do
       assertEmptyScore false keyedTune
 
-thumbnailSuite :: Free TestF Unit
-thumbnailSuite =
-  suite "thumbnail" do
-    test "with lead-in bar" do
-      Assert.equal augustssonThumbnail (buildThumbnail augustsson)
-    test "without lead-in bar" do
-      Assert.equal fastanThumbnail (buildThumbnail fastan)
-    test "remove repeat markers" do
-      Assert.equal augustssonThumbnailNoRepeats (buildThumbnailNoRepeats augustsson)
+thumbnailSpec :: Spec Unit
+thumbnailSpec =
+  describe "thumbnail" do
+    it "copes with lead-in bar" do
+      augustssonThumbnail `shouldEqual` (buildThumbnail augustsson)
+    it "copes without lead-in bar" do
+      fastanThumbnail `shouldEqual` (buildThumbnail fastan)
+    it "removes the repeat markers" do
+      augustssonThumbnailNoRepeats `shouldEqual` (buildThumbnailNoRepeats augustsson)
 
-utilsSuite :: Free TestF Unit
-utilsSuite =
-  suite "utils" do
-    test "normalise chord" do
-      Assert.equal normalisedChord $ normaliseChord denormalisedChord
+utilsSpec :: Spec Unit
+utilsSpec =
+  describe "utils" do
+    it "normalises a chord" do
+      normalisedChord `shouldEqual` (normaliseChord denormalisedChord)
 
 -- headers in sample ABC tunes
 keyedTune :: String

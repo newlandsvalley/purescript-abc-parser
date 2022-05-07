@@ -2,31 +2,35 @@ module Test.Main where
 
 import Prelude
 import Effect (Effect)
-import Test.Unit (suite)
-import Test.Unit.Main (runTest)
-import Test.Abc (abcSuite)
-import Test.Metadata (metadataSuite)
-import Test.Octave (octaveSuite)
-import Test.Optics (opticsSuite)
-import Test.Tempo (tempoSuite)
-import Test.Accidentals (accidentalsSuite)
-import Test.KeySignature (keySignatureSuite)
-import Test.Transposition (transpositionSuite)
-import Test.Midi (midiSuite)
-import Test.Voice (voiceSuite)
-import Test.UnitNote (unitNoteSuite)
+import Effect.Aff (launchAff_)
+import Test.Spec.Reporter (specReporter)
+import Test.Spec.Runner (runSpec)
+import Test.Spec (describe)
+import Test.Abc (abcSpec)
+import Test.Metadata (metadataSpec)
+import Test.Octave (octaveSpec)
+import Test.Optics (opticsSpec)
+import Test.Tempo (tempoSpec)
+import Test.Accidentals (accidentalsSpec)
+import Test.KeySignature (keySignatureSpec)
+import Test.Transposition (transpositionSpec)
+import Test.Midi (midiSpec)
+import Test.Voice (voiceSpec)
+import Test.UnitNote (unitNoteSpec)
+
 
 main :: Effect Unit
-main = runTest do
-  suite "parser" do
-    abcSuite
-    opticsSuite
-    metadataSuite
-    octaveSuite
-    tempoSuite
-    accidentalsSuite
-    keySignatureSuite
-    transpositionSuite
-    midiSuite
-    unitNoteSuite
-    voiceSuite
+main = launchAff_ $ runSpec [ specReporter] do
+  describe "ABC parser" do
+    abcSpec
+    accidentalsSpec
+    keySignatureSpec
+    metadataSpec
+    midiSpec
+    octaveSpec
+    opticsSpec
+    tempoSpec
+    transpositionSpec
+    unitNoteSpec
+    voiceSpec
+    

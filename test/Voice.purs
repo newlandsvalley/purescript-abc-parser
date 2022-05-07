@@ -1,8 +1,8 @@
-module Test.Voice (voiceSuite) where
+module Test.Voice (voiceSpec) where
 
 import Prelude
 
-import Control.Monad.Free (Free)
+import Effect.Aff (Aff)
 import Data.Abc (AbcTune)
 import Data.Abc.Canonical (fromTune)
 import Data.Abc.Metadata (getTitle)
@@ -17,21 +17,21 @@ import Data.Either (Either(..))
 import Data.Set (Set)
 import Data.Set (fromFoldable) as Set
 import Data.Unfoldable (replicate)
-import Test.Unit (Test, TestF, suite, test, failure)
-import Test.Unit.Assert as Assert
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (fail, shouldEqual)
 
-assertVoiceCount :: String -> Int -> Test
+assertVoiceCount :: String -> Int -> Aff Unit
 assertVoiceCount s target =
   case (parse s) of
     Right tune ->
-      Assert.equal target (length (partitionTuneBody tune))
+      target `shouldEqual` (length (partitionTuneBody tune))
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
 -- | assert that a canonical tune is equal to the partitioned tune 
 -- | in the array of voice-partitioned tunes at the stated index
-assertVoice :: String -> String -> Int -> Test
+assertVoice :: String -> String -> Int -> Aff Unit
 assertVoice s canonical ix =
   case (parse s) of
     Right tune ->
@@ -40,13 +40,13 @@ assertVoice s canonical ix =
         indexedBody = fromMaybe Nil $ index partitionedBody ix
         indexedVoice = { headers: tune.headers, body: indexedBody }
       in
-        Assert.equal canonical (fromTune indexedVoice)
+        canonical `shouldEqual` (fromTune indexedVoice)
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
 -- | ditto but use partitionVoices instead of partitionTuneBody
-assertVoice' :: String -> String -> Int -> Test
+assertVoice' :: String -> String -> Int -> Aff Unit
 assertVoice' s canonical ix =
   case (parse s) of
     Right tune ->
@@ -57,37 +57,37 @@ assertVoice' s canonical ix =
         indexedVoice :: Maybe AbcTune
         indexedVoice = index partitionedVoices ix
       in
-        Assert.equal (Just canonical) (map fromTune indexedVoice)
+        (Just canonical) `shouldEqual` (map fromTune indexedVoice)
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
 -- assert the set of voice names found in the tune after asking for just the labels
-assertVoiceLabels :: String -> Array String -> Test
+assertVoiceLabels :: String -> Array String -> Aff Unit
 assertVoiceLabels s target =
   case (parse s) of
     Right tune ->
-      Assert.equal target (getVoiceLabels tune)
+      target `shouldEqual` (getVoiceLabels tune)
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
 -- ditto after asking for the entire voice map
-assertVoiceMapLabels :: String -> Set String -> Test
+assertVoiceMapLabels :: String -> Set String -> Aff Unit
 assertVoiceMapLabels s target =
   case (parse s) of
     Right tune ->
       let
         voiceMap = getVoiceMap tune
       in
-        Assert.equal target (keys voiceMap)
+        target `shouldEqual` (keys voiceMap)
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
 -- check that the partitioned voice has a title representing the voice name
 -- when using getVoiceMap
-assertVoiceTitles :: String -> List (Maybe String) -> Test
+assertVoiceTitles :: String -> List (Maybe String) -> Aff Unit
 assertVoiceTitles s target =
   case (parse s) of
     Right tune ->
@@ -95,14 +95,14 @@ assertVoiceTitles s target =
         voiceMap = getVoiceMap tune
         titles = map getTitle (values voiceMap)
       in
-        Assert.equal target titles
+        target `shouldEqual` titles
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
 -- check that the partitioned voice has a title representing the voice name
 -- when using partitionVoices
-assertPartitionedVoiceTitles :: String -> Array (Maybe String) -> Test
+assertPartitionedVoiceTitles :: String -> Array (Maybe String) -> Aff Unit
 assertPartitionedVoiceTitles s target =
   case (parse s) of
     Right tune ->
@@ -110,12 +110,12 @@ assertPartitionedVoiceTitles s target =
         voices = partitionVoices tune
         titles = map getTitle voices
       in
-        Assert.equal target titles
+        target `shouldEqual` titles
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
-assertRetitlingPreservesHeaders :: String -> Test
+assertRetitlingPreservesHeaders :: String -> Aff Unit
 assertRetitlingPreservesHeaders s =
   case (parse s) of
     Right tune ->
@@ -124,55 +124,55 @@ assertRetitlingPreservesHeaders s =
         voiceMap = getVoiceMap tune
         voiceHeaderLengths = map (List.length <<< _.headers) (values voiceMap)
       in
-        Assert.equal (replicate (size voiceMap) tuneHeaderLength) voiceHeaderLengths
+        (replicate (size voiceMap) tuneHeaderLength) `shouldEqual` voiceHeaderLengths
 
     Left err ->
-      failure ("parse failed: " <> (show err))
+      fail ("parse failed: " <> (show err))
 
-voiceSuite :: Free TestF Unit
-voiceSuite = do
-  suite "voice" do
-    test "no voices" do
+voiceSpec :: Spec Unit
+voiceSpec = do
+  describe "voice" do
+    it "handles no voices" do
       assertVoiceCount noVoice 1
-    test "one voice" do
+    it "handles one voice" do
       assertVoiceCount oneVoice 1
-    test "two voices" do
+    it "handles two voices" do
       assertVoiceCount twoVoices 2
-    test "four voices" do
+    it "handles four voices" do
       assertVoiceCount fourVoices 4
-    test "two voices inline" do
+    it "handles two voices inline" do
       assertVoiceCount twoVoicesInline 2
-    test "three voices" do
+    it "handles three voices" do
       assertVoiceCount threeVoices 3
-    test "first voice of two" do
+    it "finds first voice of two" do
       assertVoice twoVoices firstVoiceOfTwo 0
-    test "first voice of two inline" do
+    it "finds first voice of two inline" do
       assertVoice twoVoicesInline firstVoiceOfTwoInline 0
-    test "second voice of two" do
+    it "finds second voice of two" do
       assertVoice' twoVoices secondVoiceOfTwo 1
-    test "second voice of two inline" do
+    it "finds second voice of two inline" do
       assertVoice' twoVoicesInline secondVoiceOfTwoInline 1
-    test "fourth voice of four" do
+    it "finds fourth voice of four" do
       assertVoice' fourVoices fourthVoiceOfFour 3
-    test "three voices with empty stave" do
+    it "handles three voices with empty stave" do
       assertVoiceCount (threeVoices <> "\x0D\n") 3
-    test "labels - no voice" do
+    it "handles labels - no voice" do
       assertVoiceLabels noVoice []
-    test "labels - one voice" do
+    it "finds labels - one voice" do
       assertVoiceLabels oneVoice [ "T1" ]
-    test "labels - two voice inline" do
+    it "finds labels - two voice inline" do
       assertVoiceLabels twoVoicesInline [ "T1", "T2" ]
-    test "labels - four voices" do
+    it "finds labels - four voices" do
       assertVoiceLabels fourVoices [ "1", "2", "3", "4" ]
-    test "labels from voice map - four voices" do
+    it "finds labels from voice map - four voices" do
       assertVoiceMapLabels fourVoices (Set.fromFoldable [ "1", "2", "3", "4" ])
-    test "retitling the voice header via getVoiceMap - two voices" do
+    it "retitles the voice header via getVoiceMap - two voices" do
       assertVoiceTitles twoVoicesTitled (List.fromFoldable [ Just "voice T1", Just "voice T2" ])
-    test "retitling the voice header via getVoiceMap - three voices" do
+    it "retitles the voice header via getVoiceMap - three voices" do
       assertVoiceTitles threeVoices (List.fromFoldable [ Just "voice T1", Just "voice T2", Just "voice T3" ])
-    test "retitling preserves other headers" do
+    it "retitles preserves other headers" do
       assertRetitlingPreservesHeaders threeVoices
-    test "retitling the voice header via partitionVoices - two voices" do
+    it "retitles the voice header via partitionVoices - two voices" do
       assertPartitionedVoiceTitles twoVoicesTitled ([ Just "voice T1", Just "voice T2" ])
 
 noVoice :: String

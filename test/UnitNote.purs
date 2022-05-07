@@ -1,28 +1,28 @@
-module Test.UnitNote (unitNoteSuite) where
+module Test.UnitNote (unitNoteSpec) where
 
 import Prelude (Unit, discard)
-import Control.Monad.Free (Free)
 
 import Data.Abc.UnitNote (defaultUnitNoteLength)
 import Data.Tuple (Tuple(..))
-import Test.Unit.Assert as Assert
+-- import Test.Unit.Assert as Assert
 import Data.Rational ((%))
 
-import Test.Unit (TestF, suite, test)
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual)
 
-unitNoteSuite :: Free TestF Unit
-unitNoteSuite = do
-  suite "unit note" do
-    test "4/4 unit note" do
-      Assert.equal
+unitNoteSpec :: Spec Unit
+unitNoteSpec = do
+  describe "unit note" do
+    it " computes a 4/4 unit note" do
+      shouldEqual
         (1 % 8)
         (defaultUnitNoteLength (Tuple 4 4))
-    test "2/4 unit note" do
-      Assert.equal
+    it "computes a 2/4 unit note" do
+      shouldEqual
         (1 % 16)
         (defaultUnitNoteLength (Tuple 2 4))
-    test "no meter signature unit note" do
+    it "finds a default unit note when no meter is present" do
       -- 4/4 is the default
-      Assert.equal
+      shouldEqual
         (1 % 8)
         (defaultUnitNoteLength (Tuple 4 4))

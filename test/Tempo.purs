@@ -1,39 +1,39 @@
-module Test.Tempo (tempoSuite) where
+module Test.Tempo (tempoSpec) where
 
 import Prelude (Unit, discard, ($))
-import Control.Monad.Free (Free)
 
 import Data.Abc.Tempo (getBpm, setBpm, midiTempo, defaultAbcTempo, beatsPerSecond)
 import Test.Utils
-import Test.Unit.Assert as Assert
 import Data.Rational (fromInt, (%))
 
-import Test.Unit (TestF, suite, test)
+import Test.Spec (Spec, describe, it)
+import Test.Spec.Assertions (shouldEqual)
 
-tempoSuite :: Free TestF Unit
-tempoSuite = do
-  suite "tempo" do
-    test "get the tempo from header" do
+
+tempoSpec :: Spec Unit
+tempoSpec = do
+  describe "tempo" do
+    it "gets the tempo from header" do
       assertIntFuncMatches
         fullHeaderHigh
         getBpm
         132
-    test "get the default tempo when there's no header" do
+    it "gets the default tempo when there's no header" do
       assertIntFuncMatches
         noHeader
         getBpm
         120
-    test "alter tempo of existing header" do
+    it "alters tempo of existing header" do
       assertMoveMatches
         fullHeaderMed
         (setBpm 132)
         fullHeaderHigh
-    test "new tempo from default of no headers" do
+    it "provides a new tempo from default of no headers" do
       assertMoveMatches
         noHeader
         (setBpm 144)
         justTempoHeader
-    test "new tempo from default of only Key header" do
+    it "provides a new tempo from default of only Key header" do
       assertMoveMatches
         onlyKeyHeader
         (setBpm 84)
@@ -42,15 +42,15 @@ tempoSuite = do
     -- | i.e. 2 quarter notes/sec (each quarter note takes 1/2 sec)
     -- | but default ABC tempo uses eighth notes
     -- | so these last for 1/4 sec = 250000 μsec
-    test "MIDI tempo for default ABC tempo" do
-      Assert.equal 250000 (midiTempo defaultAbcTempo)
-    test "default bps" do
-      Assert.equal (fromInt 2) (beatsPerSecond defaultAbcTempo)
-    test "faster bps" do
-      Assert.equal (fromInt 3) (beatsPerSecond $ defaultAbcTempo { bpm = 180 })
+    it "provides a MIDI tempo for default ABC tempo" do
+      250000 `shouldEqual` (midiTempo defaultAbcTempo)
+    it "provides a default bps" do
+      (fromInt 2) `shouldEqual` (beatsPerSecond defaultAbcTempo)
+    it "calculates a faster bps" do
+      (fromInt 3)  `shouldEqual` (beatsPerSecond $ defaultAbcTempo { bpm = 180 })
     -- | bps should be unaffected by unit note length
-    test "bps shorter notelen" do
-      Assert.equal (fromInt 2) (beatsPerSecond $ defaultAbcTempo { unitNoteLength = 1 % 16 })
+    it "provides an accurate bps irrespective of a shorter notelen" do
+      (fromInt 2) `shouldEqual` (beatsPerSecond $ defaultAbcTempo { unitNoteLength = 1 % 16 })
 
 fullHeaderMed =
   "X: 1\x0D\nT: a title\x0D\nQ: 1/4=120\x0D\nM: 3/4\x0D\nK: CMajor\x0D\n| A,B, (3CDE [FG] |\x0D\n"
