@@ -449,7 +449,7 @@ rightBracket =
 
 graceBracket :: Parser Grace
 graceBracket =
-  between (char '{') (char '}') grace
+  between (char '{') (char '}') grace <* whiteSpace
     <?> "grace bracket"
 
 grace :: Parser Grace

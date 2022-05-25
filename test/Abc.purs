@@ -212,6 +212,8 @@ noteSpec =
       assertRoundTrip "| (3zfg |\r\n"
     it "handles grace note" do
       assertRoundTrip "| {d^f}GA |\x0D\n"
+    it "accepts spaces between graces and note" do
+      assertCanonical "| {d^f} GA |\x0D\n" "| {d^f}GA |\x0D\n"
     it "handles grace note in tuplet" do
       assertRoundTrip "| (3c{d}fg A |\x0D\n"
     it "handles grace note before tuplet" do
