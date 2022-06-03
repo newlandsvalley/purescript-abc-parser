@@ -3,6 +3,8 @@ module Data.Abc.Midi
   ( module Data.Abc.Midi.Pitch
   , toMidi
   , toMidiAtBpm
+  , toMidiRecording
+  , toMidiRecordingAtBpm
   ) where
 
 import Control.Monad.State (State, get, put, execState, modify_)
@@ -43,29 +45,36 @@ import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
+import Data.Midi.Generate (recording) as Generate
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..))
 import Prelude (Unit, bind, const, identity, map, pure, unit, ($), (&&), (*), (+), (-), (<), (>), (<>), (>=))
 
--- | the fraction  of the duration of a note that is 'stolen' by any
--- | preceding grace note that it has
-graceFraction :: Rational
-graceFraction =
-  (1 % 10)
+
+-- | Transform the ABC into raw MIDI
+toMidi :: AbcTune -> List Midi.Byte 
+toMidi tune = 
+  Generate.recording $ toMidiRecording tune
+
+-- | Transform the ABC into raw MIDI but at the modified tempo
+-- | defined by the new BPM (beats per minute)
+toMidiAtBpm :: AbcTune -> Int -> List Midi.Byte 
+toMidiAtBpm tune bpm = 
+  Generate.recording $ toMidiRecordingAtBpm tune bpm
 
 -- | Transform ABC into a MIDI recording.
-toMidi :: AbcTune -> Midi.Recording
-toMidi tune =
+toMidiRecording :: AbcTune -> Midi.Recording
+toMidiRecording tune =
   let
     tstate = execState (transformTune tune) (initialState tune)
   in
     makeRecording tstate
 
--- | Transform ABC into a MIDI recording but at the mdified tempo
--- | defined by the new BPM  (beats per minute)
-toMidiAtBpm :: AbcTune -> Int -> Midi.Recording
-toMidiAtBpm originalTune bpm =
+-- | Transform ABC into a MIDI recording but at the modified tempo
+-- | defined by the new BPM (beats per minute)
+toMidiRecordingAtBpm :: AbcTune -> Int -> Midi.Recording
+toMidiRecordingAtBpm originalTune bpm =
   let
     tune = setBpm bpm originalTune
     tstate = execState (transformTune tune) (initialState tune)
@@ -83,6 +92,12 @@ type TState =
   , repeatState :: RepeatState -- the repeat state of the tune
   , rawTrack :: List MidiBar -- the growing list of completed bars
   }
+
+-- | the fraction  of the duration of a note that is 'stolen' by any
+-- | preceding grace note that it has
+graceFraction :: Rational
+graceFraction =
+  (1 % 10)  
 
 -- | The very first bar has a default tempo as the only message
 initialBar :: Midi.Message -> MidiBar

@@ -2,7 +2,7 @@ module Test.Midi (midiSpec) where
 
 import Effect.Aff (Aff)
 import Data.Abc (AbcNote, Accidental(..), Mode(..), ModifiedKeySignature, PitchClass(..)) 
-import Data.Abc.Midi (MidiPitch, toMidi, toMidiAtBpm, toMidiPitch)
+import Data.Abc.Midi (MidiPitch, toMidiRecording, toMidiRecordingAtBpm, toMidiPitch)
 import Data.Abc.Parser (parse)
 import Data.Abc.Repeats.Types (VariantPositions)
 import Data.Abc.Repeats.Variant (findEndingPosition)
@@ -26,7 +26,7 @@ assertMidi s midiTrack =
   case (parse s) of
     Right tune ->
       let
-        Midi.Recording midiRecording = toMidi tune
+        Midi.Recording midiRecording = toMidiRecording tune
         track0 = fromMaybe (Midi.Track Nil) (head midiRecording.tracks)
       in
         midiTrack `shouldEqual` track0
@@ -39,7 +39,7 @@ assertMidiAtBpm s bpm midiTrack =
   case (parse s) of
     Right tune ->
       let
-        Midi.Recording midiRecording = toMidiAtBpm tune bpm
+        Midi.Recording midiRecording = toMidiRecordingAtBpm tune bpm
         track0 = fromMaybe (Midi.Track Nil) (head midiRecording.tracks)
       in
         midiTrack  `shouldEqual` track0
