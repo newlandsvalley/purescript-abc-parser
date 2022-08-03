@@ -46,7 +46,7 @@ import Data.Foldable (foldM)
 import Data.Identity (Identity(..))
 import Data.Lens.Fold (firstOf, lastOf)
 import Data.Lens.Traversal (traversed)
-import Data.Lens.Setter (set)
+import Data.Lens.Setter (over)
 import Data.List (List, (:), filter, head, singleton, snoc)
 import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
@@ -255,7 +255,8 @@ retitleFromVoiceLabel tune (Tuple k body) =
   retitle voiceName headers =
     case (firstOf (traversed <<< _Title) headers) of
       Just _ ->
-        set (traversed <<< _Title) ("voice " <> voiceName) filteredHeaders
+        over (traversed <<< _Title) (\t -> t <>" - voice " <> voiceName) filteredHeaders
+        -- set (traversed <<< _Title) ("voice " <> voiceName) filteredHeaders
 
         where 
         predicate :: Header -> Boolean

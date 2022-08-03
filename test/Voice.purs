@@ -167,13 +167,16 @@ voiceSpec = do
     it "finds labels from voice map - four voices" do
       assertVoiceMapLabels fourVoices (Set.fromFoldable [ "1", "2", "3", "4" ])
     it "retitles the voice header via getVoiceMap - two voices" do
-      assertVoiceTitles twoVoicesTitled (List.fromFoldable [ Just "voice T1", Just "voice T2" ])
+      assertVoiceTitles twoVoicesTitled (List.fromFoldable [ Just "Two Voices - voice T1", Just "Two Voices - voice T2" ])
     it "retitles the voice header via getVoiceMap - three voices" do
-      assertVoiceTitles threeVoices (List.fromFoldable [ Just "voice T1", Just "voice T2", Just "voice T3" ])
+      assertVoiceTitles threeVoices (List.fromFoldable 
+         [ Just "Three Voices - voice T1"
+         , Just "Three Voices - voice T2"
+         , Just "Three Voices - voice T3" ])
     it "retitles preserves other headers" do
       assertRetitlingPreservesHeaders threeVoices
     it "retitles the voice header via partitionVoices - two voices" do
-      assertPartitionedVoiceTitles twoVoicesTitled ([ Just "voice T1", Just "voice T2" ])
+      assertPartitionedVoiceTitles twoVoicesTitled ([ Just "Two Voices - voice T1", Just "Two Voices - voice T2" ])
 
 noVoice :: String
 noVoice =
@@ -196,7 +199,7 @@ twoVoices =
 
 twoVoicesTitled :: String
 twoVoicesTitled =
-  "T: two voices\r\nK: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
+  "T: Two Voices\r\nK: CMajor\x0D\nV:T1\r\n| AB (3zde [fg] |\x0D\n| AB EF FG |\x0D\nV:T2\r\n" <>
     "| CD EF FG |\x0D\n| AB (3zde [fg] |\x0D\n"
 
 threeVoices :: String
@@ -271,7 +274,7 @@ fourVoices =
 fourthVoiceOfFour :: String
 fourthVoiceOfFour =
   "X: 1\r\n"
-    <> "T: voice 4\r\n"
+    <> "T: Grand Staff With Four Voices - voice 4\r\n"
     <> "M: 4/4\r\n"
     <> "L: 1/2\r\n"
     <> "K: CMajor\r\n"
