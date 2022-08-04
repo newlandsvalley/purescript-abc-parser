@@ -8,7 +8,8 @@ import Data.Abc.Canonical (fromTune)
 import Data.Abc.Metadata (getTitle)
 import Data.Abc.Parser (parse)
 import Data.Abc.Voice (getVoiceLabels, getVoiceMap, partitionTuneBody, partitionVoices)
-import Data.Array (index, length)
+import Data.Array.NonEmpty (index, length)
+import Data.Array.NonEmpty.Internal (NonEmptyArray(..)) 
 import Data.Map (keys, size, values)
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.List (List(..))
@@ -51,7 +52,7 @@ assertVoice' s canonical ix =
   case (parse s) of
     Right tune ->
       let
-        partitionedVoices :: Array AbcTune
+        partitionedVoices :: NonEmptyArray AbcTune
         partitionedVoices = partitionVoices tune
 
         indexedVoice :: Maybe AbcTune
@@ -102,7 +103,7 @@ assertVoiceTitles s target =
 
 -- check that the partitioned voice has a title representing the voice name
 -- when using partitionVoices
-assertPartitionedVoiceTitles :: String -> Array (Maybe String) -> Aff Unit
+assertPartitionedVoiceTitles :: String -> NonEmptyArray (Maybe String) -> Aff Unit
 assertPartitionedVoiceTitles s target =
   case (parse s) of
     Right tune ->
@@ -176,7 +177,8 @@ voiceSpec = do
     it "retitles preserves other headers" do
       assertRetitlingPreservesHeaders threeVoices
     it "retitles the voice header via partitionVoices - two voices" do
-      assertPartitionedVoiceTitles twoVoicesTitled ([ Just "Two Voices - voice T1", Just "Two Voices - voice T2" ])
+      assertPartitionedVoiceTitles twoVoicesTitled 
+        (NonEmptyArray [ Just "Two Voices - voice T1", Just "Two Voices - voice T2" ])
 
 noVoice :: String
 noVoice =

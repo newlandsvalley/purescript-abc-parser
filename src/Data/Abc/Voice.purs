@@ -42,14 +42,17 @@ import Control.Monad.State.Trans (StateT, evalStateT)
 import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody, TuneHeaders)
 import Data.Abc.Metadata (isEmptyStave)
 import Data.Abc.Optics (_headers, _Voice, _Title)
+import Data.Array.NonEmpty (NonEmptyArray)
+import Data.Array.NonEmpty.Internal (NonEmptyArray(..)) as Unsafe
 import Data.Foldable (foldM)
-import Data.Identity (Identity(..))
+import Data.Identity (Identity)
 import Data.Lens.Fold (firstOf, lastOf)
 import Data.Lens.Traversal (traversed)
 import Data.Lens.Setter (over)
 import Data.List (List, (:), filter, head, singleton, snoc)
 import Data.Map (Map, empty, fromFoldable, lookup, insert, toUnfoldable)
 import Data.Maybe (Maybe(..))
+import Data.Newtype (unwrap)
 import Data.Set (Set, empty, insert, toUnfoldable) as Set
 import Data.Tuple (Tuple(..), snd)
 import Prelude (class Eq, class Ord, ($), (==), (<<<), (<>), bind, join, map, not, pure)
@@ -85,8 +88,9 @@ getVoiceLabels tune =
     Set.toUnfoldable voiceLabels
 
 -- | get a map of voice name to tune (filtering the body for just that tune voice)
--- | if there is no voice header, then the voice name is "unnamed"
--- | If voices are found, then the title of the partitioned voice tune is set to
+-- | if there is no voice header, then the voice name is "unnamed" and attached to 
+-- | the entire tune.
+-- | If voices are found, then the title of each partitioned voice tune is set to
 -- | 'Voice voice-name'
 getVoiceMap :: AbcTune -> Map String AbcTune
 getVoiceMap tune =
@@ -98,49 +102,39 @@ getVoiceMap tune =
 
 -- | given a tune, partition it into multiple such tunes, one for each voice
 -- | with the title of each partitioned tune set to the voice label
-partitionVoices :: AbcTune -> Array AbcTune
+-- | where there are no voices, just return the singleton which contains
+-- | the original tune
+partitionVoices :: AbcTune -> NonEmptyArray AbcTune
 partitionVoices tune =
-  {-}
-  if (length tuples >= 1 ) then 
-    map (snd <<< retitleFromVoiceLabel tune) tuples
-  else
-    map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
-  -}
   map (snd <<< retitleFromVoiceLabel tune) tuples
 
   where
-  tuples :: Array (Tuple VoiceLabel TuneBody)
-  tuples = toUnfoldable $ voiceMap tune
-
--- map (\body -> {headers : tune.headers, body}) (partitionTuneBody tune)
+  tuples :: NonEmptyArray (Tuple VoiceLabel TuneBody)
+  tuples = Unsafe.NonEmptyArray $ toUnfoldable $ voiceMap tune
 
 -- | given a tune, partition its body into multiple such bodies 
 -- | with a separate body for each distinct voice
-partitionTuneBody :: AbcTune -> Array TuneBody
+-- | where there are no voices, just return the singleton which contains
+-- | the original tune body
+partitionTuneBody :: AbcTune -> NonEmptyArray TuneBody
 partitionTuneBody tune =
-  map (\(Tuple _ v) -> v) $ toUnfoldable (voiceMap tune)
+  map (\(Tuple _ v) -> v) $ Unsafe.NonEmptyArray $ toUnfoldable (voiceMap tune)
 
 -- produce a map of voice label to tune (filtered for that voice only)
+-- note that there must be at least one entry in the map because the common
+-- case is when there are no voices and there is one entry labelled 'unnnamed'
+-- and attached to the entire tune
 voiceMap :: AbcTune -> VoiceMap
 voiceMap tune =
-  let
-    initialLabel = initialVoiceLabel tune
-  in
-    runVoiceM initialLabel (voiceFold tune.body)
+  runVoiceM (initialVoiceLabel tune) (voiceFold tune.body)
 
 runVoiceM :: forall a. VoiceLabel -> VoiceM a -> a
 runVoiceM initialLabel v =
-  let
-    (Identity a) = evalStateT v initialLabel
-  in
-    a
+  unwrap $ evalStateT v initialLabel
 
 runLabelM :: forall a. Set.Set String -> LabelM a -> a
 runLabelM initialLabels v =
-  let
-    (Identity a) = evalStateT v initialLabels
-  in
-    a
+  unwrap $ evalStateT v initialLabels
 
 -- The heart of the algorithm
 -- Track voice labels for all score lines in the tune and separate 
