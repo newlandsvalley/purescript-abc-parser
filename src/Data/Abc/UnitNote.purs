@@ -4,20 +4,19 @@ module Data.Abc.UnitNote
   ) where
 
 import Prelude ((/), (<))
-import Data.Abc (MeterSignature, NoteDuration)
-import Data.Tuple (Tuple(..))
+import Data.Abc (TimeSignature, NoteDuration)
 import Data.Int (toNumber)
 import Data.Rational ((%))
 
--- caculate the default unit note length from the Meter 
+-- calculate the default unit note length from the Meter 
 -- signature (which defaults to 4/4)
-defaultUnitNoteLength :: MeterSignature -> NoteDuration
+defaultUnitNoteLength :: TimeSignature -> NoteDuration
 defaultUnitNoteLength sig =
   let
     computedMeter :: Number
     computedMeter =
       case sig of
-        (Tuple num denom) -> (toNumber num) / (toNumber denom)
+        { numerator, denominator} -> (toNumber numerator) / (toNumber denominator)
   in
     if (computedMeter < 0.75) then
       (1 % 16)

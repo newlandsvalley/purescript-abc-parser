@@ -5,6 +5,7 @@ module Data.Abc.Parser
   ) where
 
 import Data.Abc
+import Data.Abc.Meter as Meter
 
 import Control.Alt ((<|>))
 import Data.Array as Array
@@ -914,29 +915,32 @@ noteDuration :: Parser NoteDuration
 noteDuration =
   rational <* whiteSpace
 
-meterDefinition :: Parser (Maybe MeterSignature)
+meterDefinition :: Parser (Maybe TimeSignature)
 meterDefinition =
   choice
     [ cutTime
     , commonTime
-    , meterSignature
+    , timeSignature
     , nometer
     ]
 
-commonTime :: Parser (Maybe MeterSignature)
+commonTime :: Parser (Maybe TimeSignature)
 commonTime =
-  (Just (Tuple 4 4)) <$ char 'C'
+  (Just Meter.commonTime) <$ char 'C'
 
-cutTime :: Parser (Maybe MeterSignature)
+cutTime :: Parser (Maybe TimeSignature)
 cutTime =
-  (Just (Tuple 2 2)) <$ string "C|"
+  (Just Meter.cutTime) <$ string "C|"
 
--- can't use Rationals for these because they cancel
-meterSignature :: Parser (Maybe MeterSignature)
-meterSignature =
-  Just <$> (Tuple <$> int <* char '/' <*> int <* whiteSpace)
+timeSignature :: Parser (Maybe TimeSignature)
+timeSignature =
+  Just <$> (buildTimeSignature <$> int <* char '/' <*> int <* whiteSpace)
 
-nometer :: Parser (Maybe MeterSignature)
+  where 
+  buildTimeSignature numerator denominator =
+    { numerator, denominator }
+
+nometer :: Parser (Maybe TimeSignature)
 nometer =
   Nothing <$ string "none"
 

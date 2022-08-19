@@ -23,8 +23,8 @@ module Data.Abc
   , ModifiedKeySignature
   , Pitch(..)
   , KeySet
-  , MeterSignature(..)
   , TempoSignature
+  , TimeSignature
   , TupletSignature(..)
   , AnnotationPlacement(..)
   , Mode(..)
@@ -48,7 +48,6 @@ import Data.Maybe (Maybe(..))
 import Data.Ordering (Ordering(..))
 import Data.Rational (Rational)
 import Data.String (toLower) as Str
-import Data.Tuple (Tuple)
 import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
 
 -- | A Tune.
@@ -354,8 +353,11 @@ instance showPitch :: Show Pitch where
 type KeySet =
   List Pitch
 
--- | A Meter Signature - e.g. 3/4.
-type MeterSignature = Tuple Int Int
+-- | A Time Signature - e.g. 3/4.
+type TimeSignature = 
+  { numerator :: Int 
+  , denominator :: Int 
+  }
 
 {-| A Tempo Signature - for example:
 *  1/4=120
@@ -398,7 +400,7 @@ data Header
   | Key ModifiedKeySignature
   -- a standard key signature possibly modified with accidentals
   | UnitNoteLength NoteDuration
-  | Meter (Maybe MeterSignature)
+  | Meter (Maybe TimeSignature)
   | Macro String
   | Notes String
   | Origin String

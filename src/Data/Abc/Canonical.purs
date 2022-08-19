@@ -73,14 +73,14 @@ ratlist rs =
   in
     Str.trim $ foldr f "" rs
 
-meter :: Maybe MeterSignature -> String
+meter :: Maybe TimeSignature -> String
 meter ms =
   case ms of
     Nothing ->
       "none"
 
-    Just (Tuple n d) ->
-      show n <> "/" <> show d
+    Just { numerator, denominator } ->
+      show numerator <> "/" <> show denominator
 
 -- we optimise durations in tune bodies to the most compact form
 -- just use showRatio in headers

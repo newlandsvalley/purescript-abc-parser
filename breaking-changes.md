@@ -1,9 +1,11 @@
-Breaking Changes in v2.0.0
---------------------------
+Breaking Changes in impending v2.0.0
+------------------------------------
 
-  * PureScript v0.15.0
+  * PureScript v0.15.4
   * Header optics have been added; profunctor-lenses is now a dependency
   * Some metadata header retrieval functions have been removed in favour of optics
+  * ```MeterSignature``` - ```Tuple Int Int``` replaced by 
+    ```TimeSignature``` - ```{ numerator:: Int, denominator:: Int }```
   * MIDI pitch translation for B# and B## has been corrected
   * Decorations can now be applied to chords and tuplets
   * Chord symbols appear in the ADT as simple strings (without framing double quotes)

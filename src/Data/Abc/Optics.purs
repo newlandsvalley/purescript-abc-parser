@@ -96,7 +96,7 @@ _UnitNoteLength = prism' UnitNoteLength case _ of
   UnitNoteLength a -> Just a
   _ -> Nothing
 
-_Meter :: Prism' Header (Maybe MeterSignature)
+_Meter :: Prism' Header (Maybe TimeSignature)
 _Meter = prism' Meter case _ of
   Meter maybeTs -> Just maybeTs
   _ -> Nothing

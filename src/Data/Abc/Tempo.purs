@@ -17,7 +17,8 @@ module Data.Abc.Tempo
 
 import Data.Abc
 
-import Data.Abc.Metadata (getDefaultedMeter, getUnitNoteLength, getTempoSig)
+import Data.Abc.Metadata (getUnitNoteLength, getTempoSig)
+import Data.Abc.Meter (getDefaultedMeter)
 import Data.Abc.Optics (_bpm, _headers, _Tempo)
 import Data.Abc.UnitNote (defaultUnitNoteLength)
 import Data.Foldable (foldl)

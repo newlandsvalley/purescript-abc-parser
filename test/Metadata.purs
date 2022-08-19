@@ -1,5 +1,7 @@
 module Test.Metadata (metadataSpec) where
 
+-- | test both the Metadata and Meter modules
+
 import Prelude (Unit, discard, pure, unit, ($), (<>), (<<<))
 import Effect.Aff (Aff)
 import Data.Either (Either(..))
@@ -11,12 +13,12 @@ import Data.List.NonEmpty (NonEmptyList(..))
 import Data.Map (empty)
 import Data.NonEmpty ((:|))
 import Data.Rational (Rational, (%))
-import Data.Tuple (Tuple(..))
 import Data.Abc.Parser (parse)
 import Data.Abc
   ( PitchClass(..)
   , KeySignature
   , ModifiedKeySignature
+  , TimeSignature
   , Accidental(..)
   , BodyPart(..)
   , NoteDuration
@@ -26,6 +28,7 @@ import Data.Abc
   , AbcTune
   )
 import Data.Abc.Metadata
+import Data.Abc.Meter (getDefaultedMeter)
 import Data.Abc.Canonical (fromTune)
 import Data.Abc.Optics (_headers, _Title)
 
@@ -70,7 +73,7 @@ assertOkKeySig source target =
     _ ->
       fail "parse error"
 
-assertOkMeter :: String -> (Tuple Int Int) -> Aff Unit
+assertOkMeter :: String -> TimeSignature -> Aff Unit
 assertOkMeter source target =
   case parse source of
     Right tune ->
@@ -174,7 +177,7 @@ headerSpec =
     it "gets multiple headers" do
       assertHeaderCount 8 manyHeaders
     it "gets meter" do
-      assertOkMeter manyHeaders (Tuple 4 4)
+      assertOkMeter manyHeaders { numerator: 4, denominator: 4}
     it "gets UnitNoteLen" do
       assertOkNoteLen manyHeaders (1 % 16)
 

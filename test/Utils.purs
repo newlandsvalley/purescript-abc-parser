@@ -23,7 +23,7 @@ assertMoveMatches s move target =
       Right res ->
         target `shouldEqual` (fromTune res)
 
-      Left errs ->
+      Left _errs ->
         fail "unexpected error"
 
 {- assert the value of some Int producing function on a parsed tune -}
@@ -38,7 +38,7 @@ assertIntFuncMatches s f target =
       Right res ->
         target `shouldEqual` res
 
-      Left errs ->
+      Left _errs ->
         fail "unexpected error"
 
 
