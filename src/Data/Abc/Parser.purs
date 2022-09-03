@@ -50,7 +50,8 @@ traceParse s p =
 
 abc :: Parser AbcTune
 abc =
-  buildAbcTune <$> headers <*> body
+  { headers:_, body:_ }
+    <$> headers <*> body
 
 body :: Parser (List BodyPart)
 body =
@@ -78,7 +79,7 @@ score =
 
 bar :: Parser Bar
 bar =
-  buildBar
+  { decorations:_, startLine:_, music:_ }
     <$> decorations
     <*> barline
     <*> (many scoreItem)
@@ -87,8 +88,19 @@ bar =
 -- | an intro bar is a bar at the beginning of a line which has no starting bar line
 introBar :: Parser Bar
 introBar =
-  buildBar Nil invisibleBarType <$> many scoreItem
+  { decorations: Nil, startLine: invisibleBarType, music:_ }
+    <$> many scoreItem
     <?> "intro bar"
+
+  where
+  -- | a bar type for an introductory 'bar' where there is no opening bar line
+  invisibleBarType :: BarLine
+  invisibleBarType =
+    { endRepeats: 0
+    , thickness: Invisible
+    , startRepeats: 0
+    , iteration: Nothing
+    }
 
 -- | an intro line as a full line of bars thus introduced
 introLine :: Parser (List Bar)
@@ -158,7 +170,7 @@ barline =
 -}
 normalBarline :: Parser BarLine
 normalBarline =
-  buildBarLine
+  { endRepeats:_, thickness:_, startRepeats:_, iteration:_ }
     <$> repeatMarkers
     <*> barlineThickness
     <*> repeatMarkers
@@ -177,13 +189,13 @@ normalBarline =
 -}
 degenerateBarVolta :: Parser BarLine
 degenerateBarVolta =
-  buildBarLine 0 Thin 0
+  { endRepeats: 0, thickness: Thin, startRepeats: 0, iteration:_}
     <$> (Just <$> (whiteSpace *> char '[' *> repeatSection))
 
 {- Parse a degenerate barline with no bar line!  Just :: on its own -}
 degenerateDoubleColon :: Parser BarLine
 degenerateDoubleColon =
-  buildBarLine 1 Thin 1 Nothing
+  { endRepeats: 1, thickness: Thin, startRepeats: 1, iteration: Nothing }
     <$ char ':'
     <* char ':'
 
@@ -268,7 +280,7 @@ abcNote =
 
 graceableNote :: Parser GraceableNote
 graceableNote =
-  buildGraceableNote
+  { maybeGrace:_, leftSlurs:_, decorations:_, abcNote:_, rightSlurs:_ }
     <$> optionMaybe graceBracket
     <*> leftSlurBrackets
     <*> decorations
@@ -373,7 +385,7 @@ rest =
 
 abcRest :: Parser AbcRest
 abcRest =
-  buildRest
+  { duration:_} 
     <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
     <?> "abcRest"
 
@@ -455,7 +467,8 @@ graceBracket =
 
 grace :: Parser Grace
 grace =
-  buildGrace <$> acciaccatura <*> (many1 abcNote)
+  { isAcciaccatura:_, notes:_ } 
+    <$> acciaccatura <*> (many1 abcNote)
 
 {- acciaccaturas are indicated with an optional forward slash
    was
@@ -492,7 +505,7 @@ annotationString =
 -- | a free - format chord symbol - see 4.18 Chord symbols.  Drop the quotes round the string.
 chordSymbol :: Parser Music
 chordSymbol =
-  (ChordSymbol <<< buildSymbol)
+  (ChordSymbol <<< { name:_, duration: Nothing })
     <$> literalQuotedString false
     <?> "chord symbol"
 
@@ -767,12 +780,14 @@ instruction isInline =
 
 key :: Parser Header
 key =
-  buildKey
-    <$> (headerCode 'K')
-    <*> keySignature
-    <*> keyAccidentals
-    <*> amorphousProperties
-    <?> "K header"
+  Key <$> 
+    ({ keySignature:_, modifications:_, properties:_ }
+      <$ (headerCode 'K')
+      <*> keySignature
+      <*> keyAccidentals
+      <*> amorphousProperties
+      <?> "K header"
+    )
 
 unitNoteLength :: Parser Header
 unitNoteLength =
@@ -854,11 +869,13 @@ userDefined isInline =
 
 voice :: Parser Header
 voice =
-  buildVoice
-    <$> (headerCode 'V')
-    <*> alphaNumPlusString
-    <*> amorphousProperties
-    <?> "V header"
+  Voice <$> 
+    ( { id:_, properties:_ }
+        <$ (headerCode 'V')
+        <*> alphaNumPlusString
+        <*> amorphousProperties
+        <?> "V header"    
+    )
 
 wordsAfter :: Boolean -> Parser Header
 wordsAfter isInline =
@@ -934,11 +951,8 @@ cutTime =
 
 timeSignature :: Parser (Maybe TimeSignature)
 timeSignature =
-  Just <$> (buildTimeSignature <$> int <* char '/' <*> int <* whiteSpace)
-
-  where 
-  buildTimeSignature numerator denominator =
-    { numerator, denominator }
+  Just <$> ( { numerator:_, denominator:_} 
+    <$> int <* char '/' <*> int <* whiteSpace)
 
 nometer :: Parser (Maybe TimeSignature)
 nometer =
@@ -1085,31 +1099,6 @@ locrian :: Parser Mode
 locrian =
   Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
 
--- builders
-buildAbcTune :: TuneHeaders -> TuneBody -> AbcTune
-buildAbcTune hs b =
-  { headers: hs, body: b }
-
-buildBar :: List String -> BarLine -> List Music -> Bar
-buildBar decs bl m =
-  { decorations: decs
-  , startLine: bl
-  , music: m
-  }
-
-buildBarLine :: Int -> Thickness -> Int -> Maybe (Nel.NonEmptyList Volta) -> BarLine
-buildBarLine endRepeats thickness startRepeats iteration =
-  { endRepeats, thickness, startRepeats, iteration }
-
--- | a bar type for an introductory 'bar' where there is no opening bar line
-invisibleBarType :: BarLine
-invisibleBarType =
-  { endRepeats: 0
-  , thickness: Invisible
-  , startRepeats: 0
-  , iteration: Nothing
-  }
-
 buildBrokenOperator :: String -> Broken
 buildBrokenOperator s =
   if startsWith "<" s then
@@ -1117,17 +1106,7 @@ buildBrokenOperator s =
   else
     RightArrow (length s)
 
-buildRest :: Rational -> AbcRest
-buildRest r =
-  { duration: r }
-
-buildGrace :: Boolean -> Nel.NonEmptyList AbcNote -> Grace
-buildGrace isAcciaccatura ns =
-  { isAcciaccatura, notes: ns }
-
-buildGraceableNote :: Maybe Grace -> Int -> List String -> AbcNote -> Int -> GraceableNote
-buildGraceableNote maybeGrace leftSlurs decs n rightSlurs =
-  { maybeGrace, leftSlurs, decorations: decs, abcNote: n, rightSlurs }
+-- builders
 
 buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
 buildNote macc pitchStr octave ml mt =
@@ -1275,11 +1254,6 @@ buildTempoSignature marking td =
       , marking: marking
       }
 
--- | build a chord symbol definition.  The duration is a placeholder for later applications.
-buildSymbol :: String -> SymbolDefinition
-buildSymbol name =
-  { name, duration: Nothing }
-
 {-| equivalent builder where we have a defined label -}
 buildTempoSignature2 :: String -> TempoDesignation -> TempoSignature
 buildTempoSignature2 marking td =
@@ -1302,14 +1276,6 @@ buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
 buildKeySignature pStr ma mm =
   { pitchClass: lookupPitch pStr, accidental: ma, mode: fromMaybe Major mm }
 
-{- build a complete key designation (key signature plus modifying accidentals) -}
-buildKey :: String -> KeySignature -> List Pitch -> AmorphousProperties -> Header
-buildKey _ ks pitches properties =
-  Key { keySignature: ks, modifications: pitches, properties }
-
-buildVoice :: String -> String -> AmorphousProperties -> Header
-buildVoice _ id properties =
-  Voice { id, properties }
 
 -- lookups
 
@@ -1437,15 +1403,6 @@ spacedQuotedString =
 counted :: ∀ a. Int -> Parser a -> Parser (Nel.NonEmptyList a)
 counted num parser =
   replicate1A num parser
-
-{-}
-concatenate :: List String -> String
-concatenate = foldr (<>) ""
-invert :: Rational -> Rational
-invert r =
-  -- (denominator r % numerator r)
-  (1 % 1) / r
--}
 
 {-
 -- | Run a parser for an input string, returning either a positioned error or a result.
