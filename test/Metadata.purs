@@ -1,6 +1,6 @@
 module Test.Metadata (metadataSpec) where
 
--- | test both the Metadata and Meter modules
+-- | test both the Utils and Meter modules
 
 import Prelude (Unit, discard, pure, unit, ($), (<>), (<<<))
 import Effect.Aff (Aff)
@@ -10,24 +10,20 @@ import Data.Lens.Fold (toListOf)
 import Data.Lens.Traversal (traversed)
 import Data.List (List(..), head, length, (:))
 import Data.List.NonEmpty (NonEmptyList(..))
-import Data.Map (empty)
 import Data.NonEmpty ((:|))
-import Data.Rational (Rational, (%))
+import Data.Rational ((%))
 import Data.Abc.Parser (parse)
 import Data.Abc
   ( PitchClass(..)
-  , KeySignature
-  , ModifiedKeySignature
   , TimeSignature
   , Accidental(..)
   , BodyPart(..)
   , NoteDuration
-  , Mode(..)
   , AbcChord
   , AbcNote
   , AbcTune
   )
-import Data.Abc.Metadata
+import Data.Abc.Utils
 import Data.Abc.Meter (getDefaultedMeter)
 import Data.Abc.Canonical (fromTune)
 import Data.Abc.Optics (_headers, _Title)
@@ -60,19 +56,6 @@ assertAllTitles source target =
     _ ->
       fail "parse error"
 
-assertOkKeySig :: String -> ModifiedKeySignature -> Aff Unit
-assertOkKeySig source target =
-  case parse source of
-    Right tune ->
-      case (getKeySig tune) of
-        Just keySig ->
-          target.keySignature.pitchClass `shouldEqual` keySig.keySignature.pitchClass
-
-        _ ->
-          fail "no key signature"
-    _ ->
-      fail "parse error"
-
 assertOkMeter :: String -> TimeSignature -> Aff Unit
 assertOkMeter source target =
   case parse source of
@@ -85,6 +68,7 @@ assertOkMeter source target =
     _ ->
       fail "parse error"
 
+{-}
 assertOkNoteLen :: String -> Rational -> Aff Unit
 assertOkNoteLen source target =
   case parse source of
@@ -96,6 +80,7 @@ assertOkNoteLen source target =
           fail "no unit note length"
     _ ->
       fail "parse error"
+-}
 
 assertNoHeader :: forall h. String -> (AbcTune -> Maybe h) -> Aff Unit
 assertNoHeader source getf =
@@ -170,16 +155,10 @@ headerSpec =
       assertOkTitle doublyTitledTune "Nancy Dawson"
     it "gets all titles" do
       assertAllTitles doublyTitledTune ("Nancy Dawson" : "Piss Upon the Grass" : Nil)
-    it "gets key header" do
-      assertOkKeySig keyedTune fMajorM
-    it "recognizes key header" do
-      assertNoHeader titledTune getKeySig
     it "gets multiple headers" do
       assertHeaderCount 8 manyHeaders
     it "gets meter" do
       assertOkMeter manyHeaders { numerator: 4, denominator: 4}
-    it "gets UnitNoteLen" do
-      assertOkNoteLen manyHeaders (1 % 16)
 
 scoreSpec :: Spec Unit
 scoreSpec =
@@ -225,30 +204,6 @@ manyHeaders =
 emptyScore :: String
 emptyScore =
   "| @ # | \\r\n|  |\r\n"
-
-gMajor :: KeySignature
-gMajor =
-  { pitchClass: G, accidental: Natural, mode: Major }
-
-gMinor :: KeySignature
-gMinor =
-  { pitchClass: G, accidental: Natural, mode: Minor }
-
-cMajor :: KeySignature
-cMajor =
-  { pitchClass: C, accidental: Natural, mode: Major }
-
-dMajor :: KeySignature
-dMajor =
-  { pitchClass: D, accidental: Natural, mode: Major }
-
-fMajor :: KeySignature
-fMajor =
-  { pitchClass: F, accidental: Natural, mode: Major }
-
-fMajorM :: ModifiedKeySignature
-fMajorM =
-  { keySignature: fMajor, modifications: Nil, properties: empty }
 
 augustssonHeaders :: String
 augustssonHeaders =

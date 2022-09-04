@@ -1,12 +1,14 @@
 module Test.KeySignature (keySignatureSpec) where
 
-import Prelude (Unit, discard, negate, show, ($), (<>), (==))
+import Prelude (Unit, discard, negate, pure, show, unit, ($), (<>), (==))
 import Effect.Aff (Aff)
-import Data.Maybe (fromMaybe)
+import Data.Either (Either(..))
+import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Map (empty)
 import Data.List (List(..), head, length, sort, (:))
-import Data.Abc (PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), Pitch(..), KeySet, Mode(..))
+import Data.Abc (AbcTune, PitchClass(..), KeySignature, ModifiedKeySignature, Accidental(..), Pitch(..), KeySet, Mode(..))
 import Data.Abc.KeySignature
+import Data.Abc.Parser (parse)
 
 import Test.Spec (Spec, describe, it)
 import Test.Spec.Assertions (fail, shouldEqual)
@@ -26,8 +28,39 @@ assertEquivalentKeys actual expected =
       <> " not equal to: "
       <> (show expected)
 
+assertOkKeySig :: String -> ModifiedKeySignature -> Aff Unit
+assertOkKeySig source target =
+  case parse source of
+    Right tune ->
+      case (getKeySig tune) of
+        Just keySig ->
+          target.keySignature.pitchClass `shouldEqual` keySig.keySignature.pitchClass
+
+        _ ->
+          fail "no key signature"
+    _ ->
+      fail "parse error"      
+
+assertNoHeader :: forall h. String -> (AbcTune -> Maybe h) -> Aff Unit
+assertNoHeader source getf =
+  case parse source of
+    Right tune ->
+      let
+        mtitle =
+          getf tune
+      in
+        case mtitle of
+          Just _ ->
+            fail "no title expected"
+          _ ->
+            pure unit
+
+    _ ->
+      fail "parse error"
+
 keySignatureSpec :: Spec Unit
 keySignatureSpec = do
+  headerSpec
   majorModeSpec
   minorModeSpec
   klezmerModeSpec
@@ -35,6 +68,14 @@ keySignatureSpec = do
   keySpec
   transposeSignatureSpec
   scaleSpec
+
+headerSpec :: Spec Unit
+headerSpec =
+  describe "key signature header" do  
+    it "gets key header" do
+      assertOkKeySig keyedTune fMajorM
+    it "recognizes key header" do
+      assertNoHeader unkeyedTune getKeySig
 
 majorModeSpec :: Spec Unit
 majorModeSpec =
@@ -414,10 +455,6 @@ gMinor :: KeySignature
 gMinor =
   { pitchClass: G, accidental: Natural, mode: Minor }
 
-gMinorM :: ModifiedKeySignature
-gMinorM =
-  { keySignature: gMinor, modifications: Nil, properties: empty }
-
 cMajor :: KeySignature
 cMajor =
   { pitchClass: C, accidental: Natural, mode: Major }
@@ -463,3 +500,11 @@ ePhrygianSharpenedG =
   , modifications: (Pitch { pitchClass: G, accidental: Sharp } : Nil)
   , properties: empty
   }
+
+keyedTune :: String
+keyedTune =
+  "K: FMajor\x0D\n| ABC |\x0D\n"
+  
+unkeyedTune :: String
+unkeyedTune =
+  "T: Gamal Reinlender\x0D\n| ABC |\x0D\n"

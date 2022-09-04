@@ -40,7 +40,7 @@ module Data.Abc.Voice
 import Control.Monad.State.Class (get, put, modify)
 import Control.Monad.State.Trans (StateT, evalStateT)
 import Data.Abc (AbcTune, Bar, BodyPart(..), Header(..), Music(..), TuneBody, TuneHeaders)
-import Data.Abc.Metadata (isEmptyStave)
+import Data.Abc.Utils (isEmptyStave)
 import Data.Abc.Optics (_headers, _Voice, _Title)
 import Data.Array.NonEmpty (NonEmptyArray)
 import Data.Array.NonEmpty.Internal (NonEmptyArray(..)) as Unsafe

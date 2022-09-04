@@ -1,11 +1,6 @@
--- | A Ragbag of convenience functions for getting Metadata from ABC
-module Data.Abc.Metadata
-  ( getKeySet
-  , getKeySig
-  , getKeyProps
-  , getTempoSig
-  , getTitle
-  , getUnitNoteLength
+-- | A Ragbag of convenience functions, many of which get Metadata from ABC
+module Data.Abc.Utils
+  ( getTitle
   , dotFactor
   , normaliseChord
   , chordDuration
@@ -17,60 +12,22 @@ module Data.Abc.Metadata
 
 import Data.Abc
 
-import Data.Abc.KeySignature (modifiedKeySet)
-import Data.Abc.Optics (_headers, _properties, _ModifiedKeySignature, _Tempo, _Title, _UnitNoteLength)
+import Data.Abc.Optics (_headers, _Title)
 import Data.Either (Either(..))
 import Data.Foldable (all, foldr)
 import Data.Lens.Fold (firstOf)
 import Data.Lens.Traversal (traversed)
 import Data.List (List(..), head, null, singleton, snoc, take)
 import Data.List.NonEmpty (head) as NEL
-import Data.Map (empty)
 import Data.Maybe (Maybe(..), maybe)
 import Data.Rational (Rational, (%), fromInt, toNumber)
 import Prelude (map, ($), (||), (==), (*), (+), (<<<))
-
--- | Get the set of key accidentals from the (possibly modified) key (if there is one in the tune).
-getKeySet :: AbcTune -> KeySet
-getKeySet t =
-  case (getKeySig t) of
-    Just ksig ->
-      modifiedKeySet ksig
-    Nothing ->
-      Nil
-
--- | Get the key signature (if any) from the tune.
--- | For more flexibility, you should use the _ModifiedKeySignature optic.
-getKeySig :: AbcTune -> Maybe ModifiedKeySignature
-getKeySig tune =
-  firstOf (_headers <<< traversed <<< _ModifiedKeySignature) tune
-
--- | Get the key signature properties (if any) from the tune.
-getKeyProps :: AbcTune -> AmorphousProperties
-getKeyProps tune =
-  case (firstOf (_headers <<< traversed <<< _ModifiedKeySignature <<< _properties) tune) of
-    Just props -> props
-    _ -> (empty :: AmorphousProperties)
-
-
-
--- | Get the tempo where present
--- | For more flexibility, you should use the _Tempo optic.
-getTempoSig :: AbcTune -> Maybe TempoSignature
-getTempoSig tune =
-  firstOf (_headers <<< traversed <<< _Tempo) tune
 
 -- | Get the first Title (if any) from the tune.
 -- | For more flexibility, you should use the _Title optic.
 getTitle :: AbcTune -> Maybe String
 getTitle tune =
   firstOf (_headers <<< traversed <<< _Title) tune
-
--- | Get the unit note length
--- | For more flexibility, you should use the _UnitNoteLength optic.
-getUnitNoteLength :: AbcTune -> Maybe NoteDuration
-getUnitNoteLength tune =
-  firstOf (_headers <<< traversed <<< _UnitNoteLength) tune
 
 -- | The amount by which you increase or decrease the duration of a (possibly multiply) dotted note.
 -- |    For example A > B increases the duration of A and proportionally reduces that of B.

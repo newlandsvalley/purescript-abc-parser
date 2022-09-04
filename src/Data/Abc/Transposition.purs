@@ -17,8 +17,7 @@ import Data.Abc
 
 import Control.Monad.State (State, evalStateT, get, put)
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.KeySignature (diatonicScale, isCOrSharpKey, modifiedKeySet, notesInChromaticScale, pitchNumbers, pitchNumber, inKeySet, transposeKeySignatureBy)
-import Data.Abc.Metadata (getKeySig, getKeyProps)
+import Data.Abc.KeySignature (diatonicScale, getKeyProps, getKeySig, isCOrSharpKey, modifiedKeySet, notesInChromaticScale, pitchNumbers, pitchNumber, inKeySet, transposeKeySignatureBy)
 import Data.Either (Either(..))
 import Data.Foldable (oneOf)
 import Data.List (List(..), (:), filter, reverse)

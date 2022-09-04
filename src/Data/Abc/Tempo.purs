@@ -4,6 +4,7 @@ module Data.Abc.Tempo
   , AbcTempo
   , defaultTempo
   , defaultAbcTempo
+  , getTempoSig
   , getAbcTempo
   , midiTempo
   , beatsPerSecond
@@ -17,10 +18,9 @@ module Data.Abc.Tempo
 
 import Data.Abc
 
-import Data.Abc.Metadata (getUnitNoteLength, getTempoSig)
 import Data.Abc.Meter (getDefaultedMeter)
 import Data.Abc.Optics (_bpm, _headers, _Tempo)
-import Data.Abc.UnitNote (defaultUnitNoteLength)
+import Data.Abc.UnitNote (defaultUnitNoteLength, getUnitNoteLength)
 import Data.Foldable (foldl)
 import Data.Int (round)
 import Data.Lens.Fold (firstOf)
@@ -79,7 +79,14 @@ defaultAbcTempo =
   , unitNoteLength: 1 % 8
   }
 
+-- | Get the raw tempo signature from the tune 
+-- | For more flexibility, you should use the _Tempo optic.
+getTempoSig :: AbcTune -> Maybe TempoSignature
+getTempoSig tune =
+  firstOf (_headers <<< traversed <<< _Tempo) tune  
+
 -- | Get the ABC tempo from the tune
+-- | This is usually more useful because it incorporates the unit note length
 getAbcTempo :: AbcTune -> AbcTempo
 getAbcTempo tune =
   let

@@ -9,6 +9,8 @@ Breaking Changes in impending v2.0.0
   * MIDI pitch translation for B# and B## has been corrected
   * Decorations can now be applied to chords and tuplets
   * Chord symbols appear in the ADT as simple strings (without framing double quotes)
+  * The ```Metadata``` module has been renamed as ```Utils``` and many functions moved
+    to modules named after the appropriate header
 
 Breaking Changes in v1.9.3
 --------------------------

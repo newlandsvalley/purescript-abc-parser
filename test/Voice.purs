@@ -5,7 +5,7 @@ import Prelude
 import Effect.Aff (Aff)
 import Data.Abc (AbcTune)
 import Data.Abc.Canonical (fromTune)
-import Data.Abc.Metadata (getTitle)
+import Data.Abc.Utils (getTitle)
 import Data.Abc.Parser (parse)
 import Data.Abc.Voice (getVoiceLabels, getVoiceMap, partitionTuneBody, partitionVoices)
 import Data.Array.NonEmpty (index, length)

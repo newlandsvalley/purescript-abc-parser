@@ -2,29 +2,35 @@
 -- | The individual (sharp or flat) keys that comprise each key signature
 -- | across all the modes in western music.
 module Data.Abc.KeySignature
-  ( notesInChromaticScale
-  , diatonicScale
-  , defaultKey
+  ( getKeySig 
+  , getKeyProps
   , keySet
+  , inKeySet
   , modifiedKeySet
+  , getKeySet
+  , notesInChromaticScale
+  , diatonicScale
+  , defaultKey  
   , isCOrSharpKey
   , normaliseModalKey
-  , inKeySet
   , transposeKeySignatureBy
   , pitchNumbers
   , pitchNumber
   ) where
 
-import Data.Abc (Accidental(..), KeySet, KeySignature, Mode(..), ModifiedKeySignature, Pitch(..), PitchClass(..))
+import Data.Abc (AbcTune, Accidental(..), AmorphousProperties, KeySet, KeySignature, Mode(..), ModifiedKeySignature, Pitch(..), PitchClass(..))
+import Data.Abc.Optics (_headers, _properties, _ModifiedKeySignature)
 import Data.Array (index, elemIndex, head, drop, take, filter, toUnfoldable)
 import Data.Enum (succ, pred)
+import Data.Lens.Fold (firstOf)
+import Data.Lens.Traversal (traversed)
 import Data.List (List(..), (:), null, foldr)
 import Data.List (elem, filter) as L
 import Data.Map (Map, empty, fromFoldable, lookup)
-import Data.Maybe (fromMaybe, fromJust)
+import Data.Maybe (Maybe(..), fromMaybe, fromJust)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafePartial)
-import Prelude (class Eq, class Ord, class Show, map, mod, show, ($), (&&), (+), (/=), (<), (<>), (==), (||))
+import Prelude (class Eq, class Ord, class Show, map, mod, show, ($), (&&), (+), (/=), (<), (<>), (==), (||), (<<<))
 
 -- Internal data structures
 -- a note on a piano keyboard. The virtue of this representation is that we
@@ -39,6 +45,81 @@ derive instance ordPianoKey :: Ord PianoKey
 instance showPianoKey :: Show PianoKey where
   show (White p) = "white: " <> (show p)
   show (Black p q) = "black: " <> (show p) <> " " <> (show q)
+
+-- API
+
+-- | Get the key signature (if any) from the tune.
+-- | For more flexibility, you should use the _ModifiedKeySignature optic.
+getKeySig :: AbcTune -> Maybe ModifiedKeySignature
+getKeySig tune =
+  firstOf (_headers <<< traversed <<< _ModifiedKeySignature) tune
+
+-- | Get the key signature properties (if any) from the tune.
+getKeyProps :: AbcTune -> AmorphousProperties
+getKeyProps tune =
+  case (firstOf (_headers <<< traversed <<< _ModifiedKeySignature <<< _properties) tune) of
+    Just props -> props
+    _ -> (empty :: AmorphousProperties)
+
+-- | The set of keys (pitches) that comprise the key signature.
+keySet :: KeySignature -> KeySet
+keySet ks =
+  let
+    -- the key signature in terms of a PianoKey
+    pianoKeySignature = buildPianoKey
+      ( Pitch
+          { pitchClass: ks.pitchClass
+          , accidental: ks.accidental
+          }
+      )
+    Tuple tonic blackKeys = blackKeySet pianoKeySignature ks.mode
+    -- decide how we translate the black keys in the given context
+    isFlatCtx =
+      case tonic of
+        White F -> true -- F Natural uses flat keys
+        White _ -> false -- all other Natural key signatures use sharp (or no) keys
+        _ -> true -- we'll ignore F# for the time being - all black note naturals use flat keys
+    -- generate the basic keys
+    basicKeySet = toUnfoldable $ map (pianoKeyToPitch isFlatCtx) blackKeys
+  in
+    -- special-case F# (which has an E#)
+    if (isFSharp ks) then
+      fSharpKeySet
+    else
+      -- special case Gb (which has a Cb)
+      case tonic of
+        Black F G ->
+          -- need to mend this line with a modify
+          (Pitch { pitchClass: C, accidental: Flat }) : basicKeySet
+        _ ->
+          basicKeySet
+
+-- | Is the pitch is in the KeySet?
+inKeySet :: Pitch -> KeySet -> Boolean
+inKeySet p ks =
+  L.elem p ks
+
+-- | The set of keys (pitch classes with accidental) that comprise a modified key signature
+-- | (i.e. those signatures that don't represent classical western modes such as,
+-- | for example, Klezmer or Balkan music.)
+modifiedKeySet :: ModifiedKeySignature -> KeySet
+modifiedKeySet ksm =
+  let
+    kSet = keySet ksm.keySignature
+  in
+    if (null ksm.modifications) then
+      kSet
+    else
+      foldr modifyKeySet kSet ksm.modifications
+
+-- | Get the set of key accidentals from the (possibly modified) key (if there is one in the tune).
+getKeySet :: AbcTune -> KeySet
+getKeySet t =
+  case (getKeySig t) of
+    Just ksig ->
+      modifiedKeySet ksig
+    Nothing ->
+      Nil 
 
 -- constants
 
@@ -106,39 +187,6 @@ defaultKey =
   , properties: empty
   }
 
--- | The set of keys (pitches) that comprise the key signature.
-keySet :: KeySignature -> KeySet
-keySet ks =
-  let
-    -- the key signature in terms of a PianoKey
-    pianoKeySignature = buildPianoKey
-      ( Pitch
-          { pitchClass: ks.pitchClass
-          , accidental: ks.accidental
-          }
-      )
-    Tuple tonic blackKeys = blackKeySet pianoKeySignature ks.mode
-    -- decide how we translate the black keys in the given context
-    isFlatCtx =
-      case tonic of
-        White F -> true -- F Natural uses flat keys
-        White _ -> false -- all other Natural key signatures use sharp (or no) keys
-        _ -> true -- we'll ignore F# for the time being - all black note naturals use flat keys
-    -- generate the basic keys
-    basicKeySet = toUnfoldable $ map (pianoKeyToPitch isFlatCtx) blackKeys
-  in
-    -- special-case F# (which has an E#)
-    if (isFSharp ks) then
-      fSharpKeySet
-    else
-      -- special case Gb (which has a Cb)
-      case tonic of
-        Black F G ->
-          -- need to mend this line with a modify
-          (Pitch { pitchClass: C, accidental: Flat }) : basicKeySet
-        _ ->
-          basicKeySet
-
 -- | The set of keys (pitches) that comprise the diatonic scale governed by
 -- | the key signature.
 diatonicScale :: KeySignature -> KeySet
@@ -171,19 +219,6 @@ diatonicScale ks =
           renameBNatural basicKeySet
         _ ->
           basicKeySet
-
--- | The set of keys (pitch classes with accidental) that comprise a modified key signature
--- | (i.e. those signatures that don't represent classical western modes such as,
--- | for example, Klezmer or Balkan music.)
-modifiedKeySet :: ModifiedKeySignature -> KeySet
-modifiedKeySet ksm =
-  let
-    kSet = keySet ksm.keySignature
-  in
-    if (null ksm.modifications) then
-      kSet
-    else
-      foldr modifyKeySet kSet ksm.modifications
 
 -- | Is the key signature a sharp key or else a simple C Major key?
 isCOrSharpKey :: KeySignature -> Boolean
@@ -221,11 +256,6 @@ normaliseModalKey ks =
     , accidental: newKeyPitch.accidental
     , mode: Major
     }
-
--- | Is the pitch is in the KeySet?
-inKeySet :: Pitch -> KeySet -> Boolean
-inKeySet p ks =
-  L.elem p ks
 
 -- | Transpose a key signature by a given distance.
 transposeKeySignatureBy :: Int -> ModifiedKeySignature -> ModifiedKeySignature

@@ -27,14 +27,14 @@ import Data.Abc
   , TempoSignature
   )
 import Data.Abc.Accidentals as Accidentals
-import Data.Abc.KeySignature (defaultKey)
-import Data.Abc.Metadata (dotFactor, getKeySig)
+import Data.Abc.KeySignature (defaultKey, getKeySig)
 import Data.Abc.Midi.Pitch (MidiPitch, toMidiPitch) 
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Repeats.Types (RepeatState, Section(..), Sections)
 import Data.Abc.Repeats.Variant (activeVariants, findEndingPosition, variantPositionOf, variantCount)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
+import Data.Abc.Utils (dotFactor)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
 import Data.Foldable (foldl, foldM)
