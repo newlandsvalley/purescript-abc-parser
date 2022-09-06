@@ -148,6 +148,15 @@ abcChord =
     <*> rightSlurBrackets
     <?> "ABC chord"
 
+  where 
+  buildChord :: Int -> List String -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
+  buildChord leftSlurs decs ns ml rightSlurs =
+    let
+      l =
+        fromMaybe (fromInt 1) ml
+    in
+      { leftSlurs, decorations: decs, notes: ns, duration: l, rightSlurs }
+
 inline :: Parser Music
 inline =
   Inline
@@ -278,6 +287,29 @@ abcNote =
     <*> maybeTie
     <?> "ABC note"
 
+  where 
+  buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
+  buildNote macc pitchStr octave ml mt =
+    let
+      l =
+        fromMaybe (1 % 1) ml
+      pc =
+        lookupPitch (toUpper pitchStr)
+      spn =
+        scientificPitchNotation pitchStr octave
+      tied =
+        case mt of
+          Just _ ->
+            true
+          _ ->
+            false
+      acc =
+        case macc of
+          Nothing -> Implicit
+          Just a -> a
+    in
+      { pitchClass: pc, accidental: acc, octave: spn, duration: l, tied: tied }
+
 graceableNote :: Parser GraceableNote
 graceableNote =
   { maybeGrace:_, leftSlurs:_, decorations:_, abcNote:_, rightSlurs:_ }
@@ -305,6 +337,21 @@ accidental =
           , string "="
           ]
       )
+
+  where    
+  buildAccidental :: String -> Accidental
+  buildAccidental s =
+    case s of
+      "^^" ->
+        DoubleSharp
+      "__" ->
+        DoubleFlat
+      "^" ->
+        Sharp
+      "_" ->
+        Flat
+      _ ->
+        Natural  
 
 {- an upper or lower case note ([A-Ga-g]) -}
 pitch :: Parser String
@@ -493,6 +540,25 @@ annotation =
   buildAnnotation
     <$> annotationString
     <?> "annotation"
+
+  where 
+  buildAnnotation :: String -> Music
+  buildAnnotation s =
+    let
+      placement =
+        case (charAt 0 s) of
+          Just '^' ->
+            AboveNextSymbol
+          Just '_' ->
+            BelowNextSymbol
+          Just '<' ->
+            LeftOfNextSymbol
+          Just '>' ->
+            RightOfNextSymbol
+          _ ->
+            Discretional
+    in
+      Annotation placement (drop 1 s)
 
 annotationString :: Parser String
 annotationString =
@@ -1020,10 +1086,20 @@ keySignature :: Parser KeySignature
 keySignature =
   buildKeySignature <$> keyName <*> option Natural sharpOrFlat <* whiteSpace <*> optionMaybe mode
 
+  where 
+  buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
+  buildKeySignature pStr ma mm =
+    { pitchClass: lookupPitch pStr, accidental: ma, mode: fromMaybe Major mm }
+
 {- a key accidental as an amendment to a key signature - as in e.g. K:D Phr ^f -}
 keyAccidental :: Parser Pitch
 keyAccidental =
   buildPitch <$> accidental <*> pitch
+
+  where 
+  buildPitch :: Accidental -> String -> Pitch
+  buildPitch a pitchStr =
+    Pitch { pitchClass: lookupPitch pitchStr, accidental: a }
 
 -- | a complete list of key accidentals which may be empty
 -- | each is separated by a single space
@@ -1106,60 +1182,7 @@ buildBrokenOperator s =
   else
     RightArrow (length s)
 
--- builders
-
-buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
-buildNote macc pitchStr octave ml mt =
-  let
-    l =
-      fromMaybe (1 % 1) ml
-    -- a = buildAccidental macc
-    pc =
-      lookupPitch (toUpper pitchStr)
-    spn =
-      scientificPitchNotation pitchStr octave
-    tied =
-      case mt of
-        Just _ ->
-          true
-        _ ->
-          false
-    acc =
-      case macc of
-        Nothing -> Implicit
-        Just a -> a
-  in
-    { pitchClass: pc, accidental: acc, octave: spn, duration: l, tied: tied }
-
-buildAccidental :: String -> Accidental
-buildAccidental s =
-  case s of
-    "^^" ->
-      DoubleSharp
-
-    "__" ->
-      DoubleFlat
-
-    "^" ->
-      Sharp
-
-    "_" ->
-      Flat
-
-    _ ->
-      Natural
-
-buildPitch :: Accidental -> String -> Pitch
-buildPitch a pitchStr =
-  Pitch { pitchClass: lookupPitch pitchStr, accidental: a }
-
-buildChord :: Int -> List String -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
-buildChord leftSlurs decs ns ml rightSlurs =
-  let
-    l =
-      fromMaybe (fromInt 1) ml
-  in
-    { leftSlurs, decorations: decs, notes: ns, duration: l, rightSlurs }
+-- shared builders
 
 {- investigate a note/octave pair and return the octave
    in scientific pitch notation relative to MIDI pitches
@@ -1216,31 +1239,6 @@ toTupletInt :: String -> Int
 toTupletInt s =
   fromMaybe 3 (fromString s)
 
-buildAnnotation :: String -> Music
-buildAnnotation s =
-  let
-    firstChar =
-      charAt 0 s
-
-    placement =
-      case firstChar of
-        Just '^' ->
-          AboveNextSymbol
-
-        Just '_' ->
-          BelowNextSymbol
-
-        Just '<' ->
-          LeftOfNextSymbol
-
-        Just '>' ->
-          RightOfNextSymbol
-
-        _ ->
-          Discretional
-  in
-    Annotation placement (drop 1 s)
-
 {- default tempo signature builder which builds from
      an optional label
      a tempo designation such as (1/4=120) or (1/3 1/6=120)
@@ -1270,12 +1268,6 @@ buildTempoSignature3 bpm =
     , bpm: bpm
     , marking: Nothing
     }
-
-{- build a key signature -}
-buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
-buildKeySignature pStr ma mm =
-  { pitchClass: lookupPitch pStr, accidental: ma, mode: fromMaybe Major mm }
-
 
 -- lookups
 
@@ -1403,18 +1395,6 @@ spacedQuotedString =
 counted :: ∀ a. Int -> Parser a -> Parser (Nel.NonEmptyList a)
 counted num parser =
   replicate1A num parser
-
-{-
--- | Run a parser for an input string, returning either a positioned error or a result.
-runParser1 :: forall a. Parser a -> String -> Either PositionedParseError a
-runParser1 (Parser p) s =
-  let
-    formatErr :: { pos :: Pos, error :: ParseError } -> PositionedParseError
-    formatErr { pos : pos, error : ParseError e } =
-      PositionedParseError { pos : pos, error : e}
-  in
-    bimap formatErr _.result (p { str: s, pos: 0 })
--}
 
 -- | Entry point - Parse an ABC tune image.
 parse :: String -> Either ParseError AbcTune
