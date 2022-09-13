@@ -1396,16 +1396,12 @@ counted :: ∀ a. Int -> Parser a -> Parser (Nel.NonEmptyList a)
 counted num parser =
   replicate1A num parser
 
--- | Entry point - Parse an ABC tune image.
+-- | Parse an ABC tune image.
 parse :: String -> Either ParseError AbcTune
 parse s =
-  case runParser abc s of
-    Right n ->
-      Right n
+  runParser abc s 
 
-    Left e ->
-      Left e
-
+-- | Parse an ABC key signature
 parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
   case runParser keySignature s of

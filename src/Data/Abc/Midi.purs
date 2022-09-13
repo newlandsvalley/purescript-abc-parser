@@ -51,7 +51,6 @@ import Data.Rational (Rational, fromInt, (%))
 import Data.Tuple (Tuple(..))
 import Prelude (Unit, bind, const, identity, map, pure, unit, ($), (&&), (*), (+), (-), (<), (>), (<>), (>=))
 
-
 -- | Transform the ABC into raw MIDI
 toMidi :: AbcTune -> List Midi.Byte 
 toMidi tune = 
