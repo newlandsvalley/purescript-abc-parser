@@ -1,5 +1,5 @@
-Breaking Changes in impending v2.0.0
-------------------------------------
+Breaking Changes in v2.0.0
+--------------------------
 
   * PureScript v0.15.4
   * Header optics have been added; profunctor-lenses is now a dependency

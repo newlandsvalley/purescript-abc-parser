@@ -8,6 +8,8 @@ purescript-abc-parser
 
 This is a parser for version 2.1 of Chris Walshaw's [ABC Notation](http://abcnotation.com/) which is primarily designed as an interchange format for scores of traditional music.  Also included are functions to manipulate the parse tree in order to provide alteration of tempo, transposition, conversion to MIDI etc.
 
+For more information, see the [guide](https://github.com/newlandsvalley/purescript-abc-parser/blob/master/docs/GUIDE.md).
+
 Motivation
 ----------
 
@@ -49,5 +51,13 @@ Issues
 * Grace notes are, however, supported against notes in all other contexts and attached to them directly, although optionally mediated by a left slur bracket. 
 * In translating to MIDI, only a single voice is recognized.
 
+To Build
+--------
 
+    npm run build 
+
+To Test
+-------
+
+    npm run test
 
