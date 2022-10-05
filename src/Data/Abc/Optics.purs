@@ -1,6 +1,7 @@
 -- | Optics for accessing the tune headers
 -- |
--- | Remember that ABC allows for multiple headers of the same type to exist.
+-- | ABC allows for multiple headers of the same type to exist: 
+-- | https://abcnotation.com/wiki/abc:standard:v2.1#file_header
 -- | It's not clear how you should discriminate between them if, for example,
 -- | you want to display the main tune header on a score.  I use the convention
 -- | that the first header to be defined is the prominent one.
