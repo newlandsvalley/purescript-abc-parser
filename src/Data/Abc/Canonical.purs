@@ -11,6 +11,7 @@ module Data.Abc.Canonical
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
 import Data.Abc
+import JS.BigInt (toString) as BigInt
 import Data.List (List, foldMap)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Maybe (Maybe(..), fromMaybe, maybe)
@@ -86,11 +87,11 @@ meter ms =
 -- just use showRatio in headers
 duration :: Rational -> String
 duration r =
-  case (Tuple (numerator r) (denominator r)) of
-    Tuple 1 1 -> ""
-    Tuple 1 2 -> "/"
-    Tuple n 1 -> show n
-    Tuple _ _ -> showRatio r
+  case (BigInt.toString $ numerator r),  (BigInt.toString $ denominator r) of
+    "1", "1" -> ""
+    "1" ,"2" -> "/"
+    n, "1" -> n
+    _, _ -> showRatio r
 
 key :: KeySignature -> String
 key k =

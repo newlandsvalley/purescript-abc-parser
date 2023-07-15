@@ -1,3 +1,9 @@
+Breaking Changes in v2.0.1
+--------------------------
+
+  * PureScript v0.15.9
+  * There is now a transitive dependency on ```purescript-js-bigints``` via the latest ```purescript-rationals```
+
 Breaking Changes in v2.0.0
 --------------------------
 

@@ -14,6 +14,7 @@ You can edit this file as you like.
   , "foldable-traversable"
   , "identity"
   , "integers"
+  , "js-bigints"
   , "lists"
   , "maybe"
   , "midi"
