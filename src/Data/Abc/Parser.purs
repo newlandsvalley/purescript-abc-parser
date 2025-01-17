@@ -126,8 +126,8 @@ scoreItem =
     , try annotation -- potential ambiguity with chordSymbol
     , chordSymbol
     , try tuplet -- potential ambiguity with slurs inside a note
-    , rest
-    , try brokenRhythmPair -- potential ambiguity with note
+    , try brokenRhythmPair -- potential ambiguity with note and with rest
+    , rest  
     , try note -- potential ambiguity with decorations on bars
     ]
     <?> "score item"
@@ -268,9 +268,9 @@ degenerateBrokenRhythmOperator =
 brokenRhythmPair :: Parser Music
 brokenRhythmPair =
   BrokenRhythmPair
-    <$> graceableNote
+    <$> restOrNote
     <*> brokenRhythmTie
-    <*> graceableNote
+    <*> restOrNote
     <?> "broken rhythm pair"
 
 note :: Parser Music
@@ -445,14 +445,14 @@ tuplet = do
     leftSlurs = max 0 (leftBracketCount - 1)
   signature <- tupletSignature
   -- ensure that the contents match the signature count
-  restsOrNotes <- counted signature.r restOrNote
+  -- we also need to allow whitespace betseen any of the contents but not after the final note
+  restsOrNotes <- counted signature.r (whiteSpace *> restOrNote)
   pure $ Tuplet { maybeGrace, leftSlurs, signature, restsOrNotes }
 
 -- | tuplets may now contain either a (Left) rest or a (Right) Note
 restOrNote :: Parser RestOrNote
 restOrNote =
   (Left <$> abcRest) <|> (Right <$> graceableNote)
-    <* whiteSpace
 
 {- possible tuplet signatures
    (3             --> {3,2,3}

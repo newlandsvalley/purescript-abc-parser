@@ -263,8 +263,8 @@ transposeMusic m =
 
     BrokenRhythmPair n1 b n2 ->
       do
-        result1 <- transposeGraceableNoteBy n1
-        result2 <- transposeGraceableNoteBy n2
+        result1 <- transposeRestOrNoteBy n1
+        result2 <- transposeRestOrNoteBy n2
         pure $ BrokenRhythmPair result1 b result2
 
     Tuplet tuplet ->

@@ -197,18 +197,23 @@ notes ns =
   in
     foldr f "" ns
 
+-- generate a single free-standing rest or note (i.e. not part of a tuplet)
+singleRestOrNote :: RestOrNote -> String
+singleRestOrNote rn =
+  restOrNote rn ""
+
+-- a rest or note whih may be part of a sequence if the accumulator is used
+restOrNote :: RestOrNote -> String -> String
+restOrNote rn acc =
+  case rn of
+    Left r ->
+      (abcRest r) <> acc
+    Right n ->
+      (graceableNote n) <> acc
+
 restsOrNotes :: NonEmptyList RestOrNote -> String
 restsOrNotes rns =
-  let
-    f :: RestOrNote -> String -> String
-    f rn acc =
-      case rn of
-        Left r ->
-          (abcRest r) <> acc
-        Right n ->
-          (graceableNote n) <> acc
-  in
-    foldr f "" rns
+    foldr restOrNote "" rns
 
 abcRest :: AbcRest -> String
 abcRest r =
@@ -254,11 +259,6 @@ barLine b =
   in
     endColons <> lines <> startColons <> iteration
 
-{-}
-mBarLine :: Maybe BarLine -> String
-mBarLine mbl =
-  fromMaybe "" $ map barLine mbl
--}
 
 voltas :: NonEmptyList Volta -> String
 voltas vs =
@@ -281,7 +281,7 @@ music m =
       graceableNote gn
 
     BrokenRhythmPair g1 b g2 ->
-      graceableNote g1 <> (broken b) <> graceableNote g2
+      (singleRestOrNote g1) <> (broken b) <> (singleRestOrNote g2) 
 
     Rest r ->
       abcRest r
@@ -291,8 +291,7 @@ music m =
         <> leftSlurs t.leftSlurs
         <> tupletSignature t.signature
         <> restsOrNotes t.restsOrNotes
-        <> " "
-
+        
     DecoratedSpace decorations ->
       (decorate decorations) <> "y"
 

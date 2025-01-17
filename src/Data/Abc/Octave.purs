@@ -58,7 +58,7 @@ moveOctave i m =
       Note (moveGraceableNoteBy i n)
 
     BrokenRhythmPair n1 b n2 ->
-      BrokenRhythmPair (moveGraceableNoteBy i n1) b (moveGraceableNoteBy i n2)
+      BrokenRhythmPair (moveRestOrNoteBy i n1) b (moveRestOrNoteBy i n2)
 
     Tuplet tuplet ->
       let
@@ -114,17 +114,16 @@ moveNoteList :: Int -> NonEmptyList AbcNote -> NonEmptyList AbcNote
 moveNoteList i =
   map (moveNoteBy i)
 
--- | tuples may now contain either rests or notes
+moveRestOrNoteBy :: Int -> RestOrNote -> RestOrNote
+moveRestOrNoteBy i rn =
+  case rn of
+    Left r -> Left r
+    Right n -> Right (moveGraceableNoteBy i n)
+
+-- | tuples and broken operands may now contain either rests or notes
 moveRestOrNoteList :: Int -> NonEmptyList RestOrNote -> NonEmptyList RestOrNote
 moveRestOrNoteList i =
-  let
-    f :: RestOrNote -> RestOrNote
-    f rn =
-      case rn of
-        Left r -> Left r
-        Right n -> Right (moveGraceableNoteBy i n)
-  in
-    map f
+  map (moveRestOrNoteBy i)
 
 moveChord :: Int -> AbcChord -> AbcChord
 moveChord i c =

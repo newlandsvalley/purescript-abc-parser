@@ -222,12 +222,12 @@ transformMusic m =
       case broken of
         LeftArrow i ->
           do
-            _ <- handleGraceableNote false (brokenTempo i false) note1
-            handleGraceableNote false (brokenTempo i true) note2
+            _ <- handleRestOrNote false (brokenTempo i false) note1
+            handleRestOrNote false (brokenTempo i true) note2
         RightArrow i ->
           do
-            _ <- handleGraceableNote false (brokenTempo i true) note1
-            handleGraceableNote false (brokenTempo i false) note2
+            _ <- handleRestOrNote false (brokenTempo i true) note1
+            handleRestOrNote false (brokenTempo i false) note2
 
     Inline header ->
       transformHeader header
@@ -319,7 +319,7 @@ handleNote chordal tempoModifier maybeGrace abcNote = do
       , currentBarAccidentals = barAccidentals
       }
 
--- | tuplets can now contain rests
+-- | tuplets and broken operands can now contain rests
 handleRestOrNote :: Boolean -> Rational -> RestOrNote -> State TState Unit
 handleRestOrNote chordal tempoModifier restOrNote =
   case restOrNote of

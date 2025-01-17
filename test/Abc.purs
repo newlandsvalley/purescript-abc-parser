@@ -220,6 +220,8 @@ noteSpec =
       assertRoundTrip "| {d}(3cfg A |\x0D\n"
     it "handles grace note in broken rhythm pair" do
       assertRoundTrip "| A>{f}B C>>{ef}D |\x0D\n"
+    it "handles rest in broken rhythm pair" do
+      assertRoundTrip "| A>z z>>D |\x0D\n"
     it "handles double sharp" do
       assertRoundTrip "| ^^C2 |\r\n"
     it "handles sharp" do
@@ -301,9 +303,9 @@ slurSpec =
     it "handles slur" do
       assertRoundTrip "| (de^f) (cda) |\x0D\n"
     it "handles broken rhythm slurred start" do
-      assertRoundTrip "| A>(BC) |\x0D\n"
+      assertRoundTrip "| A>(B C) |\x0D\n"
     it "handles broken rhythm slurred finish" do
-      assertRoundTrip "| (BC)>A |\x0D\n"
+      assertRoundTrip "| (B C)>A |\x0D\n"
     it "handles grace note with slur" do
       assertRoundTrip "| {d^f}(GA) |\x0D\n"
     it "handles chord with leading slur" do
@@ -314,7 +316,7 @@ slurSpec =
       assertRoundTrip "| ((3def) |\x0D\n"
     -- we throw away the slur if it mistakenly encompasses the operator
     it "handles degenerate slurred broken rhythm start" do
-      assertCanonical "| A(>BC) |\x0D\n" "| A>BC) |\x0D\n"
+      assertCanonical "| A(>B C) |\x0D\n" "| A>B C) |\x0D\n"
     it "handles degenerate slurred broken rhythm finish" do
       assertCanonical "| (BC>)A |\x0D\n" "| (BC>A |\x0D\n"
 

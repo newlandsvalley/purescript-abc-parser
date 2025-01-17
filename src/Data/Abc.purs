@@ -165,7 +165,7 @@ type RestOrNote
 -- | The 'score' part of Music.
 data Music
   = Note GraceableNote
-  | BrokenRhythmPair GraceableNote Broken GraceableNote
+  | BrokenRhythmPair RestOrNote Broken RestOrNote
   | Rest AbcRest
   | Tuplet AbcTuplet
   | DecoratedSpace (List String)
