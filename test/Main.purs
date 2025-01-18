@@ -17,6 +17,7 @@ import Test.Transposition (transpositionSpec)
 import Test.Midi (midiSpec)
 import Test.Voice (voiceSpec)
 import Test.UnitNote (unitNoteSpec)
+import Test.Normaliser (normaliserSpec)
 
 
 main :: Effect Unit
@@ -33,4 +34,5 @@ main = launchAff_ $ runSpec [ specReporter] do
     transpositionSpec
     unitNoteSpec
     voiceSpec
+    normaliserSpec
     

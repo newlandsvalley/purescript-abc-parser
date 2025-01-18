@@ -2,7 +2,6 @@
 module Data.Abc.Utils
   ( getTitle
   , dotFactor
-  , normaliseChord
   , chordDuration
   , tupletDuration
   , isEmptyStave
@@ -20,7 +19,7 @@ import Data.Lens.Traversal (traversed)
 import Data.List (List(..), head, null, singleton, snoc, take)
 import Data.List.NonEmpty (head) as NEL
 import Data.Maybe (Maybe(..), maybe)
-import Data.Rational (Rational, (%), fromInt, toNumber)
+import Data.Rational (Rational, (%), fromInt)
 import Prelude (map, ($), (||), (==), (*), (+), (<<<))
 
 -- | Get the first Title (if any) from the tune.
@@ -75,20 +74,7 @@ isEmptyStave bars =
     in
       all f bar.music || null bar.music
 
--- | Normalise an ABC chord by placing the correct duration against each note
--- | and setting the overall Chord length to Unit
-normaliseChord :: AbcChord -> AbcChord
-normaliseChord abcChord =
-  case (toNumber abcChord.duration) of
-    1.0 -> abcChord
-    _ ->
-      let
-        notes = map (\n -> n { duration = n.duration * abcChord.duration }) abcChord.notes
-        decorations = abcChord.decorations
-        leftSlurs = abcChord.leftSlurs
-        rightSlurs = abcChord.rightSlurs
-      in
-        { leftSlurs, decorations, notes, duration: (1 % 1), rightSlurs }
+
 
 -- | Get the duration of a chord. We consider notes in a chord to have the same 
 -- | duration (as the first such note) and must also cater for the overall chord duration. 
@@ -191,3 +177,5 @@ removeRepeatMarkers abcTune =
 
   replaceBody :: List BodyPart -> List BodyPart
   replaceBody = map replaceBodyPart
+
+          

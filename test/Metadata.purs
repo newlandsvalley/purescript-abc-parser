@@ -9,20 +9,8 @@ import Data.Maybe (Maybe(..))
 import Data.Lens.Fold (toListOf)
 import Data.Lens.Traversal (traversed)
 import Data.List (List(..), head, length, (:))
-import Data.List.NonEmpty (NonEmptyList(..))
-import Data.NonEmpty ((:|))
-import Data.Rational ((%))
 import Data.Abc.Parser (parse)
-import Data.Abc
-  ( PitchClass(..)
-  , TimeSignature
-  , Accidental(..)
-  , BodyPart(..)
-  , NoteDuration
-  , AbcChord
-  , AbcNote
-  , AbcTune
-  )
+import Data.Abc  ( TimeSignature, BodyPart(..), AbcTune)
 import Data.Abc.Utils
 import Data.Abc.Meter (getDefaultedMeter)
 import Data.Abc.Canonical (fromTune)
@@ -142,7 +130,6 @@ metadataSpec = do
     headerSpec
     scoreSpec
     thumbnailSpec
-    utilsSpec
 
 headerSpec :: Spec Unit
 headerSpec =
@@ -177,12 +164,6 @@ thumbnailSpec =
       fastanThumbnail `shouldEqual` (buildThumbnail fastan)
     it "removes the repeat markers" do
       augustssonThumbnailNoRepeats `shouldEqual` (buildThumbnailNoRepeats augustsson)
-
-utilsSpec :: Spec Unit
-utilsSpec =
-  describe "utils" do
-    it "normalises a chord" do
-      normalisedChord `shouldEqual` (normaliseChord denormalisedChord)
 
 -- headers in sample ABC tunes
 keyedTune :: String
@@ -255,27 +236,3 @@ fastanThumbnail :: String
 fastanThumbnail =
   fastanHeaders
     <> "| (3A4F4G4 A2B2 | (3:2:4c2d2B4c4 A2F2 |\r\n"
-
-bnote :: NoteDuration -> AbcNote
-bnote duration =
-  { pitchClass: B, accidental: Implicit, octave: 4, duration, tied: false }
-
-dnote :: NoteDuration -> AbcNote
-dnote duration =
-  { pitchClass: D, accidental: Implicit, octave: 4, duration, tied: false }
-
-denormalisedChordNotes :: NonEmptyList AbcNote
-denormalisedChordNotes =
-  NonEmptyList $ (bnote (1 % 4)) :| ((dnote (1 % 4)) : Nil)
-
-normalisedChordNotes :: NonEmptyList AbcNote
-normalisedChordNotes =
-  NonEmptyList $ (bnote (3 % 4)) :| ((dnote (3 % 4)) : Nil)
-
-normalisedChord :: AbcChord
-normalisedChord =
-  { leftSlurs: 0, decorations: Nil, notes: normalisedChordNotes, duration: (1 % 1), rightSlurs: 0 }
-
-denormalisedChord :: AbcChord
-denormalisedChord =
-  { leftSlurs: 0, decorations: Nil, notes: denormalisedChordNotes, duration: (3 % 1), rightSlurs: 0 }
