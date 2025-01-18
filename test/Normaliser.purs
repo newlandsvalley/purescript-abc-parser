@@ -33,5 +33,7 @@ normaliserSpec =
       assertNormalised "| z4>E4 z2<F2 |\x0D\n" "| z6E2 zF3 |\x0D\n"
     it "normalises a doubly broken rhythm between two notes" do
       assertNormalised "| A4>>B4 C4<<D4 |\x0D\n" "| A7B CD7 |\x0D\n"
+    it "normalises a broken rhythm between with small durations" do
+      assertNormalised "| A>B C<D |\x0D\n" "| A3/2B/ C/D3/2 |\x0D\n"
      
 
