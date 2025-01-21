@@ -2,6 +2,7 @@ module Data.Abc.Normaliser
   ( normalise
   , normaliseBrokenRhythm
   , normaliseChord
+  , normaliseTuneBody
   ) where
 
 import Data.Abc (AbcTune, AbcChord, TuneBody, BodyPart(..), Bar, Broken(..), Music(..), RestOrNote)
@@ -18,6 +19,7 @@ normalise :: AbcTune -> AbcTune
 normalise t =
   { headers: t.headers, body: (normaliseTuneBody t.body) }
 
+-- | as for normalise but just applied to the tune body
 normaliseTuneBody :: TuneBody -> TuneBody
 normaliseTuneBody =
   map normaliseBodyPart
