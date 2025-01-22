@@ -15,7 +15,6 @@ import Data.Abc
   , RestOrNote
   , Accidental(..)
   , BarLine
-  , Broken(..)
   , Header(..)
   , TuneBody
   , BodyPart(..)
@@ -31,10 +30,10 @@ import Data.Abc.KeySignature (defaultKey, getKeySig)
 import Data.Abc.Midi.Pitch (MidiPitch, toMidiPitch) 
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
+import Data.Abc.Normaliser (normalise)
 import Data.Abc.Repeats.Types (RepeatState, Section(..), Sections)
 import Data.Abc.Repeats.Variant (activeVariants, findEndingPosition, variantPositionOf, variantCount)
 import Data.Abc.Tempo (AbcTempo, getAbcTempo, midiTempo, noteTicks, setBpm, standardMidiTick)
-import Data.Abc.Utils (dotFactor)
 import Data.Either (Either(..))
 import Data.Bifunctor (bimap)
 import Data.Foldable (foldl, foldM)
@@ -66,7 +65,8 @@ toMidiAtBpm tune bpm =
 toMidiRecording :: AbcTune -> Midi.Recording
 toMidiRecording tune =
   let
-    tstate = execState (transformTune tune) (initialState tune)
+    -- we normalise the tune to replace all broken rhythm pairs with normal notes or rests
+    tstate = execState (transformTune $ normalise tune) (initialState tune)
   in
     makeRecording tstate
 
@@ -75,7 +75,8 @@ toMidiRecording tune =
 toMidiRecordingAtBpm :: AbcTune -> Int -> Midi.Recording
 toMidiRecordingAtBpm originalTune bpm =
   let
-    tune = setBpm bpm originalTune
+    -- we normalise the tune to replace all broken rhythm pairs with normal notes or rests
+    tune = setBpm bpm $ normalise originalTune
     tstate = execState (transformTune tune) (initialState tune)
   in
     makeRecording tstate
@@ -218,21 +219,12 @@ transformMusic m =
           -- and terminate all the other notes with a NoteOff at 0 duration
           handleNoteOffs (fromInt 0) others
 
-    BrokenRhythmPair note1 broken note2 ->
-      case broken of
-        LeftArrow i ->
-          do
-            _ <- handleRestOrNote false (brokenTempo i false) note1
-            handleRestOrNote false (brokenTempo i true) note2
-        RightArrow i ->
-          do
-            _ <- handleRestOrNote false (brokenTempo i true) note1
-            handleRestOrNote false (brokenTempo i false) note2
-
     Inline header ->
       transformHeader header
 
     _ -> do
+      -- this includes BrokenRhythmPair which is replaced by a pair of individual notes or rests
+      -- assuming normalise is called prior to generating the MIDI
       pure unit
 
 -- | add a bar to the state.  index it and add it to the growing list of bars
@@ -319,7 +311,7 @@ handleNote chordal tempoModifier maybeGrace abcNote = do
       , currentBarAccidentals = barAccidentals
       }
 
--- | tuplets and broken operands can now contain rests
+-- | tuplets can now contain rests
 handleRestOrNote :: Boolean -> Rational -> RestOrNote -> State TState Unit
 handleRestOrNote chordal tempoModifier restOrNote =
   case restOrNote of
@@ -537,14 +529,6 @@ midiNoteOff ticks pitch =
 midiTempoMsg :: AbcTempo -> Midi.Message
 midiTempoMsg abcTempo =
   Midi.Message 0 (Midi.Tempo $ midiTempo abcTempo)
-
--- | work out the broken rhythm tempo
-brokenTempo :: Int -> Boolean -> Rational
-brokenTempo i isUp =
-  if isUp then
-    (fromInt 1) + (dotFactor i)
-  else
-    (fromInt 1) - (dotFactor i)
 
 -- | does the MIDI bar hold no notes (or any other MIDI messages)
 isBarEmpty :: MidiBar -> Boolean
