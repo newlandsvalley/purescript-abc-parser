@@ -32,6 +32,6 @@ package:
       - effect
       - spec
 workspace:
-  extraPackages: {}
   packageSet:
-    url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.9-20230715/packages.json
+    registry: 62.3.2
+  extraPackages: {}
