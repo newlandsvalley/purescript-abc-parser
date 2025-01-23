@@ -1,0 +1,37 @@
+package:
+  name: abc-parser
+  dependencies:
+    - arrays
+    - bifunctors
+    - control
+    - either
+    - enums
+    - foldable-traversable
+    - identity
+    - integers
+    - js-bigints
+    - lists
+    - maybe
+    - midi
+    - newtype
+    - ordered-collections
+    - partial
+    - prelude
+    - profunctor-lenses
+    - rationals
+    - string-parsers
+    - strings
+    - stringutils
+    - transformers
+    - tuples
+    - unfoldable
+  test:
+    main: Test.Main
+    dependencies:
+      - aff
+      - effect
+      - spec
+workspace:
+  extraPackages: {}
+  packageSet:
+    url: https://raw.githubusercontent.com/purescript/package-sets/psc-0.15.9-20230715/packages.json
