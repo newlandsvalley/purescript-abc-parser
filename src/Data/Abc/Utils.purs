@@ -20,13 +20,14 @@ import Data.List (List(..), head, null, singleton, snoc, take)
 import Data.List.NonEmpty (head) as NEL
 import Data.Maybe (Maybe(..), maybe)
 import Data.Rational (Rational, (%), fromInt)
+import Data.String.Common (trim)
 import Prelude (map, ($), (||), (==), (*), (+), (<<<))
 
 -- | Get the first Title (if any) from the tune.
 -- | For more flexibility, you should use the _Title optic.
 getTitle :: AbcTune -> Maybe String
 getTitle tune =
-  firstOf (_headers <<< traversed <<< _Title) tune
+  map trim $ firstOf (_headers <<< traversed <<< _Title) tune
 
 -- | The amount by which you increase or decrease the duration of a (possibly multiply) dotted note.
 -- |    For example A > B increases the duration of A and proportionally reduces that of B.
