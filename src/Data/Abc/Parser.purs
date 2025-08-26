@@ -10,7 +10,6 @@ import Data.Abc.Meter as Meter
 import Control.Alt ((<|>))
 import Data.Array as Array
 import Data.Either (Either(..))
-import Data.Foldable (foldMap)
 import Data.Functor (map)
 import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
@@ -20,8 +19,8 @@ import Data.Map (Map, empty)
 import Data.Map (fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
-import Data.String (drop, toUpper, singleton)
-import Data.String.CodePoints (codePointFromChar, length)
+import Data.String (drop, toUpper)
+import Data.String.CodePoints (length)
 import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
@@ -599,8 +598,16 @@ longDecoration =
 -- |consume carriage returns or newlines
 whiteSpace :: Parser String
 whiteSpace =
+  (fromCharArray <<< Array.fromFoldable)
+    <$> many scoreSpace
+
+
+{-}
+whiteSpace :: Parser String
+whiteSpace =
   foldMap (singleton <<< codePointFromChar) <$>
     many scoreSpace
+-}
 
 -- at least one (intended) space somewhere inside the music body
 spacer :: Parser Music
