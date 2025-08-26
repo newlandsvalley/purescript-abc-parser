@@ -7,6 +7,7 @@ module Data.Abc.Canonical
   , tupletSignature
   , bars
   , keySignatureAccidental
+  , normaliseKey
   ) where
 
 import Prelude (map, show, ($), (<>), (<<<), (+), (-), (<=), (>), (==), (||))
@@ -93,8 +94,10 @@ duration r =
     n, "1" -> n
     _, _ -> showRatio r
 
-key :: KeySignature -> String
-key k =
+
+-- | Normalise a key signature to a standard canonical format as a string
+normaliseKey :: KeySignature -> String
+normaliseKey k =
   show k.pitchClass <> (keySignatureAccidental k.accidental) <> show k.mode
 
 keyAccidentals :: List Pitch -> String
@@ -344,7 +347,7 @@ header h =
       "I: " <> s
 
     Key mks ->
-      "K: " <> (key mks.keySignature) <> (keyAccidentals mks.modifications)
+      "K: " <> (normaliseKey mks.keySignature) <> (keyAccidentals mks.modifications)
         <> amorphousProperties mks.properties
 
     UnitNoteLength d ->
