@@ -1,3 +1,9 @@
+Breaking Changes in v2.1.0
+--------------------------
+
+  * PureScript v0.15.15
+  * Build with spago@next  
+
 Breaking Changes in v2.0.1
 --------------------------
 
