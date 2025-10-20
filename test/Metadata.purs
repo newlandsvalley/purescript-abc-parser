@@ -138,6 +138,8 @@ headerSpec =
       assertOkTitle titledTune "Gamal Reinlender"
     it "gets no title" do
       assertNoHeader keyedTune getTitle
+    it "trims space from title" do
+      assertOkTitle trailingSpaceTitledTune "Gamal Reinlender"
     it "gets first of multiple titles" do
       assertOkTitle doublyTitledTune "Nancy Dawson"
     it "gets all titles" do
@@ -177,6 +179,10 @@ titledTune =
 doublyTitledTune :: String
 doublyTitledTune =
   "T: Nancy Dawson\x0D\nT: Piss Upon the Grass\x0D\n| ABC |\x0D\n"
+
+trailingSpaceTitledTune :: String
+trailingSpaceTitledTune =
+  "T: Gamal Reinlender \x0D\n| ABC |\x0D\n"
 
 manyHeaders :: String
 manyHeaders =
