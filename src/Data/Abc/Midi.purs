@@ -27,7 +27,7 @@ import Data.Abc
   )
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.KeySignature (defaultKey, getKeySig)
-import Data.Abc.Midi.Pitch (MidiPitch, toMidiPitch) 
+import Data.Abc.Midi.Pitch (MidiPitch, toMidiPitch)
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Normaliser (normalise)
@@ -51,14 +51,14 @@ import Data.Tuple (Tuple(..))
 import Prelude (Unit, bind, const, identity, map, pure, unit, ($), (&&), (*), (+), (-), (<), (>), (<>), (>=))
 
 -- | Transform the ABC into raw MIDI
-toMidi :: AbcTune -> List Midi.Byte 
-toMidi tune = 
+toMidi :: AbcTune -> List Midi.Byte
+toMidi tune =
   Generate.recording $ toMidiRecording tune
 
 -- | Transform the ABC into raw MIDI but at the modified tempo
 -- | defined by the new BPM (beats per minute)
-toMidiAtBpm :: AbcTune -> Int -> List Midi.Byte 
-toMidiAtBpm tune bpm = 
+toMidiAtBpm :: AbcTune -> Int -> List Midi.Byte
+toMidiAtBpm tune bpm =
   Generate.recording $ toMidiRecordingAtBpm tune bpm
 
 -- | Transform ABC into a MIDI recording.
@@ -97,7 +97,7 @@ type TState =
 -- | preceding grace note that it has
 graceFraction :: Rational
 graceFraction =
-  (1 % 10)  
+  (1 % 10)
 
 -- | The very first bar has a default tempo as the only message
 initialBar :: Midi.Message -> MidiBar

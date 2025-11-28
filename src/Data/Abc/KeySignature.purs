@@ -2,7 +2,7 @@
 -- | The individual (sharp or flat) keys that comprise each key signature
 -- | across all the modes in western music.
 module Data.Abc.KeySignature
-  ( getKeySig 
+  ( getKeySig
   , getKeyProps
   , keySet
   , inKeySet
@@ -10,7 +10,7 @@ module Data.Abc.KeySignature
   , getKeySet
   , notesInChromaticScale
   , diatonicScale
-  , defaultKey  
+  , defaultKey
   , isCOrSharpKey
   , normaliseModalKey
   , transposeKeySignatureBy
@@ -119,7 +119,7 @@ getKeySet t =
     Just ksig ->
       modifiedKeySet ksig
     Nothing ->
-      Nil 
+      Nil
 
 -- constants
 

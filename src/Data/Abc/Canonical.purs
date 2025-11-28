@@ -88,12 +88,11 @@ meter ms =
 -- just use showRatio in headers
 duration :: Rational -> String
 duration r =
-  case (BigInt.toString $ numerator r),  (BigInt.toString $ denominator r) of
+  case (BigInt.toString $ numerator r), (BigInt.toString $ denominator r) of
     "1", "1" -> ""
-    "1" ,"2" -> "/"
+    "1", "2" -> "/"
     n, "1" -> n
     _, _ -> showRatio r
-
 
 -- | Normalise a key signature to a standard canonical format as a string
 normaliseKey :: KeySignature -> String
@@ -216,7 +215,7 @@ restOrNote rn acc =
 
 restsOrNotes :: NonEmptyList RestOrNote -> String
 restsOrNotes rns =
-    foldr restOrNote "" rns
+  foldr restOrNote "" rns
 
 abcRest :: AbcRest -> String
 abcRest r =
@@ -262,7 +261,6 @@ barLine b =
   in
     endColons <> lines <> startColons <> iteration
 
-
 voltas :: NonEmptyList Volta -> String
 voltas vs =
   intercalateMap "," show vs
@@ -284,7 +282,7 @@ music m =
       graceableNote gn
 
     BrokenRhythmPair g1 b g2 ->
-      (singleRestOrNote g1) <> (broken b) <> (singleRestOrNote g2) 
+      (singleRestOrNote g1) <> (broken b) <> (singleRestOrNote g2)
 
     Rest r ->
       abcRest r
@@ -294,7 +292,7 @@ music m =
         <> leftSlurs t.leftSlurs
         <> tupletSignature t.signature
         <> restsOrNotes t.restsOrNotes
-        
+
     DecoratedSpace decorations ->
       (decorate decorations) <> "y"
 

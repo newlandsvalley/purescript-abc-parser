@@ -75,8 +75,6 @@ isEmptyStave bars =
     in
       all f bar.music || null bar.music
 
-
-
 -- | Get the duration of a chord. We consider notes in a chord to have the same 
 -- | duration (as the first such note) and must also cater for the overall chord duration. 
 chordDuration :: AbcChord -> NoteDuration
@@ -179,4 +177,3 @@ removeRepeatMarkers abcTune =
   replaceBody :: List BodyPart -> List BodyPart
   replaceBody = map replaceBodyPart
 
-          

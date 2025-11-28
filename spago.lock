@@ -48,6 +48,9 @@
               "ordered-collections": ">=3.2.0 <4.0.0"
             },
             {
+              "parsing": ">=10.0.0 <11.0.0"
+            },
+            {
               "partial": ">=4.0.0 <5.0.0"
             },
             {
@@ -58,9 +61,6 @@
             },
             {
               "rationals": ">=6.0.0 <7.0.0"
-            },
-            {
-              "string-parsers": ">=8.0.0 <9.0.0"
             },
             {
               "strings": ">=6.0.1 <7.0.0"
@@ -107,10 +107,12 @@
             "midi",
             "newtype",
             "nonempty",
+            "nullable",
             "numbers",
             "ordered-collections",
             "orders",
             "parallel",
+            "parsing",
             "partial",
             "prelude",
             "profunctor",
@@ -130,6 +132,7 @@
             "type-equality",
             "typelevel-prelude",
             "unfoldable",
+            "unicode",
             "unsafe-coerce"
           ]
         },
@@ -1190,6 +1193,16 @@
         "effect"
       ]
     },
+    "nullable": {
+      "type": "registry",
+      "version": "6.0.0",
+      "integrity": "sha256-yiGBVl3AD+Guy4kNWWeN+zl1gCiJK+oeIFtZtPCw4+o=",
+      "dependencies": [
+        "effect",
+        "functions",
+        "maybe"
+      ]
+    },
     "numbers": {
       "type": "registry",
       "version": "9.0.1",
@@ -1242,6 +1255,38 @@
         "profunctor",
         "refs",
         "transformers"
+      ]
+    },
+    "parsing": {
+      "type": "registry",
+      "version": "10.2.0",
+      "integrity": "sha256-ZDIdMFAKkst57x6BVa1aUWJnS8smoZnXsZ339Aq1mPA=",
+      "dependencies": [
+        "arrays",
+        "control",
+        "effect",
+        "either",
+        "enums",
+        "foldable-traversable",
+        "functions",
+        "identity",
+        "integers",
+        "lazy",
+        "lists",
+        "maybe",
+        "newtype",
+        "nullable",
+        "numbers",
+        "partial",
+        "prelude",
+        "st",
+        "strings",
+        "tailrec",
+        "transformers",
+        "tuples",
+        "unfoldable",
+        "unicode",
+        "unsafe-coerce"
       ]
     },
     "partial": {
@@ -1532,6 +1577,16 @@
         "partial",
         "prelude",
         "tuples"
+      ]
+    },
+    "unicode": {
+      "type": "registry",
+      "version": "6.0.0",
+      "integrity": "sha256-QJnTVZpmihEAUiMeYrfkusVoziJWp2hJsgi9bMQLue8=",
+      "dependencies": [
+        "foldable-traversable",
+        "maybe",
+        "strings"
       ]
     },
     "unsafe-coerce": {

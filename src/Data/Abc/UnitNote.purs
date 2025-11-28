@@ -27,7 +27,7 @@ defaultUnitNoteLength sig =
     computedMeter :: Number
     computedMeter =
       case sig of
-        { numerator, denominator} -> (toNumber numerator) / (toNumber denominator)
+        { numerator, denominator } -> (toNumber numerator) / (toNumber denominator)
   in
     if (computedMeter < 0.75) then
       (1 % 16)

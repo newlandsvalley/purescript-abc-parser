@@ -1,11 +1,9 @@
 -- | Conversion of an ABC pitch to a MIDI pitch
-module Data.Abc.Midi.Pitch 
- ( MidiPitch
- , toMidiPitch
- , midiPitchOffset
- ) 
-
-where 
+module Data.Abc.Midi.Pitch
+  ( MidiPitch
+  , toMidiPitch
+  , midiPitchOffset
+  ) where
 
 import Data.Abc (AbcNote, Accidental(..), ModifiedKeySignature, Pitch(..))
 import Data.Abc.Accidentals as Accidentals

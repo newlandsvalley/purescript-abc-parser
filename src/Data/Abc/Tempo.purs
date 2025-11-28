@@ -83,7 +83,7 @@ defaultAbcTempo =
 -- | For more flexibility, you should use the _Tempo optic.
 getTempoSig :: AbcTune -> Maybe TempoSignature
 getTempoSig tune =
-  firstOf (_headers <<< traversed <<< _Tempo) tune  
+  firstOf (_headers <<< traversed <<< _Tempo) tune
 
 -- | Get the ABC tempo from the tune
 -- | This is usually more useful because it incorporates the unit note length

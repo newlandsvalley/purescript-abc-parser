@@ -35,7 +35,7 @@ normaliseBodyPart bp =
 normaliseBarList :: List Bar -> List Bar
 normaliseBarList =
   map normaliseBar
-  
+
 normaliseBar :: Bar -> Bar
 normaliseBar bar =
   let
@@ -44,11 +44,11 @@ normaliseBar bar =
   in
     bar { music = newMusic }
 
-normaliseMusic ::  Music -> List Music -> List Music
-normaliseMusic next acc = 
+normaliseMusic :: Music -> List Music -> List Music
+normaliseMusic next acc =
   case next of
     BrokenRhythmPair operand1 operator operand2 ->
-      let 
+      let
         (Tuple music1 music2) = normaliseBrokenRhythm operator operand1 operand2
       in
         music1 : (music2 : acc)
@@ -56,45 +56,45 @@ normaliseMusic next acc =
     Chord c ->
       Chord (normaliseChord c) : acc
 
-    _ -> 
-      next : acc 
+    _ ->
+      next : acc
 
 -- | Apply the specified broken rhythm to each note in the note pair (presented individually)
 -- | and return the broken note pair simply as a pair of normalised Music items held in a Tuple
 normaliseBrokenRhythm :: Broken -> RestOrNote -> RestOrNote -> (Tuple Music Music)
 normaliseBrokenRhythm broken rorNa rorNb =
-  let 
-    factora = 
-      case broken of 
-        LeftArrow i -> 
+  let
+    factora =
+      case broken of
+        LeftArrow i ->
           (fromInt 1) - (dotFactor i)
-        RightArrow i -> 
+        RightArrow i ->
           (fromInt 1) + (dotFactor i)
-    factorb = 
-      case broken of 
-        LeftArrow i -> 
+    factorb =
+      case broken of
+        LeftArrow i ->
           (fromInt 1) + (dotFactor i)
-        RightArrow i -> 
+        RightArrow i ->
           (fromInt 1) - (dotFactor i)
     musica =
-      case rorNa of 
-        Left r -> 
-          Rest r { duration = r.duration * factora}
-        Right gn ->           
-          let 
+      case rorNa of
+        Left r ->
+          Rest r { duration = r.duration * factora }
+        Right gn ->
+          let
             newAbcNote = gn.abcNote { duration = gn.abcNote.duration * factora }
-          in 
+          in
             Note gn { abcNote = newAbcNote }
     musicb =
-      case rorNb of 
-        Left r -> 
-          Rest r  { duration = r.duration * factorb}
-        Right gn ->   
-          let 
+      case rorNb of
+        Left r ->
+          Rest r { duration = r.duration * factorb }
+        Right gn ->
+          let
             newAbcNote = gn.abcNote { duration = gn.abcNote.duration * factorb }
           in
             Note gn { abcNote = newAbcNote }
-  in 
+  in
     Tuple musica musicb
 
 -- | Normalise an ABC chord by placing the correct duration against each note
@@ -111,6 +111,4 @@ normaliseChord abcChord =
         rightSlurs = abcChord.rightSlurs
       in
         { leftSlurs, decorations, notes, duration: (1 % 1), rightSlurs }
-
-
 

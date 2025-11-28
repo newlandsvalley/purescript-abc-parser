@@ -159,8 +159,7 @@ instance showAnnotationPlacement :: Show AnnotationPlacement where
   show Discretional = "@"
 
 -- | either a Rest or a Note.
-type RestOrNote
-  = Either AbcRest GraceableNote
+type RestOrNote = Either AbcRest GraceableNote
 
 -- | The 'score' part of Music.
 data Music
@@ -354,9 +353,9 @@ type KeySet =
   List Pitch
 
 -- | A Time Signature - e.g. 3/4.
-type TimeSignature = 
-  { numerator :: Int 
-  , denominator :: Int 
+type TimeSignature =
+  { numerator :: Int
+  , denominator :: Int
   }
 
 {-| A Tempo Signature - for example:

@@ -249,10 +249,10 @@ retitleFromVoiceLabel tune (Tuple k body) =
   retitle voiceName headers =
     case (firstOf (traversed <<< _Title) headers) of
       Just _ ->
-        over (traversed <<< _Title) (\t -> t <>" - voice " <> voiceName) filteredHeaders
+        over (traversed <<< _Title) (\t -> t <> " - voice " <> voiceName) filteredHeaders
         -- set (traversed <<< _Title) ("voice " <> voiceName) filteredHeaders
 
-        where 
+        where
         predicate :: Header -> Boolean
         predicate h =
           case h of
@@ -278,6 +278,4 @@ retitleFromVoiceLabel tune (Tuple k body) =
             Voice voiceDescription -> voiceDescription.id == voiceName
             _ -> true
         filteredRetitledHeaders = filter predicate headers
-
-        
 

@@ -1,3 +1,8 @@
+Breaking Changes in v2.2.0
+--------------------------
+
+  * Replace string-parsers with parsing.  The only noticeable change in the API is that the returned ```ParseError``` type comes from the new parser generator.
+
 Breaking Changes in v2.1.0
 --------------------------
 

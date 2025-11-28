@@ -1,4 +1,4 @@
-module Data.Abc.Meter 
+module Data.Abc.Meter
   ( getMeter
   , getDefaultedMeter
   , commonTime
@@ -26,17 +26,17 @@ getDefaultedMeter tune =
   fromMaybe commonTime $ getMeter tune
 
 -- | common time - 4/4
-commonTime :: TimeSignature 
+commonTime :: TimeSignature
 commonTime =
-  { numerator: 4, denominator: 4}
+  { numerator: 4, denominator: 4 }
 
 -- | cut time - 2/2
-cutTime :: TimeSignature 
+cutTime :: TimeSignature
 cutTime =
-  { numerator: 2, denominator: 2}
+  { numerator: 2, denominator: 2 }
 
 -- | convert the time signature to a Rational
-toRational :: TimeSignature -> Rational 
-toRational ts = 
-  ( ts.numerator % ts.denominator )
+toRational :: TimeSignature -> Rational
+toRational ts =
+  (ts.numerator % ts.denominator)
 

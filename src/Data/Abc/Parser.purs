@@ -8,27 +8,42 @@ import Data.Abc
 import Data.Abc.Meter as Meter
 
 import Control.Alt ((<|>))
+import Control.Monad.State.Class (class MonadState)
+import Control.Monad.State.Trans (StateT, evalStateT, get, put)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Functor (map)
+import Data.Identity (Identity(..))
 import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
-import Data.Map (Map, empty)
-import Data.Map (fromFoldable) as Map
+import Data.Map (Map, insert, lookup)
+import Data.Map (empty, fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
 import Data.String (drop, toUpper)
 import Data.String.CodePoints (length)
 import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
+import Data.String.Regex.Flags (noFlags)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
-import Data.Unfoldable1 (replicate1A)
-import Prelude (bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
-import StringParser (Parser, ParseError, runParser, try)
-import StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
-import StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
+import Partial.Unsafe (unsafeCrashWith)
+import Prelude (class Bind, bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==), (>>=))
+import Parsing (ParserT, ParseError, runParserT)
+import Parsing.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, replicate1A, sepBy, sepBy1, try, (<?>))
+import Parsing.String (char, eof, regex, satisfy, string)
+import Parsing.String.Basic (alphaNum)
+
+-- | the parser for regexes
+type RegexParser = Parser String
+
+-- | lookup for precompiled regexes
+-- | we need to wrap Map in a newtype to avoid circular dependencies between RegexParser, Parser and RegexMap
+newtype RegexMap = RegexMap (Map String RegexParser)
+
+-- | the parser for ABC
+type Parser = ParserT String (StateT RegexMap Identity)
 
 {- transient data type just used for parsing the awkward Tempo syntax
   a list of time signatures expressed as rationals and a bpm expressed as an Int
@@ -49,8 +64,9 @@ traceParse s p =
 
 abc :: Parser AbcTune
 abc =
-  { headers:_, body:_ }
-    <$> headers <*> body
+  { headers: _, body: _ }
+    <$> headers
+    <*> body
 
 body :: Parser (List BodyPart)
 body =
@@ -67,18 +83,19 @@ body =
 
 score :: Parser BodyPart
 score =
-  Score <$>
-    {- there is potential ambiguity here betweeb 'fullyBarredLine' and
+  Score
+    <$>
+      {- there is potential ambiguity here betweeb 'fullyBarredLine' and
        'inline' both of which commence with '[' making this order in the
        pairing necessary.  To do it in the other order would involve:
          (try fullyBarredLine <|> introLine)
     -}
-    (introLine <|> fullyBarredLine)
+      (introLine <|> fullyBarredLine)
     <?> "score"
 
 bar :: Parser Bar
 bar =
-  { decorations:_, startLine:_, music:_ }
+  { decorations: _, startLine: _, music: _ }
     <$> decorations
     <*> barline
     <*> (many scoreItem)
@@ -87,7 +104,7 @@ bar =
 -- | an intro bar is a bar at the beginning of a line which has no starting bar line
 introBar :: Parser Bar
 introBar =
-  { decorations: Nil, startLine: invisibleBarType, music:_ }
+  { decorations: Nil, startLine: invisibleBarType, music: _ }
     <$> many scoreItem
     <?> "intro bar"
 
@@ -126,7 +143,7 @@ scoreItem =
     , chordSymbol
     , try tuplet -- potential ambiguity with slurs inside a note
     , try brokenRhythmPair -- potential ambiguity with note and with rest
-    , rest  
+    , rest
     , try note -- potential ambiguity with decorations on bars
     ]
     <?> "score item"
@@ -147,7 +164,7 @@ abcChord =
     <*> rightSlurBrackets
     <?> "ABC chord"
 
-  where 
+  where
   buildChord :: Int -> List String -> Nel.NonEmptyList AbcNote -> Maybe Rational -> Int -> AbcChord
   buildChord leftSlurs decs ns ml rightSlurs =
     let
@@ -178,7 +195,7 @@ barline =
 -}
 normalBarline :: Parser BarLine
 normalBarline =
-  { endRepeats:_, thickness:_, startRepeats:_, iteration:_ }
+  { endRepeats: _, thickness: _, startRepeats: _, iteration: _ }
     <$> repeatMarkers
     <*> barlineThickness
     <*> repeatMarkers
@@ -197,7 +214,7 @@ normalBarline =
 -}
 degenerateBarVolta :: Parser BarLine
 degenerateBarVolta =
-  { endRepeats: 0, thickness: Thin, startRepeats: 0, iteration:_}
+  { endRepeats: 0, thickness: Thin, startRepeats: 0, iteration: _ }
     <$> (Just <$> (whiteSpace *> char '[' *> repeatSection))
 
 {- Parse a degenerate barline with no bar line!  Just :: on its own -}
@@ -286,7 +303,7 @@ abcNote =
     <*> maybeTie
     <?> "ABC note"
 
-  where 
+  where
   buildNote :: Maybe Accidental -> String -> Int -> Maybe Rational -> Maybe Char -> AbcNote
   buildNote macc pitchStr octave ml mt =
     let
@@ -311,7 +328,7 @@ abcNote =
 
 graceableNote :: Parser GraceableNote
 graceableNote =
-  { maybeGrace:_, leftSlurs:_, decorations:_, abcNote:_, rightSlurs:_ }
+  { maybeGrace: _, leftSlurs: _, decorations: _, abcNote: _, rightSlurs: _ }
     <$> optionMaybe graceBracket
     <*> leftSlurBrackets
     <*> decorations
@@ -337,7 +354,7 @@ accidental =
           ]
       )
 
-  where    
+  where
   buildAccidental :: String -> Accidental
   buildAccidental s =
     case s of
@@ -350,16 +367,17 @@ accidental =
       "_" ->
         Flat
       _ ->
-        Natural  
+        Natural
 
 {- an upper or lower case note ([A-Ga-g]) -}
 pitch :: Parser String
 pitch =
-  regex "[A-Ga-g]"
+  getRegexParser "[A-Ga-g]" >>= \p -> p
 
 moveOctave :: Parser Int
 moveOctave =
-  octaveShift <$> regex "[',]*"
+  getRegexParser "[',]*"
+    >>= \p -> octaveShift <$> p
 
 {- count the number of apostrophe (up) or comma (down) characters in the string
    and give the result a value of (up-down)
@@ -418,9 +436,10 @@ maybeTie =
 -- | to the next note syntactically.  This helps a good deal of 'bad' ABC
 -- | examples in the wild.
 maybeTie :: Parser (Maybe Char)
-maybeTie =
-  map (\_ -> '-') <$>
-    (optionMaybe (regex " *-"))
+maybeTie = do
+  p <- getRegexParser " *-"
+  map (\_ -> '-')
+    <$> (optionMaybe p)
     <?> "tie"
 
 rest :: Parser Music
@@ -430,9 +449,10 @@ rest =
     <?> "rest"
 
 abcRest :: Parser AbcRest
-abcRest =
-  { duration:_} 
-    <$> (fromMaybe (fromInt 1) <$> (regex "[XxZz]" *> optionMaybe noteDur))
+abcRest = do
+  p <- getRegexParser "[XxZz]"
+  { duration: _ }
+    <$> (fromMaybe (fromInt 1) <$> (p *> optionMaybe noteDur))
     <?> "abcRest"
 
 tuplet :: Parser Music
@@ -513,8 +533,9 @@ graceBracket =
 
 grace :: Parser Grace
 grace =
-  { isAcciaccatura:_, notes:_ } 
-    <$> acciaccatura <*> (many1 abcNote)
+  { isAcciaccatura: _, notes: _ }
+    <$> acciaccatura
+    <*> (many1 abcNote)
 
 {- acciaccaturas are indicated with an optional forward slash
    was
@@ -540,7 +561,7 @@ annotation =
     <$> annotationString
     <?> "annotation"
 
-  where 
+  where
   buildAnnotation :: String -> Music
   buildAnnotation s =
     let
@@ -560,17 +581,18 @@ annotation =
       Annotation placement (drop 1 s)
 
 annotationString :: Parser String
-annotationString =
+annotationString = do
+  p <- getRegexParser "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
   -- (\s -> "\"" <> s <> "\"") <$>
   string "\""
-    *> regex "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
+    *> p
     <* string "\""
     <?> "annotation"
 
 -- | a free - format chord symbol - see 4.18 Chord symbols.  Drop the quotes round the string.
 chordSymbol :: Parser Music
 chordSymbol =
-  (ChordSymbol <<< { name:_, duration: Nothing })
+  (ChordSymbol <<< { name: _, duration: Nothing })
     <$> literalQuotedString false
     <?> "chord symbol"
 
@@ -586,13 +608,14 @@ decoration =
 
 shortDecoration :: Parser String
 shortDecoration =
-  regex "[\\.~HLMOPSTuv]"
-    <?> "short decoration"
+  getRegexParser "[\\.~HLMOPSTuv]"
+    >>= \p -> p <?> "short decoration"
 
 longDecoration :: Parser String
 longDecoration =
-  between (char '!') (char '!') (regex "[^\x0D\n!]+")
-    <?> "long decoration"
+  getRegexParser "[^\x0D\n!]+"
+    >>= \p -> between (char '!') (char '!') p
+      <?> "long decoration"
 
 -- | our whiteSpace differs from that of the string parser we do NOT want to
 -- |consume carriage returns or newlines
@@ -600,7 +623,6 @@ whiteSpace :: Parser String
 whiteSpace =
   (fromCharArray <<< Array.fromFoldable)
     <$> many scoreSpace
-
 
 {-}
 whiteSpace :: Parser String
@@ -643,9 +665,9 @@ space = char ' '
 -}
 ignore :: Parser Music
 ignore =
-  Ignore <$
-    (regex "[#@;`\\*\\?]+")
-    <?> "ignored character"
+  getRegexParser "[#@;`\\*\\?]+"
+    >>= \p -> Ignore <$ p
+      <?> "ignored character"
 
 {- This is an area where the spec is uncertain.  See 6.1.1 Typesetting line-breaks
    The forward slash is used to indicate 'continuation of input lines' often because
@@ -659,10 +681,11 @@ ignore =
    to accumulate the following line into the ADT as a continuation of this line.
 -}
 continuation :: Parser Music
-continuation =
+continuation = do
+  p <- getRegexParser "[^\x0D\n]*"
   Continuation
     <$ char '\\'
-    <*> regex "[^\x0D\n]*"
+    <*> p
     <* eol
     <?> "continuation"
 
@@ -773,7 +796,7 @@ headerCode c =
 
 unsupportedHeaderCode :: Parser String
 unsupportedHeaderCode =
-  regex "[a-qt-vx-zEJ]:" <* whiteSpace
+  getRegexParser "[a-qt-vx-zEJ]:" >>= \p -> p <* whiteSpace
 
 {- Full comment lines.  Comments are introduced with '%' and can occur anywhere
    and carry on thill the end of the line. We'll treat single line comments 
@@ -793,15 +816,14 @@ commentLine =
    not that the spec has anything to say about it as far as I can see
 -}
 inlineInfo :: Boolean -> Parser String
-inlineInfo isInline =
+inlineInfo isInline = do
   let
     pattern =
       if isInline then
         "[^\x0D\n\\[\\]]*"
       else
         "[^\x0D\n]*"
-  in
-    regex pattern
+  getRegexParser pattern >>= \p -> p
 
 area :: Parser Header
 area =
@@ -853,13 +875,13 @@ instruction isInline =
 
 key :: Parser Header
 key =
-  Key <$> 
-    ({ keySignature:_, modifications:_, properties:_ }
-      <$ (headerCode 'K')
-      <*> keySignature
-      <*> keyAccidentals
-      <*> amorphousProperties
-      <?> "K header"
+  Key <$>
+    ( { keySignature: _, modifications: _, properties: _ }
+        <$ (headerCode 'K')
+        <*> keySignature
+        <*> keyAccidentals
+        <*> amorphousProperties
+        <?> "K header"
     )
 
 unitNoteLength :: Parser Header
@@ -942,12 +964,12 @@ userDefined isInline =
 
 voice :: Parser Header
 voice =
-  Voice <$> 
-    ( { id:_, properties:_ }
+  Voice <$>
+    ( { id: _, properties: _ }
         <$ (headerCode 'V')
         <*> alphaNumPlusString
         <*> amorphousProperties
-        <?> "V header"    
+        <?> "V header"
     )
 
 wordsAfter :: Boolean -> Parser Header
@@ -1024,8 +1046,13 @@ cutTime =
 
 timeSignature :: Parser (Maybe TimeSignature)
 timeSignature =
-  Just <$> ( { numerator:_, denominator:_} 
-    <$> int <* char '/' <*> int <* whiteSpace)
+  Just <$>
+    ( { numerator: _, denominator: _ }
+        <$> int
+        <* char '/'
+        <*> int
+        <* whiteSpace
+    )
 
 nometer :: Parser (Maybe TimeSignature)
 nometer =
@@ -1087,13 +1114,13 @@ sharpOrFlat =
 
 keyName :: Parser String
 keyName =
-  regex "[A-G]"
+  getRegexParser "[A-G]" >>= \p -> p
 
 keySignature :: Parser KeySignature
 keySignature =
   buildKeySignature <$> keyName <*> option Natural sharpOrFlat <* whiteSpace <*> optionMaybe mode
 
-  where 
+  where
   buildKeySignature :: String -> Accidental -> Maybe Mode -> KeySignature
   buildKeySignature pStr ma mm =
     { pitchClass: lookupPitch pStr, accidental: ma, mode: fromMaybe Major mm }
@@ -1103,7 +1130,7 @@ keyAccidental :: Parser Pitch
 keyAccidental =
   buildPitch <$> accidental <*> pitch
 
-  where 
+  where
   buildPitch :: Accidental -> String -> Pitch
   buildPitch a pitchStr =
     Pitch { pitchClass: lookupPitch pitchStr, accidental: a }
@@ -1147,40 +1174,48 @@ mode =
 
 minor :: Parser Mode
 minor =
-  Minor <$ whiteSpace <* regex "[M|m][A-Za-z]*"
+  getRegexParser "[M|m][A-Za-z]*"
+    >>= \p -> Minor <$ whiteSpace <* p
 
 major :: Parser Mode
 major =
-  Major <$ whiteSpace <* regex "[M|m][A|a][J|j][A-Za-z]*"
+  getRegexParser "[M|m][A|a][J|j][A-Za-z]*"
+    >>= \p -> Major <$ whiteSpace <* p
 
 ionian :: Parser Mode
 ionian =
-  -- Ionian <$ whiteSpace <* regex "(I|i)(O|o)(N|n)([A-Za-z])*"
-  Ionian <$ whiteSpace <* regex "[I|i][O|o][N|n][A-Za-z]*"
+  getRegexParser "[I|i][O|o][N|n][A-Za-z]*"
+    >>= \p -> Ionian <$ whiteSpace <* p
 
 dorian :: Parser Mode
 dorian =
-  Dorian <$ whiteSpace <* regex "[D|d][O|o][R|r][A-Za-z]*"
+  getRegexParser "[D|d][O|o][R|r][A-Za-z]*"
+    >>= \p -> Dorian <$ whiteSpace <* p
 
 phrygian :: Parser Mode
 phrygian =
-  Phrygian <$ whiteSpace <* regex "[P|p][H|h][R|r][A-Za-z]*"
+  getRegexParser "[P|p][H|h][R|r][A-Za-z]*"
+    >>= \p -> Phrygian <$ whiteSpace <* p
 
 lydian :: Parser Mode
 lydian =
-  Lydian <$ whiteSpace <* regex "[L|l][Y|y][D|d][A-Za-z]*"
+  getRegexParser "[L|l][Y|y][D|d][A-Za-z]*"
+    >>= \p -> Lydian <$ whiteSpace <* p
 
 mixolydian :: Parser Mode
 mixolydian =
-  Mixolydian <$ whiteSpace <* regex "[M|m][I|i][X|x][A-Za-z]*"
+  getRegexParser "[M|m][I|i][X|x][A-Za-z]*"
+    >>= \p -> Mixolydian <$ whiteSpace <* p
 
 aeolian :: Parser Mode
 aeolian =
-  Aeolian <$ whiteSpace <* regex "[A|a][E|e][O|o][A-Za-z]*"
+  getRegexParser "[A|a][E|e][O|o][A-Za-z]*"
+    >>= \p -> Aeolian <$ whiteSpace <* p
 
 locrian :: Parser Mode
 locrian =
-  Locrian <$ whiteSpace <* regex "[L|l][O|o][C|c][A-Za-z]*"
+  getRegexParser "[L|l][O|o][C|c][A-Za-z]*"
+    >>= \p -> Locrian <$ whiteSpace <* p
 
 buildBrokenOperator :: String -> Broken
 buildBrokenOperator s =
@@ -1293,19 +1328,19 @@ lookupPitch p =
 -- regex parsers.  
 brokenRhythmOperator :: Parser String
 brokenRhythmOperator =
-  regex "(<+|>+)"
+  getRegexParser "(<+|>+)" >>= \p -> p
 
 tupletLength :: Parser String
 tupletLength =
-  regex "[2-9]"
+  getRegexParser "[2-9]" >>= \p -> p
 
 anyInt :: Parser String
 anyInt =
-  regex "(0|[1-9][0-9]*)"
+  getRegexParser "(0|[1-9][0-9]*)" >>= \p -> p
 
 anyDigit :: Parser String
 anyDigit =
-  regex "([0-9])"
+  getRegexParser "([0-9])" >>= \p -> p
 
 -- low level
 
@@ -1327,7 +1362,9 @@ newline = satisfy ((==) '\n') <?> "expected newline"
 -- | it with a try, because the whole regex match is either consumed or not.
 -- | Also accommodate a carriage return but without the terminating newline
 crlf :: Parser Char
-crlf = '\n' <$ regex "!?\r(\n)?" <?> "expected crlf"
+crlf =
+  getRegexParser "!?\r(\n)?"
+    >>= \p -> '\n' <$ p <?> "expected crlf"
 
 {-| Parse an end of line character or sequence, returning a `\n` character. 
     Before the actual end of line, we can have comments, which are discarded
@@ -1347,12 +1384,12 @@ comment =
 -}
 strToEol :: Parser String
 strToEol =
-  regex "[^\x0D\n%]*"
+  getRegexParser "[^\x0D\n%]*" >>= \p -> p
 
 {- as above but with further comment characters allowed -}
 commentStrToEol :: Parser String
 commentStrToEol =
-  regex "[^\x0D\n]*"
+  getRegexParser "[^\x0D\n]*" >>= \p -> p
 
 {-| Parse a positive integer (with no sign). -}
 int :: Parser Int
@@ -1375,19 +1412,19 @@ digit =
 
 -- | literal quoted String. Optionally retain the quotes surrounding the returned String
 literalQuotedString :: Boolean -> Parser String
-literalQuotedString retainQuotes =
+literalQuotedString retainQuotes = do
+  p <- getRegexParser "(\\\\\"|[^\"\n])*"
   let
     quotedString :: Parser String
     quotedString =
       string "\""
-        *> regex "(\\\\\"|[^\"\n])*"
+        *> p
         <* string "\""
         <?> "quoted string"
-  in
-    if retainQuotes then
-      (\s -> "\"" <> s <> "\"") <$> quotedString
-    else
-      quotedString
+  if retainQuotes then
+    (\s -> "\"" <> s <> "\"") <$> quotedString
+  else
+    quotedString
 
 -- | ditto where it may be bracketed by spaces
 spacedQuotedString :: Parser String
@@ -1403,20 +1440,49 @@ counted :: ∀ a. Int -> Parser a -> Parser (Nel.NonEmptyList a)
 counted num parser =
   replicate1A num parser
 
+-- | precompile a (static) regex pattern and crash if our syntax is illegal
+mkRegexParser :: String -> RegexParser
+mkRegexParser regexPattern =
+  case regex regexPattern noFlags of
+    Left compileError -> unsafeCrashWith $ "regex pattern " <> regexPattern <> " failed to compile: " <> compileError
+    Right parser -> parser
+
+-- | place every precompiled regex in a Map on first reference
+-- | thus avoiding recompilation on further references
+getRegexParser :: forall m. Bind m => MonadState RegexMap m => String -> m RegexParser
+getRegexParser regexPattern = do
+  (RegexMap regexMap) <- get
+  case (lookup regexPattern regexMap) of
+    Nothing -> do
+      let
+        regexParser :: RegexParser
+        regexParser = mkRegexParser regexPattern
+
+        newMap :: RegexMap
+        newMap = RegexMap (insert regexPattern regexParser regexMap)
+      _ <- put newMap
+
+      pure regexParser
+    Just regexParser ->
+      pure regexParser
+
 -- | Parse an ABC tune image.
 parse :: String -> Either ParseError AbcTune
 parse s =
-  runParser abc s 
+  result
+  where
+  (Identity result) = evalStateT (runParserT s abc) (RegexMap Map.empty)
 
 -- | Parse an ABC key signature
 parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
-  case runParser keySignature s of
-    Right ks ->
+  case (evalStateT (runParserT s keySignature) (RegexMap Map.empty)) of
+    -- case runParser keySignature s of
+    Identity (Right ks) ->
       let
         emptyList = Nil :: List Pitch
       in
-        Right { keySignature: ks, modifications: emptyList, properties: empty }
+        Right { keySignature: ks, modifications: emptyList, properties: Map.empty }
 
-    Left e ->
+    Identity (Left e) ->
       Left e
