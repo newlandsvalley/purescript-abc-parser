@@ -2,6 +2,7 @@
 module Data.Abc.Parser
   ( parse
   , parseKeySignature
+  , module ParsingAlias
   ) where
 
 import Data.Abc
@@ -31,6 +32,7 @@ import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafeCrashWith)
 import Prelude (class Bind, bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==), (>>=))
 import Parsing (ParserT, ParseError, runParserT)
+import Parsing (ParseError()) as ParsingAlias
 import Parsing.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, replicate1A, sepBy, sepBy1, try, (<?>))
 import Parsing.String (char, eof, regex, satisfy, string)
 import Parsing.String.Basic (alphaNum)
