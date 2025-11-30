@@ -19,8 +19,8 @@ import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
-import Data.Map (Map, insert, lookup)
-import Data.Map (empty, fromFoldable) as Map
+import Data.HashMap (HashMap, empty, insert, lookup)
+import Data.Map (Map, empty, fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
 import Data.String (drop, toUpper)
@@ -42,7 +42,7 @@ type RegexParser = Parser String
 
 -- | lookup for precompiled regexes
 -- | we need to wrap Map in a newtype to avoid circular dependencies between RegexParser, Parser and RegexMap
-newtype RegexMap = RegexMap (Map String RegexParser)
+newtype RegexMap = RegexMap (HashMap String RegexParser)
 
 -- | the parser for ABC
 type Parser = ParserT String (StateT RegexMap Identity)
@@ -1144,7 +1144,7 @@ keyAccidentals =
   whiteSpace *> sepBy keyAccidental space
 
 -- | (optional) properties for the Voice or Key header
-amorphousProperties :: Parser (Map String String)
+amorphousProperties :: Parser (Map.Map String String)
 amorphousProperties =
   Map.fromFoldable
     <$> many kvPair
@@ -1473,13 +1473,12 @@ parse :: String -> Either ParseError AbcTune
 parse s =
   result
   where
-  (Identity result) = evalStateT (runParserT s abc) (RegexMap Map.empty)
+  (Identity result) = evalStateT (runParserT s abc) (RegexMap empty)
 
 -- | Parse an ABC key signature
 parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
-  case (evalStateT (runParserT s keySignature) (RegexMap Map.empty)) of
-    -- case runParser keySignature s of
+  case (evalStateT (runParserT s keySignature) (RegexMap empty)) of
     Identity (Right ks) ->
       let
         emptyList = Nil :: List Pitch

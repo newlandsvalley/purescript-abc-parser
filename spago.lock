@@ -76,6 +76,9 @@
             },
             {
               "unfoldable": ">=6.0.0 <7.0.0"
+            },
+            {
+              "unordered-collections": ">=3.1.0 <4.0.0"
             }
           ],
           "build_plan": [
@@ -133,6 +136,7 @@
             "typelevel-prelude",
             "unfoldable",
             "unicode",
+            "unordered-collections",
             "unsafe-coerce"
           ]
         },
@@ -1587,6 +1591,23 @@
         "foldable-traversable",
         "maybe",
         "strings"
+      ]
+    },
+    "unordered-collections": {
+      "type": "registry",
+      "version": "3.1.0",
+      "integrity": "sha256-H2eQR+ylI+cljz4XzWfEbdF7ee+pnw2IZCeq69AuJ+Q=",
+      "dependencies": [
+        "arrays",
+        "enums",
+        "functions",
+        "integers",
+        "lists",
+        "prelude",
+        "record",
+        "tuples",
+        "typelevel-prelude",
+        "unfoldable"
       ]
     },
     "unsafe-coerce": {

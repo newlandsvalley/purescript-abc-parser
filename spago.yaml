@@ -31,6 +31,7 @@ package:
     - transformers: ">=6.1.0 <7.0.0"
     - tuples: ">=7.0.0 <8.0.0"
     - unfoldable: ">=6.0.0 <7.0.0"
+    - unordered-collections: ">=3.1.0 <4.0.0"
   test:
     main: Test.Main
     dependencies:
