@@ -9,8 +9,6 @@ import Data.Abc
 import Data.Abc.Meter as Meter
 
 import Control.Alt ((<|>))
-import Control.Monad.State.Class (class MonadState)
-import Control.Monad.State.Trans (StateT, evalStateT, get, put)
 import Data.Array as Array
 import Data.Either (Either(..))
 import Data.Functor (map)
@@ -19,7 +17,6 @@ import Data.Int (fromString, pow)
 import Data.List (List(..), (:))
 import Data.List (length) as L
 import Data.List.NonEmpty as Nel
-import Data.HashMap (HashMap, empty, insert, lookup)
 import Data.Map (Map, empty, fromFoldable) as Map
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
@@ -30,7 +27,7 @@ import Data.String.Regex.Flags (noFlags)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Partial.Unsafe (unsafeCrashWith)
-import Prelude (class Bind, bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==), (>>=))
+import Prelude (bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
 import Parsing (ParserT, ParseError, runParserT)
 import Parsing (ParseError()) as ParsingAlias
 import Parsing.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, replicate1A, sepBy, sepBy1, try, (<?>))
@@ -40,12 +37,8 @@ import Parsing.String.Basic (alphaNum)
 -- | the parser for regexes
 type RegexParser = Parser String
 
--- | lookup for precompiled regexes
--- | we need to wrap Map in a newtype to avoid circular dependencies between RegexParser, Parser and RegexMap
-newtype RegexMap = RegexMap (HashMap String RegexParser)
-
 -- | the parser for ABC
-type Parser = ParserT String (StateT RegexMap Identity)
+type Parser = ParserT String Identity
 
 {- transient data type just used for parsing the awkward Tempo syntax
   a list of time signatures expressed as rationals and a bpm expressed as an Int
@@ -373,13 +366,16 @@ accidental =
 
 {- an upper or lower case note ([A-Ga-g]) -}
 pitch :: Parser String
-pitch =
-  getRegexParser "[A-Ga-g]" >>= \p -> p
+pitch = do
+  let 
+    p = getRegexParser "[A-Ga-g]"
+  p
 
 moveOctave :: Parser Int
-moveOctave =
-  getRegexParser "[',]*"
-    >>= \p -> octaveShift <$> p
+moveOctave = do
+  let
+    p = getRegexParser "[',]*"
+  octaveShift <$> p
 
 {- count the number of apostrophe (up) or comma (down) characters in the string
    and give the result a value of (up-down)
@@ -439,7 +435,8 @@ maybeTie =
 -- | examples in the wild.
 maybeTie :: Parser (Maybe Char)
 maybeTie = do
-  p <- getRegexParser " *-"
+  let
+    p = getRegexParser " *-"
   map (\_ -> '-')
     <$> (optionMaybe p)
     <?> "tie"
@@ -452,7 +449,8 @@ rest =
 
 abcRest :: Parser AbcRest
 abcRest = do
-  p <- getRegexParser "[XxZz]"
+  let
+    p = getRegexParser "[XxZz]"
   { duration: _ }
     <$> (fromMaybe (fromInt 1) <$> (p *> optionMaybe noteDur))
     <?> "abcRest"
@@ -584,8 +582,8 @@ annotation =
 
 annotationString :: Parser String
 annotationString = do
-  p <- getRegexParser "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
-  -- (\s -> "\"" <> s <> "\"") <$>
+  let 
+    p = getRegexParser "[\\^\\>\\<-@](\\\\\"|[^\"\n])*"
   string "\""
     *> p
     <* string "\""
@@ -609,14 +607,16 @@ decoration =
     <?> "decoration"
 
 shortDecoration :: Parser String
-shortDecoration =
-  getRegexParser "[\\.~HLMOPSTuv]"
-    >>= \p -> p <?> "short decoration"
+shortDecoration = do
+  let 
+    p = getRegexParser "[\\.~HLMOPSTuv]"
+  p <?> "short decoration"
 
 longDecoration :: Parser String
-longDecoration =
-  getRegexParser "[^\x0D\n!]+"
-    >>= \p -> between (char '!') (char '!') p
+longDecoration = do
+  let
+    p = getRegexParser "[^\x0D\n!]+"
+  between (char '!') (char '!') p
       <?> "long decoration"
 
 -- | our whiteSpace differs from that of the string parser we do NOT want to
@@ -666,9 +666,10 @@ space = char ' '
    They are ignored by computer programs. For example, A2``B``C is equivalent to A2BC.
 -}
 ignore :: Parser Music
-ignore =
-  getRegexParser "[#@;`\\*\\?]+"
-    >>= \p -> Ignore <$ p
+ignore = do 
+  let 
+    p = getRegexParser  "[#@;`\\*\\?]+"
+  Ignore <$ p
       <?> "ignored character"
 
 {- This is an area where the spec is uncertain.  See 6.1.1 Typesetting line-breaks
@@ -684,7 +685,8 @@ ignore =
 -}
 continuation :: Parser Music
 continuation = do
-  p <- getRegexParser "[^\x0D\n]*"
+  let
+    p = getRegexParser "[^\x0D\n]*"
   Continuation
     <$ char '\\'
     <*> p
@@ -797,8 +799,10 @@ headerCode c =
     string pattern <* whiteSpace
 
 unsupportedHeaderCode :: Parser String
-unsupportedHeaderCode =
-  getRegexParser "[a-qt-vx-zEJ]:" >>= \p -> p <* whiteSpace
+unsupportedHeaderCode = do
+  let 
+    p = getRegexParser "[a-qt-vx-zEJ]:" 
+  p <* whiteSpace
 
 {- Full comment lines.  Comments are introduced with '%' and can occur anywhere
    and carry on thill the end of the line. We'll treat single line comments 
@@ -825,7 +829,8 @@ inlineInfo isInline = do
         "[^\x0D\n\\[\\]]*"
       else
         "[^\x0D\n]*"
-  getRegexParser pattern >>= \p -> p
+    p = getRegexParser pattern
+  p
 
 area :: Parser Header
 area =
@@ -1115,8 +1120,10 @@ sharpOrFlat =
     (char '#' <|> char 'b')
 
 keyName :: Parser String
-keyName =
-  getRegexParser "[A-G]" >>= \p -> p
+keyName = do
+  let 
+    p = getRegexParser "[A-G]"
+  p
 
 keySignature :: Parser KeySignature
 keySignature =
@@ -1175,49 +1182,58 @@ mode =
     ]
 
 minor :: Parser Mode
-minor =
-  getRegexParser "[M|m][A-Za-z]*"
-    >>= \p -> Minor <$ whiteSpace <* p
+minor = do
+  let
+    p = getRegexParser "[M|m][A-Za-z]*"
+  Minor <$ whiteSpace <* p
 
 major :: Parser Mode
-major =
-  getRegexParser "[M|m][A|a][J|j][A-Za-z]*"
-    >>= \p -> Major <$ whiteSpace <* p
+major = do
+  let 
+    p = getRegexParser "[M|m][A|a][J|j][A-Za-z]*"
+  Major <$ whiteSpace <* p
 
 ionian :: Parser Mode
-ionian =
-  getRegexParser "[I|i][O|o][N|n][A-Za-z]*"
-    >>= \p -> Ionian <$ whiteSpace <* p
+ionian = do
+  let
+    p = getRegexParser "[I|i][O|o][N|n][A-Za-z]*"
+  Ionian <$ whiteSpace <* p
 
 dorian :: Parser Mode
-dorian =
-  getRegexParser "[D|d][O|o][R|r][A-Za-z]*"
-    >>= \p -> Dorian <$ whiteSpace <* p
+dorian = do
+  let
+    p = getRegexParser "[D|d][O|o][R|r][A-Za-z]*"
+  Dorian <$ whiteSpace <* p
 
 phrygian :: Parser Mode
-phrygian =
-  getRegexParser "[P|p][H|h][R|r][A-Za-z]*"
-    >>= \p -> Phrygian <$ whiteSpace <* p
+phrygian = do
+  let
+    p = getRegexParser "[P|p][H|h][R|r][A-Za-z]*"
+  Phrygian <$ whiteSpace <* p
 
 lydian :: Parser Mode
-lydian =
-  getRegexParser "[L|l][Y|y][D|d][A-Za-z]*"
-    >>= \p -> Lydian <$ whiteSpace <* p
+lydian = do
+  let
+    p = getRegexParser "[L|l][Y|y][D|d][A-Za-z]*"
+  Lydian <$ whiteSpace <* p
 
 mixolydian :: Parser Mode
-mixolydian =
-  getRegexParser "[M|m][I|i][X|x][A-Za-z]*"
-    >>= \p -> Mixolydian <$ whiteSpace <* p
+mixolydian = do
+  let
+    p = getRegexParser "[M|m][I|i][X|x][A-Za-z]*"
+  Mixolydian <$ whiteSpace <* p
 
 aeolian :: Parser Mode
-aeolian =
-  getRegexParser "[A|a][E|e][O|o][A-Za-z]*"
-    >>= \p -> Aeolian <$ whiteSpace <* p
+aeolian = do
+  let 
+    p = getRegexParser "[A|a][E|e][O|o][A-Za-z]*"
+  Aeolian <$ whiteSpace <* p
 
 locrian :: Parser Mode
-locrian =
-  getRegexParser "[L|l][O|o][C|c][A-Za-z]*"
-    >>= \p -> Locrian <$ whiteSpace <* p
+locrian = do
+  let
+    p = getRegexParser "[L|l][O|o][C|c][A-Za-z]*"
+  Locrian <$ whiteSpace <* p
 
 buildBrokenOperator :: String -> Broken
 buildBrokenOperator s =
@@ -1329,20 +1345,28 @@ lookupPitch p =
 
 -- regex parsers.  
 brokenRhythmOperator :: Parser String
-brokenRhythmOperator =
-  getRegexParser "(<+|>+)" >>= \p -> p
+brokenRhythmOperator = do
+  let 
+    p = getRegexParser "(<+|>+)" 
+  p
 
 tupletLength :: Parser String
-tupletLength =
-  getRegexParser "[2-9]" >>= \p -> p
+tupletLength = do 
+  let 
+    p = getRegexParser "[2-9]"
+  p
 
 anyInt :: Parser String
-anyInt =
-  getRegexParser "(0|[1-9][0-9]*)" >>= \p -> p
+anyInt = do
+  let 
+    p = getRegexParser "(0|[1-9][0-9]*)" 
+  p
 
 anyDigit :: Parser String
-anyDigit =
-  getRegexParser "([0-9])" >>= \p -> p
+anyDigit = do 
+  let 
+    p = getRegexParser "([0-9])"   
+  p
 
 -- low level
 
@@ -1364,9 +1388,10 @@ newline = satisfy ((==) '\n') <?> "expected newline"
 -- | it with a try, because the whole regex match is either consumed or not.
 -- | Also accommodate a carriage return but without the terminating newline
 crlf :: Parser Char
-crlf =
-  getRegexParser "!?\r(\n)?"
-    >>= \p -> '\n' <$ p <?> "expected crlf"
+crlf = do 
+  let 
+    p = getRegexParser "!?\r(\n)?"
+  '\n' <$ p <?> "expected crlf"
 
 {-| Parse an end of line character or sequence, returning a `\n` character. 
     Before the actual end of line, we can have comments, which are discarded
@@ -1385,13 +1410,17 @@ comment =
    here we intend to retain the string so we bar any comments
 -}
 strToEol :: Parser String
-strToEol =
-  getRegexParser "[^\x0D\n%]*" >>= \p -> p
+strToEol = do
+  let 
+    p = getRegexParser "[^\x0D\n%]*" 
+  p
 
 {- as above but with further comment characters allowed -}
 commentStrToEol :: Parser String
-commentStrToEol =
-  getRegexParser "[^\x0D\n]*" >>= \p -> p
+commentStrToEol = do 
+  let 
+    p = getRegexParser "[^\x0D\n]*"
+  p
 
 {-| Parse a positive integer (with no sign). -}
 int :: Parser Int
@@ -1415,8 +1444,8 @@ digit =
 -- | literal quoted String. Optionally retain the quotes surrounding the returned String
 literalQuotedString :: Boolean -> Parser String
 literalQuotedString retainQuotes = do
-  p <- getRegexParser "(\\\\\"|[^\"\n])*"
   let
+    p = getRegexParser "(\\\\\"|[^\"\n])*"
     quotedString :: Parser String
     quotedString =
       string "\""
@@ -1443,42 +1472,23 @@ counted num parser =
   replicate1A num parser
 
 -- | precompile a (static) regex pattern and crash if our syntax is illegal
-mkRegexParser :: String -> RegexParser
-mkRegexParser regexPattern =
+getRegexParser :: String -> RegexParser
+getRegexParser regexPattern = 
   case regex regexPattern noFlags of
     Left compileError -> unsafeCrashWith $ "regex pattern " <> regexPattern <> " failed to compile: " <> compileError
     Right parser -> parser
-
--- | place every precompiled regex in a Map on first reference
--- | thus avoiding recompilation on further references
-getRegexParser :: forall m. Bind m => MonadState RegexMap m => String -> m RegexParser
-getRegexParser regexPattern = do
-  (RegexMap regexMap) <- get
-  case (lookup regexPattern regexMap) of
-    Nothing -> do
-      let
-        regexParser :: RegexParser
-        regexParser = mkRegexParser regexPattern
-
-        newMap :: RegexMap
-        newMap = RegexMap (insert regexPattern regexParser regexMap)
-      _ <- put newMap
-
-      pure regexParser
-    Just regexParser ->
-      pure regexParser
 
 -- | Parse an ABC tune image.
 parse :: String -> Either ParseError AbcTune
 parse s =
   result
   where
-  (Identity result) = evalStateT (runParserT s abc) (RegexMap empty)
+  (Identity result) = runParserT s abc
 
 -- | Parse an ABC key signature
 parseKeySignature :: String -> Either ParseError ModifiedKeySignature
 parseKeySignature s =
-  case (evalStateT (runParserT s keySignature) (RegexMap empty)) of
+  case runParserT s keySignature of
     Identity (Right ks) ->
       let
         emptyList = Nil :: List Pitch
