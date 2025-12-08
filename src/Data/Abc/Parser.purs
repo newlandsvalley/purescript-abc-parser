@@ -2,6 +2,7 @@
 module Data.Abc.Parser
   ( parse
   , parseKeySignature
+  , module StringParser
   ) where
 
 import Data.Abc
@@ -21,13 +22,14 @@ import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Rational (Rational, fromInt, (%))
 import Data.String (drop, toUpper)
 import Data.String.CodePoints (length)
-import Data.String.CodeUnits (charAt, fromCharArray, toCharArray)
+import Data.String.CodeUnits (charAt, fromCharArray, toCharArray, singleton)
 import Data.String.Utils (startsWith, includes)
 import Data.Tuple (Tuple(..))
 import Data.Unfoldable1 (replicate1A)
-import Prelude (bind, flip, join, max, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==))
+import Prelude (bind, flip, join, max, negate, pure, ($), (*>), (+), (-), (<$), (<$>), (<*), (<*>), (<<<), (<>), (==), (||), (&&), (>=), (<=))
 import StringParser (Parser, ParseError, runParser, try)
-import StringParser.CodePoints (satisfy, string, alphaNum, char, eof, regex)
+import StringParser (ParseError()) as StringParser
+import StringParser.CodePoints (anyDigit, satisfy, string, alphaNum, char, eof, regex)
 import StringParser.Combinators (between, choice, many, many1, manyTill, option, optional, optionMaybe, sepBy, sepBy1, (<?>))
 
 {- transient data type just used for parsing the awkward Tempo syntax
@@ -357,13 +359,16 @@ pitch :: Parser String
 pitch =
   regex "[A-Ga-g]"
 
+{-
 moveOctave :: Parser Int
 moveOctave =
   octaveShift <$> regex "[',]*"
+-}
 
 {- count the number of apostrophe (up) or comma (down) characters in the string
    and give the result a value of (up-down)
 -}
+{-}
 octaveShift :: String -> Int
 octaveShift s =
   let
@@ -371,6 +376,22 @@ octaveShift s =
     down = Array.length $ Array.filter ((==) ',') (toCharArray s)
   in
     up - down
+-}
+
+moveOctave :: Parser Int 
+moveOctave = 
+  option 0 $ highOctave <|> lowOctave 
+
+  where
+  highOctave :: Parser Int 
+  highOctave = 
+    Nel.length <$>
+      many1 (char ''')
+
+  lowOctave :: Parser Int 
+  lowOctave = 
+    negate <$> Nel.length <$>
+      many1 (char ',')
 
 {- the duration of a note in the body
    order of choices here is important to remove ambiguity
@@ -595,7 +616,7 @@ longDecoration =
     <?> "long decoration"
 
 -- | our whiteSpace differs from that of the string parser we do NOT want to
--- |consume carriage returns or newlines
+-- | consume carriage returns or newlines
 whiteSpace :: Parser String
 whiteSpace =
   (fromCharArray <<< Array.fromFoldable)
@@ -629,7 +650,7 @@ scoreSpace =
   -- tab <|> space
   (char '\t') <|> space
 
-space :: Parser Char --
+space :: Parser Char 
 space = char ' '
 
 {- characters to ignore
@@ -1061,7 +1082,7 @@ suffixedTempoDesignation =
     <$> tempoDesignation
     <*> spacedQuotedString
 
-{-\ we have for example 120 -}
+{- we have for example 120 -}
 degenerateTempo :: Parser TempoSignature
 degenerateTempo =
   buildTempoSignature3 <$>
@@ -1303,11 +1324,11 @@ anyInt :: Parser String
 anyInt =
   regex "(0|[1-9][0-9]*)"
 
-anyDigit :: Parser String
-anyDigit =
-  regex "([0-9])"
-
 -- low level
+
+anyDigitAsString :: Parser String
+anyDigitAsString = 
+  singleton <$> anyDigit
 
 {- an alphnumeric string with added +,- and _ -}
 alphaNumPlusString :: Parser String
@@ -1370,7 +1391,7 @@ digit =
   fromMaybe 1
     <$> fromString
     <$>
-      anyDigit
+      anyDigitAsString
     <?> "expected a digit"
 
 -- | literal quoted String. Optionally retain the quotes surrounding the returned String
