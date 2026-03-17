@@ -1,6 +1,7 @@
 -- | Conversion of an ABC tune to MIDI.
 module Data.Abc.Midi
-  ( module Data.Abc.Midi.Pitch
+  ( module ExportMidi             -- re-export MidiPitch
+  , module Data.Abc.Midi.Pitch    -- re-export conversion of ABC pitch to MidiPitch
   , toMidi
   , toMidiAtBpm
   , toMidiRecording
@@ -27,7 +28,7 @@ import Data.Abc
   )
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.KeySignature (defaultKey, getKeySig)
-import Data.Abc.Midi.Pitch (MidiPitch, toMidiPitch) 
+import Data.Abc.Midi.Pitch (toMidiPitch) 
 import Data.Abc.Midi.Types (MidiBar, MidiBars)
 import Data.Abc.Midi.RepeatSections (initialRepeatState, indexBar, finalBar)
 import Data.Abc.Normaliser (normalise)
@@ -44,6 +45,7 @@ import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
+import Data.Midi (MidiPitch(..)) as ExportMidi
 import Data.Midi.Generate (recording) as Generate
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, (%))
@@ -462,7 +464,7 @@ handleRest duration = do
   tstate <- get
   let
     -- a rest is a note without a pitch
-    msg = midiNoteOn (noteTicks duration) 0
+    msg = midiNoteOn (noteTicks duration) (Midi.MidiPitch 0)
     bar' = tstate.currentBar { midiMessages = (msg : tstate.currentBar.midiMessages) }
   put
     tstate { currentBar = bar' }
@@ -516,14 +518,14 @@ addNoteToBarAccidentals abcNote accs =
       Accidentals.add abcNote.pitchClass acc accs
 
 -- | a MIDI NoteOn message
-midiNoteOn :: Int -> Int -> Midi.Message
+midiNoteOn :: Int -> Midi.MidiPitch -> Midi.Message
 midiNoteOn ticks pitch =
-  Midi.Message ticks (Midi.NoteOn 0 pitch defaultVolume)
+  Midi.Message ticks (Midi.NoteOn (Midi.Channel 0) pitch defaultVolume)
 
 -- | a MIDI NoteOff message
-midiNoteOff :: Int -> Int -> Midi.Message
+midiNoteOff :: Int -> Midi.MidiPitch -> Midi.Message
 midiNoteOff ticks pitch =
-  Midi.Message ticks (Midi.NoteOff 0 pitch defaultVolume)
+  Midi.Message ticks (Midi.NoteOff (Midi.Channel 0) pitch defaultVolume)
 
 -- | a MIDI message to set the tempo
 midiTempoMsg :: AbcTempo -> Midi.Message

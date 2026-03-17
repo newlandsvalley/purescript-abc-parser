@@ -343,13 +343,13 @@ pitchSpec :: Spec Unit
 pitchSpec =
   describe "convert a note's pitch class to a MIDI pitch (in context)" do  
     it "converts B natural to MIDI" do         
-      assertMidiPitch b 47 
+      assertMidiPitch b (Midi.MidiPitch 47)
     it "converts B# to MIDI" do         
-      assertMidiPitch bSharp 48
+      assertMidiPitch bSharp (Midi.MidiPitch 48)
     it "converts B## to MIDI" do         
-      assertMidiPitch bDoubleSharp 49
+      assertMidiPitch bDoubleSharp (Midi.MidiPitch 49)
     it "converts C natural to MIDI" do         
-      assertMidiPitch c 48
+      assertMidiPitch c (Midi.MidiPitch 48)
 
 -- | the number of MIDI ticks that equates to 1/4=120
 standardTicks :: Int
@@ -377,47 +377,47 @@ tempo r =
 
 rest :: Rational -> List Midi.Message
 rest abcDuration =
-  Midi.Message (midiTicks abcDuration) (Midi.NoteOn 0 0 80)
+  Midi.Message (midiTicks abcDuration) (Midi.noteOn 0 0 80)
     : Nil
 
 noteC :: Rational -> List Midi.Message
 noteC abcDuration =
-  Midi.Message 0 (Midi.NoteOn 0 60 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
+  Midi.Message 0 (Midi.noteOn 0 60 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 60 80)
     : Nil
 
 noteCs :: Rational -> List Midi.Message
 noteCs abcDuration =
-  Midi.Message 0 (Midi.NoteOn 0 61 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 61 80)
+  Midi.Message 0 (Midi.noteOn 0 61 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 61 80)
     : Nil
 
 noteD :: Rational -> List Midi.Message
 noteD abcDuration =
-  Midi.Message 0 (Midi.NoteOn 0 62 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 62 80)
+  Midi.Message 0 (Midi.noteOn 0 62 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 62 80)
     : Nil
 
 noteE :: Rational -> List Midi.Message
 noteE abcDuration =
-  Midi.Message 0 (Midi.NoteOn 0 64 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 64 80)
+  Midi.Message 0 (Midi.noteOn 0 64 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 64 80)
     : Nil
 
 noteF :: Rational -> List Midi.Message
 noteF abcDuration =
-  Midi.Message 0 (Midi.NoteOn 0 65 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 65 80)
+  Midi.Message 0 (Midi.noteOn 0 65 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 65 80)
     : Nil
 
 chordC :: Rational -> List Midi.Message
 chordC abcDuration =
-  Midi.Message 0 (Midi.NoteOn 0 60 80)
-    : Midi.Message 0 (Midi.NoteOn 0 64 80)
-    : Midi.Message 0 (Midi.NoteOn 0 67 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.NoteOff 0 60 80)
-    : Midi.Message 0 (Midi.NoteOff 0 64 80)
-    : Midi.Message 0 (Midi.NoteOff 0 67 80)
+  Midi.Message 0 (Midi.noteOn 0 60 80)
+    : Midi.Message 0 (Midi.noteOn 0 64 80)
+    : Midi.Message 0 (Midi.noteOn 0 67 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 60 80)
+    : Midi.Message 0 (Midi.noteOff 0 64 80)
+    : Midi.Message 0 (Midi.noteOff 0 67 80)
     : Nil
 
 b :: AbcNote
@@ -462,3 +462,4 @@ end = 10
 midiTicks :: Rational -> Int
 midiTicks r =
   (round <<< toNumber) (fromInt standardMidiTick * r)
+

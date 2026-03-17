@@ -1,7 +1,6 @@
 -- | Conversion of an ABC pitch to a MIDI pitch
 module Data.Abc.Midi.Pitch 
- ( MidiPitch
- , toMidiPitch
+ ( toMidiPitch
  , midiPitchOffset
  ) 
 
@@ -10,14 +9,17 @@ where
 import Data.Abc (AbcNote, Accidental(..), ModifiedKeySignature, Pitch(..))
 import Data.Abc.Accidentals as Accidentals
 import Data.Abc.KeySignature (modifiedKeySet, pitchNumber, notesInChromaticScale)
+import Data.Midi (MidiPitch(..))
 import Data.Foldable (oneOf)
 import Data.List (List(..), (:))
 import Data.Maybe (fromMaybe)
 import Prelude ((+), (*), ($))
 
+{-}
 -- | The pitch of a note expressed as a MIDI interval.
 type MidiPitch =
   Int
+-}
 
 -- | Convert an ABC note pitch to a MIDI pitch.
 -- |
@@ -27,7 +29,7 @@ type MidiPitch =
 -- | MidiPitch - the resulting pitch of the MIDI note
 toMidiPitch :: ModifiedKeySignature -> Accidentals.Accidentals -> AbcNote -> MidiPitch
 toMidiPitch mks barAccidentals n =
-  (n.octave * notesInChromaticScale) + midiPitchOffset mks barAccidentals n
+  MidiPitch $ (n.octave * notesInChromaticScale) + midiPitchOffset mks barAccidentals n
 
 -- | convert an AbcNote (pich class and accidental) to a pitch offset in a chromatic scale
 midiPitchOffset :: ModifiedKeySignature -> Accidentals.Accidentals -> AbcNote -> Int

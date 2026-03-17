@@ -2,9 +2,8 @@ module Test.Main where
 
 import Prelude
 import Effect (Effect)
-import Effect.Aff (launchAff_)
 import Test.Spec.Reporter (specReporter)
-import Test.Spec.Runner (runSpec)
+import Test.Spec.Runner.Node (runSpecAndExitProcess)
 import Test.Spec (describe)
 import Test.Abc (abcSpec)
 import Test.Metadata (metadataSpec)
@@ -21,7 +20,7 @@ import Test.Normaliser (normaliserSpec)
 
 
 main :: Effect Unit
-main = launchAff_ $ runSpec [ specReporter] do
+main = runSpecAndExitProcess [ specReporter] do
   describe "ABC parser" do
     abcSpec
     accidentalsSpec

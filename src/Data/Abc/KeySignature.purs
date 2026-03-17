@@ -416,8 +416,8 @@ distanceFromC keySig =
 
 -- the classical modes are just the major modes shifted a bit
 distanceFromMajor :: Mode -> Int
-distanceFromMajor mode =
-  case mode of
+distanceFromMajor =
+  case _ of
     Dorian -> 10
     Phrygian -> 8
     Lydian -> 7

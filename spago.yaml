@@ -37,7 +37,28 @@ package:
       - aff
       - effect
       - spec
+      - spec-node
 workspace:
-  packageSet:
-    registry: 62.3.2
-  extraPackages: {}
+  extraPackages: 
+    midi:
+      dependencies:
+        - arrays
+        - bifunctors
+        - control
+        - effect
+        - either
+        - foldable-traversable
+        - integers
+        - lists
+        - maybe
+        - ordered-collections
+        - prelude
+        - signal
+        - string-parsers
+        - strings
+        - tuples
+        - unfoldable
+      git: https://github.com/newlandsvalley/purescript-midi.git
+      ref: 55b1fcc50d9bfe0743053f4cdb3636eb94a7e72a
+  package_set:
+    registry: 73.3.0

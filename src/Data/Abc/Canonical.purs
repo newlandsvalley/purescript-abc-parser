@@ -30,8 +30,8 @@ import Data.Either (Either(..))
 -- | Module for converting an ABC Tune parse tree to a canonical ABC string
 
 keySignatureAccidental :: Accidental -> String
-keySignatureAccidental a =
-  case a of
+keySignatureAccidental =
+  case _ of
     Sharp ->
       "#"
     Flat ->
@@ -76,8 +76,8 @@ ratlist rs =
     Str.trim $ foldr f "" rs
 
 meter :: Maybe TimeSignature -> String
-meter ms =
-  case ms of
+meter =
+  case _ of
     Nothing ->
       "none"
 
@@ -268,8 +268,8 @@ voltas vs =
   intercalateMap "," show vs
 
 broken :: Broken -> String
-broken b =
-  case b of
+broken =
+  case _ of
     LeftArrow i ->
       Str.take i "<<<<<<<<<<"
 
@@ -277,8 +277,8 @@ broken b =
       Str.take i ">>>>>>>>>>"
 
 music :: Music -> String
-music m =
-  case m of
+music =
+  case _ of
 
     Note gn ->
       graceableNote gn
@@ -320,8 +320,8 @@ music m =
       ("\\" <> comment <> "\r\n")
 
 header :: Header -> String
-header h =
-  case h of
+header =
+  case _ of
     Area s ->
       "A: " <> s
 
@@ -420,8 +420,8 @@ tuneHeaders hs =
     foldr f "" hs
 
 bodyPart :: BodyPart -> String
-bodyPart bp =
-  case bp of
+bodyPart =
+  case _ of
     Score bs ->
       bars bs
 

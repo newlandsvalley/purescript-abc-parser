@@ -215,8 +215,8 @@ processHeader h =
       pure h
 
 transposeBodyPart :: BodyPart -> Transposition BodyPart
-transposeBodyPart bp =
-  case bp of
+transposeBodyPart =
+  case _ of
     -- just transpose the score
     Score bars ->
       do
@@ -309,8 +309,8 @@ transposeChord c =
     pure $ c { notes = newNotes }
 
 transposeRestOrNoteBy :: RestOrNote -> Transposition RestOrNote
-transposeRestOrNoteBy restOrNote =
-  case (restOrNote) of
+transposeRestOrNoteBy  =
+  case _ of
     Left r ->
       pure $ Left r
     Right n -> do
@@ -329,10 +329,8 @@ transposeGraceableNoteBy gn =
     pure { maybeGrace, leftSlurs, decorations, abcNote, rightSlurs }
 
 transposeGrace :: Maybe Grace -> Transposition (Maybe Grace)
-transposeGrace mGrace =
-  case
-    mGrace
-    of
+transposeGrace =
+  case _ of
     Just grace ->
       do
         newNotes <- transposeNoteList grace.notes

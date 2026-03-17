@@ -9,3 +9,6 @@
 /.spago/
 /.metals/
 /.vscode/
+/.spec-results
+/package-lock.json
+

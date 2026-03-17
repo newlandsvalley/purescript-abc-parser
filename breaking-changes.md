@@ -1,3 +1,9 @@
+Breaking Changes in v2.2.0
+--------------------------
+
+  * Uses latest abc-midi where the types MidiPitch and Channel have been redefined as newtypes
+
+
 Breaking Changes in v2.1.0
 --------------------------
 
