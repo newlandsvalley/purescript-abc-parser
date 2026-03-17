@@ -45,7 +45,7 @@ import Data.List.NonEmpty (NonEmptyList)
 import Data.List.NonEmpty (head, length, tail, toList) as Nel
 import Data.Maybe (Maybe(..), fromMaybe)
 import Data.Midi as Midi
-import Data.Midi (MidiPitch(..)) as ExportMidi
+import Data.Midi (Channel(..), MidiPitch(..)) as ExportMidi
 import Data.Midi.Generate (recording) as Generate
 import Data.Newtype (unwrap)
 import Data.Rational (Rational, fromInt, (%))
