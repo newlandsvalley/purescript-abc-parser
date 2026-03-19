@@ -377,47 +377,47 @@ tempo r =
 
 rest :: Rational -> List Midi.Message
 rest abcDuration =
-  Midi.Message (midiTicks abcDuration) (Midi.noteOn 0 0 80)
+  Midi.Message (midiTicks abcDuration) (Midi.buildNoteOn 0 0 80)
     : Nil
 
 noteC :: Rational -> List Midi.Message
 noteC abcDuration =
-  Midi.Message 0 (Midi.noteOn 0 60 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 60 80)
+  Midi.Message 0 (Midi.buildNoteOn 0 60 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.buildNoteOff 0 60 80)
     : Nil
 
 noteCs :: Rational -> List Midi.Message
 noteCs abcDuration =
-  Midi.Message 0 (Midi.noteOn 0 61 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 61 80)
+  Midi.Message 0 (Midi.buildNoteOn 0 61 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.buildNoteOff 0 61 80)
     : Nil
 
 noteD :: Rational -> List Midi.Message
 noteD abcDuration =
-  Midi.Message 0 (Midi.noteOn 0 62 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 62 80)
+  Midi.Message 0 (Midi.buildNoteOn 0 62 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.buildNoteOff 0 62 80)
     : Nil
 
 noteE :: Rational -> List Midi.Message
 noteE abcDuration =
-  Midi.Message 0 (Midi.noteOn 0 64 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 64 80)
+  Midi.Message 0 (Midi.buildNoteOn 0 64 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.buildNoteOff 0 64 80)
     : Nil
 
 noteF :: Rational -> List Midi.Message
 noteF abcDuration =
-  Midi.Message 0 (Midi.noteOn 0 65 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 65 80)
+  Midi.Message 0 (Midi.buildNoteOn 0 65 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.buildNoteOff 0 65 80)
     : Nil
 
 chordC :: Rational -> List Midi.Message
 chordC abcDuration =
-  Midi.Message 0 (Midi.noteOn 0 60 80)
-    : Midi.Message 0 (Midi.noteOn 0 64 80)
-    : Midi.Message 0 (Midi.noteOn 0 67 80)
-    : Midi.Message (midiTicks abcDuration) (Midi.noteOff 0 60 80)
-    : Midi.Message 0 (Midi.noteOff 0 64 80)
-    : Midi.Message 0 (Midi.noteOff 0 67 80)
+  Midi.Message 0 (Midi.buildNoteOn 0 60 80)
+    : Midi.Message 0 (Midi.buildNoteOn 0 64 80)
+    : Midi.Message 0 (Midi.buildNoteOn 0 67 80)
+    : Midi.Message (midiTicks abcDuration) (Midi.buildNoteOff 0 60 80)
+    : Midi.Message 0 (Midi.buildNoteOff 0 64 80)
+    : Midi.Message 0 (Midi.buildNoteOff 0 67 80)
     : Nil
 
 b :: AbcNote

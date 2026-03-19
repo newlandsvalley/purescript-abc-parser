@@ -59,6 +59,6 @@ workspace:
         - tuples
         - unfoldable
       git: https://github.com/newlandsvalley/purescript-midi.git
-      ref: 55b1fcc50d9bfe0743053f4cdb3636eb94a7e72a
+      ref: 6e47b9c2a58ff13225f17be71339c3708cd5f98f
   package_set:
     registry: 73.3.0
