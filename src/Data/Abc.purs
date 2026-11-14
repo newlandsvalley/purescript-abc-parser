@@ -40,12 +40,10 @@ module Data.Abc
 import Data.Either (Either)
 import Data.Enum (class Enum)
 import Data.Generic.Rep (class Generic)
-import Data.Eq.Generic (genericEq)
 import Data.List (List)
 import Data.List.NonEmpty (NonEmptyList)
 import Data.Map (Map)
 import Data.Maybe (Maybe(..))
-import Data.Ordering (Ordering(..))
 import Data.Rational (Rational)
 import Data.String (toLower) as Str
 import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
@@ -184,6 +182,7 @@ data Thickness
   | ThinThick
   | ThickThin
   | Invisible -- | e.e. an implied bar line at the start of a stave
+  derive (Eq)
 
 instance showThickness :: Show Thickness where
   show Thin = "|"
@@ -192,19 +191,17 @@ instance showThickness :: Show Thickness where
   show ThickThin = "[|"
   show Invisible = ""
 
-derive instance eqThickness :: Eq Thickness
-
 -- | a Volta - a repeated section
 data Volta
   = Volta Int -- |1  or |2 etc
   | VoltaRange Int Int -- |1-3 etc
+  derive (Eq)
 
 derive instance genericVolta :: Generic Volta _
 instance showVolta :: Show Volta where
   show (Volta v) = show v
   show (VoltaRange v1 v2) = (show v1) <> "-" <> (show v2)
 
-derive instance eqVolta :: Eq Volta
 
 {-| A Bar Line:
 *  endRepeats - any repeat of the previous section indicated by colon(s)
@@ -230,6 +227,7 @@ data Mode
   | Mixolydian
   | Aeolian
   | Locrian
+  derive (Eq)
 
 instance showMode :: Show Mode where
   show Major = "Major"
@@ -242,8 +240,6 @@ instance showMode :: Show Mode where
   show Aeolian = "Aeolian"
   show Locrian = "Locrian"
 
-derive instance eqMode :: Eq Mode
-
 -- | An Accidental.
 data Accidental
   = Sharp
@@ -252,6 +248,7 @@ data Accidental
   | DoubleFlat
   | Natural
   | Implicit -- accidental determoined by context of the note
+  derive (Eq, Ord)
 
 {- as shown in the body of the tune but not in headers -}
 instance showAccidental :: Show Accidental where
@@ -262,9 +259,6 @@ instance showAccidental :: Show Accidental where
   show Natural = "="
   show Implicit = ""
 
-derive instance eqAccidental :: Eq Accidental
-derive instance ordAccidental :: Ord Accidental
-
 -- | A white note on the piano.
 data PitchClass
   = A
@@ -274,6 +268,7 @@ data PitchClass
   | E
   | F
   | G
+  derive (Eq, Ord)
 
 instance showPitchClass :: Show PitchClass where
   show A = "A"
@@ -284,8 +279,6 @@ instance showPitchClass :: Show PitchClass where
   show F = "F"
   show G = "G"
 
-derive instance eqPitchCLass :: Eq PitchClass
-derive instance ordPitchCLass :: Ord PitchClass
 
 instance enumPitchClass :: Enum PitchClass where
   succ C = Just D
@@ -326,25 +319,7 @@ data Pitch = Pitch
   { pitchClass :: PitchClass
   , accidental :: Accidental
   }
-
-derive instance genericPitchClass :: Generic PitchClass _
-derive instance genericAccidental :: Generic Accidental _
-
-derive instance genericPitch :: Generic Pitch _
-
-instance eqPitch :: Eq Pitch where
-  eq = genericEq
-
-instance ordPitch :: Ord Pitch where
-  compare (Pitch r1) (Pitch r2) =
-    let
-      comp1 = compare r1.pitchClass r2.pitchClass
-    in
-      case comp1 of
-        EQ ->
-          compare r1.accidental r2.accidental
-        _ ->
-          comp1
+  derive (Eq, Ord)
 
 instance showPitch :: Show Pitch where
   show (Pitch p) = show p.accidental <> Str.toLower (show p.pitchClass)

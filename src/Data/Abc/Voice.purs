@@ -60,9 +60,7 @@ import Prelude (class Eq, class Ord, ($), (==), (<<<), (<>), bind, join, map, no
 data VoiceLabel
   = VoiceLabel String
   | NoLabel
-
-derive instance eqVoiceLabel :: Eq VoiceLabel
-derive instance ordVoiceLabel :: Ord VoiceLabel
+  derive (Eq, Ord)
 
 type VoiceMap = Map VoiceLabel TuneBody
 

@@ -17,7 +17,6 @@ import Data.Maybe (Maybe)
 import Data.List (List)
 import Data.Map (Map)
 import Data.Newtype (class Newtype)
-import Data.Eq.Generic (genericEq)
 import Data.Show.Generic (genericShow)
 
 data Label
@@ -25,14 +24,13 @@ data Label
   | Intro --- artificially generated Intro
   | APart
   | OtherPart
+  derive (Eq)
 
 instance showLabel :: Show Label where
   show LeadIn = "Lead-in"
   show Intro = "Intro"
   show APart = "A Part"
   show OtherPart = "Other Part"
-
-derive instance eqLabel :: Eq Label
 
 -- a bar number in the melody
 type BarNo = Int
@@ -50,11 +48,10 @@ newtype Section = Section
   , repeatCount :: Int
   , label :: Label
   }
+  derive (Eq)
 
 derive instance newtypeSection :: Newtype Section _
 derive instance genericSection :: Generic Section _
-instance eqSection :: Eq Section where
-  eq = genericEq
 
 instance showSection :: Show Section where
   show = genericShow

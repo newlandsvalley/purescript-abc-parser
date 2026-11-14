@@ -38,9 +38,7 @@ import Prelude (class Eq, class Ord, class Show, map, mod, show, ($), (&&), (+),
 data PianoKey
   = White PitchClass
   | Black PitchClass PitchClass
-
-derive instance eqPianoKey :: Eq PianoKey
-derive instance ordPianoKey :: Ord PianoKey
+  derive (Eq, Ord)
 
 instance showPianoKey :: Show PianoKey where
   show (White p) = "white: " <> (show p)
