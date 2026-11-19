@@ -7,6 +7,6 @@
   "devDependencies": {
     "purescript": "^0.15.17",
     "purescript-psa": "^0.6.0",
-    "spago": "^1.0.3"
+    "spago": "^1.0.5"
   }
 }
