@@ -46,7 +46,7 @@ import Data.Map (Map)
 import Data.Maybe (Maybe(..))
 import Data.Rational (Rational)
 import Data.String (toLower) as Str
-import Prelude (class Show, class Eq, class Ord, (<>), compare, show)
+import Prelude (class Show, class Eq, class Ord, (<>), show)
 
 -- | A Tune.
 type AbcTune =
